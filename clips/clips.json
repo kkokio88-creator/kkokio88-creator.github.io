@@ -1,0 +1,32 @@
+[
+ {
+  "id": "capture",
+  "title": "담기",
+  "seconds": 4.5
+ },
+ {
+  "id": "inbox",
+  "title": "수집함 정리",
+  "seconds": 5.6
+ },
+ {
+  "id": "swipe",
+  "title": "옆으로 밀어 완료",
+  "seconds": 4.3
+ },
+ {
+  "id": "timeline",
+  "title": "시간표 → 캘린더",
+  "seconds": 5.5
+ },
+ {
+  "id": "remind",
+  "title": "맡긴 일 리마인드",
+  "seconds": 5.9
+ },
+ {
+  "id": "weekly",
+  "title": "주간 검토 머리 비우기",
+  "seconds": 6.1
+ }
+]
