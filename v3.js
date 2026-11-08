@@ -1,4 +1,4 @@
-/* 내 업무관리 키트 홈페이지 v3
+/* GTD 워크 홈페이지 v3
  * - 캔버스 이미지 시퀀스 스크럽(장면 ①~④는 tools/render-scenes에서 Three.js로 직접 렌더링)
  * - Lenis 관성 스크롤 + GSAP ScrollTrigger
  * - 신청 폼: apps-script/signup 웹 앱으로 보낸다(요청 형식은 v1과 같음)
@@ -21,11 +21,13 @@
 
   // ── 글자 단위 쪼개기 ──
   $$('[data-split]').forEach(function (el) {
-    var txt = el.textContent.trim(); el.setAttribute('aria-label', txt); el.textContent = '';
+    // '|'는 줄바꿈 자리(넓은 화면에서만 확실히 꺾고, 좁으면 자연스럽게 흐름)
+    var raw = el.textContent.trim(), txt = raw.replace(/\s*\|\s*/g, ' '); el.setAttribute('aria-label', txt); el.textContent = '';
     // 단어 단위로 묶어 줄바꿈이 글자 사이(마침표 앞 등)에서 일어나지 않게
     var i = 0;
-    txt.split(' ').forEach(function (word, wi) {
-      if (wi) el.appendChild(document.createTextNode(' '));
+    raw.replace(/\s*\|\s*/g, ' | ').split(' ').filter(Boolean).forEach(function (word, wi) {
+      if (word === '|') { el.appendChild(document.createElement('br')); return; }
+      if (wi && el.lastChild && el.lastChild.nodeName !== 'BR') el.appendChild(document.createTextNode(' '));
       var w = document.createElement('span'); w.className = 'w'; w.setAttribute('aria-hidden', 'true');
       Array.from(word).forEach(function (ch) { var s = document.createElement('span'); s.className = 'c'; s.textContent = ch; s.style.setProperty('--i', i++); w.appendChild(s); });
       el.appendChild(w);

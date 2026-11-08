@@ -1,4 +1,4 @@
-/* 내 업무관리 키트 홈페이지 v3 — 애플 제품 페이지 문법(큰 글씨 · 고정 챕터 · 이미지 시퀀스) */
+/* GTD 워크 홈페이지 v3 — 애플 제품 페이지 문법(큰 글씨 · 고정 챕터 · 이미지 시퀀스) */
 :root {
   --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   --ink: #05050A; --navy: #0B1030; --g: #5B5CF6; --g2: #4A4BE0; --gt: #EEEEFF;
@@ -74,7 +74,8 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 .poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .copy { position: absolute; left: 0; right: 0; padding: 0 var(--pad); z-index: 2; text-align: center; pointer-events: none; }
 .hero-copy { top: 6vh; }
-.hero-copy .mega { font-size: clamp(52px, 6.6vw, 100px); }
+.hero-copy .mega { font-size: clamp(42px, 4.7vw, 74px); }
+@media (max-width: 600px) { .hero-copy .mega { font-size: clamp(32px, 10vw, 42px); line-height: 1.16; } }
 .hero-copy .sub { margin-top: 10px; }
 #c10 .big { font-size: clamp(38px, 5.2vw, 84px); }
 #c10 .big2 { font-size: clamp(22px, 2.6vw, 40px); }
@@ -403,7 +404,7 @@ main:focus { outline: 0; }
 /* 휴대폰 가로 화면: 제목을 줄여 휴대폰·목록과 겹치지 않게 */
 @media (max-height: 500px) and (min-aspect-ratio: 1/1) {
   .hero-copy { top: 54px; } .hero-copy .eyebrow { display: none; }
-  .hero-copy .mega { font-size: clamp(30px, 5vw, 48px); }
+  .hero-copy .mega { font-size: clamp(24px, 4vw, 34px); }
   .top-copy { top: 54px; } .top-copy .big, #c10 .big { font-size: clamp(26px, 4.4vw, 40px); } .top-copy .sub { display: none; }
   #c10 .big2 { font-size: 20px; } #c10 .top-copy { top: 56px; }
   #c3 .side-copy .big { font-size: 30px; }
