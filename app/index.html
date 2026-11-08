@@ -12,6 +12,11 @@
   #kitGate .kg-pts { list-style: none; padding: 0; margin: 24px 0 0; text-align: left; }
   #kitGate .kg-pts li { position: relative; padding: 0 0 0 26px; margin: 0 0 10px; color: var(--t2, #4E5968); font-size: 15px; line-height: 1.5; }
   #kitGate .kg-pts li::before { content: ''; position: absolute; left: 4px; top: 6px; width: 9px; height: 5px; border-left: 2.5px solid #12B886; border-bottom: 2.5px solid #12B886; transform: rotate(-45deg); }
+  #kitGate .kg-prog { margin: 18px 0 0; color: var(--t2, #4E5968); font-size: 15px; font-weight: 600; line-height: 1.6; }
+  #kitGate .kg-prog[hidden] { display: none; }
+  #kitGate .kg-prog small { color: var(--t3, #8B95A1); font-weight: 500; font-size: 13px; }
+  #kitGate .kg-prog i { display: inline-block; width: 14px; height: 14px; margin: 0 8px -2px 0; border-radius: 50%; border: 2.5px solid #C9CBFF; border-top-color: #5B5CF6; animation: kgspin .8s linear infinite; }
+  @keyframes kgspin { to { transform: rotate(360deg); } }
   #kitGate .kg-msg { color: #F04452; font-weight: 600; min-height: 22px; font-size: 14.5px; }
   #kitGate .kg-fine { color: var(--t3, #8B95A1); font-size: 12.5px; margin-top: 18px; } #kitGate .kg-fine a { color: inherit; }
   #kitGate.kg-bar { position: fixed; left: 12px; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 120; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 16px; background: var(--card, #fff); box-shadow: 0 10px 30px rgba(0,0,0,.15); font-size: 14px; font-weight: 600; color: var(--t2, #4E5968); }
@@ -1409,14 +1414,16 @@
     $('moreBody').innerHTML = '<div class="h1" style="margin-bottom:22px">더보기</div>' +
       '<div class="card">' + row('user', 'blue', '맡긴 일', 'waiting', (d.delegated || []).length) + row('folder', 'purple', '프로젝트', 'projects', (d.projects || []).filter(function (p) { return !p.finished; }).length) + row('repeat', 'green', '루틴 만들기', 'routine') + row('calcheck', 'purple', '주간 검토', 'weekly') + '</div><div class="gap"></div>' +
       '<div class="card">' + row('list', 'gray', '모든 할 일', 'all') + row('archive', 'gray', '나중에 할 일', 'someday', d.someday || '') + row('calendar', 'blue', '보이는 캘린더', 'cals') + '</div><div class="gap"></div>' +
-      '<div class="h2" style="margin-top:22px">알림</div><div class="card">' +
+      (window.KIT_ENGINE ? '' : '<div class="h2" style="margin-top:22px">알림</div><div class="card">' +
       '<label class="row" style="cursor:pointer">' + tile('sun', 'amber') + '<div class="tx"><div class="t">아침 브리핑 메일</div><div class="m">평일 아침 8시 · 오늘 할 일과 일정</div></div><span class="sw"><input type="checkbox" data-nt="daily"' + ((d.notify || {}).daily ? ' checked' : '') + '><i></i></span></label>' +
       '<label class="row" style="cursor:pointer">' + tile('mail', 'purple') + '<div class="tx"><div class="t">주간 검토 메일</div><div class="m">금요일 오후 4시 · 한 주 요약</div></div><span class="sw"><input type="checkbox" data-nt="weekly"' + ((d.notify || {}).weekly ? ' checked' : '') + '><i></i></span></label>' +
-      '</div><button class="txtlink" data-nt-test>아침 브리핑 지금 받아보기</button><div class="gap"></div>' +
+      '</div><button class="txtlink" data-nt-test>아침 브리핑 지금 받아보기</button><div class="gap"></div>') +
       '<div class="card"><a class="row" href="' + esc(d.sheetUrl || '#') + '" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'green') + '<div class="tx"><div class="t">구글 시트 열기</div></div>' + CHEV + '</a></div>' +
       (d.pageUrl ? '<div class="gap"></div><div class="card"><a class="row" href="' + esc(d.pageUrl) + 'help.html" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'gray') + '<div class="tx"><div class="t">도움말 · 개인정보 안내</div></div>' + CHEV + '</a></div>' : '') +
       '<div class="gap"></div><div class="card"><a class="row" id="report" href="#" style="text-decoration:none;color:inherit">' + tile('bell', 'red') + '<div class="tx"><div class="t">문제 제보 · 처리 확인</div><div class="m">제보 게시판에서 처리 상태를 볼 수 있어요</div></div>' + CHEV + '</a></div>' +
+      (window.KIT_AUTH ? '<div class="gap"></div><div class="card"><div class="row" tabindex="0" role="button" id="kitLogout">' + tile('user', 'gray') + '<div class="tx"><div class="t">로그아웃</div><div class="m">' + esc(window.KIT_AUTH.email() || '구글 계정') + ' · 시트는 내 드라이브에 그대로 있어요</div></div>' + CHEV + '</div></div>' : '') +
       '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') + '</div>';
+    var lo = $('kitLogout'); if (lo) lo.onclick = function () { if (confirm('로그아웃할까요? 할 일은 내 구글 시트에 그대로 남아 있어요.')) window.KIT_AUTH.logout(); };
     stagger($('moreBody'));
   }
   function waitInfo(t) {

@@ -31,8 +31,13 @@
   }
   function afterLogin() {
     var go = function (email) {
-      showGate(false);
-      if (!started) { started = true; document.documentElement.classList.add('kit-signed'); window.KIT_ENGINE.start(email).catch(function (e) { gateMsg('시작하지 못했어요: ' + e.message); showGate(true); started = false; }); }
+      if (started) { showGate(false); return; }
+      started = true; document.documentElement.classList.add('kit-signed');
+      // 처음 시작(큰 화면)은 시트를 만드는 동안 진행 상황을 보여 준다. 다시 올 때는 저장본 화면을 바로 보인다
+      var g = document.getElementById('kitGate'), first = g && !g.hidden && g.className === 'kg-full';
+      if (first) { busy(true); } else showGate(false);
+      window.KIT_ENGINE.start(email).then(function () { busy(false); showGate(false); })
+        .catch(function (e) { busy(false); gateMsg('시작하지 못했어요: ' + e.message); showGate(true); started = false; });
     };
     if (tok.email) return go(tok.email);
     fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + tok.t } }).then(function (r) { return r.json(); })
@@ -63,21 +68,27 @@
       ? '<div class="kg-in"><div class="kg-logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
         '<h1>내 업무관리 키트</h1><p class="kg-sub">떠오르면 담고, 하루 한 번 정리하고,<br>오늘 할 일만 봐요.</p>' + gbtn +
         '<ul class="kg-pts"><li>내 구글 드라이브에 <b>내 시트를 하나 만들어</b> 거기에만 저장해요</li><li>운영자를 포함해 <b>누구도 내 할 일을 볼 수 없어요</b></li><li>구글 캘린더 일정과 함께 보고, 할 일을 끌어다 넣어요</li></ul>' +
-        '<p class="kg-msg" id="kgMsg" role="alert"></p><p class="kg-fine">시작하면 <a href="../privacy.html" target="_blank">개인정보 처리방침</a>에 동의하는 것으로 봐요. 이 앱은 자기가 만든 파일만 볼 수 있어요.</p></div>'
+        '<p class="kg-prog" id="kgProg" hidden><i></i><span id="kgProgT" role="status"></span><br><small>처음 한 번만 걸려요</small></p><p class="kg-msg" id="kgMsg" role="alert"></p><p class="kg-fine">시작하면 <a href="../privacy.html" target="_blank">개인정보 처리방침</a>에 동의하는 것으로 봐요. 이 앱은 자기가 만든 파일만 볼 수 있어요.</p></div>'
       : '<span>로그인이 만료됐어요</span>' + gbtn + '<span class="kg-msg" id="kgMsg" role="alert"></span>';
     document.body.appendChild(g);
     document.getElementById('kgBtn').onclick = login;
     return g;
   }
+  function busy(on) {
+    var b = document.getElementById('kgBtn'); if (b) { b.disabled = on; b.style.opacity = on ? '.55' : ''; }
+    var p = document.getElementById('kgProg'); if (p) p.hidden = !on;
+    if (on) progress('구글 계정을 확인했어요');
+  }
+  function progress(m) { var el = document.getElementById('kgProgT'); if (el) el.textContent = m + '…'; }
   function showGate(on) { if (on) { gate().hidden = false; } else { var g = document.getElementById('kitGate'); if (g) g.hidden = true; } }
   function gateMsg(m) { gate(); var el = document.getElementById('kgMsg'); if (el) el.textContent = m || ''; }
 
   // 엔진 만들기 (App.html 의 call()이 KIT_ENGINE 을 쓴다)
   window.KIT_ENGINE = createKitEngine({
-    token: token, storage: store,
+    token: token, storage: store, onProgress: progress,
     onUnauthorized: function () { tok = null; store.set('kitTok', 'null'); return token(); }
   });
-  window.KIT_AUTH = { login: login, logout: logout };
+  window.KIT_AUTH = { login: login, logout: logout, email: function () { return (tok && tok.email) || ''; } };
 
   // GIS 스크립트
   var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.defer = true; document.head.appendChild(s);

@@ -145,20 +145,25 @@ function createKitEngine(opts) {
   }
 
   // ── 시트 찾기·만들기 (drive.file: 이 앱이 만든 파일만 보인다) ──
+  function step(msg) { try { if (opts.onProgress) opts.onProgress(msg); } catch (e) {} }
   async function findOrCreateSheet() {
     var saved = store.get('kitSheetId');
+    step(saved ? '내 시트를 여는 중이에요' : '내 드라이브에서 시트를 찾는 중이에요');
     if (saved) { try { await loadBook(saved); return { id: saved, created: false }; } catch (e) { if (e.status !== 404 && e.status !== 403) throw e; } }
     var list = await gapi('GET', API.drive + '/files?q=' + enc("appProperties has { key='myTaskKit' and value='1' } and trashed=false") + '&orderBy=createdTime&fields=' + enc('files(id,name)'));
     if (list.files && list.files.length) { var id0 = list.files[0].id; store.set('kitSheetId', id0); await loadBook(id0); return { id: id0, created: false }; }
+    step('내 드라이브에 시트를 만드는 중이에요');
     var f = await gapi('POST', API.drive + '/files?fields=id', { name: SHEET_NAME, mimeType: 'application/vnd.google-apps.spreadsheet', appProperties: { myTaskKit: '1' }, description: '내 업무관리 키트가 만든 시트예요. 지우면 앱의 데이터도 사라져요.' });
     store.set('kitSheetId', f.id);
-    await loadBook(f.id);
+    // 방금 만든 빈 시트는 다시 읽지 않는다: 기본 탭(sheetId 0) 하나뿐이다. 시간대는 setup 이 서울로 맞춘다
+    cache = {}; book = makeBook({ id: f.id, tz: 'Etc/UTC', sheets: [{ title: 'Sheet1', sheetId: 0, hidden: false, rows: [] }] }); loadedAt = Date.now();
     return { id: f.id, created: true };
   }
   /** 다른 시트(예: v1에서 쓰던 시트)를 고르면 그 시트로 연결 (구글 파일 선택 창이 drive.file 권한을 열어 준다) */
   async function useSheet(id) { await loadBook(id); store.set('kitSheetId', id); await setup(false); return true; }
 
   // ── .gs 실행 환경 ────────────────────────────────────────────
+  var startLog = '';
   var book = null, loadedAt = 0, userEmail = '', cache = {}, props = {};
   var calData = {}; // 'start|days|ids' → {ok, items}
   var utils = {
@@ -2441,13 +2446,24 @@ function installFromEditor() {
     /** 로그인 직후 한 번: 내 시트 찾기·만들기, 구조 맞추기 */
     start: function (email) {
       userEmail = email || '';
-      var p = (async function () { var f = await findOrCreateSheet(); await setup(f.created); return f; })();
+      var t0 = Date.now(), log = [];
+      var mark = function (what) { log.push(what + ' ' + ((Date.now() - t0) / 1000).toFixed(1) + 's'); };
+      var p = (async function () {
+        var f = await findOrCreateSheet(); mark(f.created ? '시트 만듦' : '시트 읽음');
+        step(f.created ? '예시 할 일을 넣는 중이에요' : '거의 다 됐어요');
+        await setup(f.created); mark('구조 맞춤');
+        // 첫 화면에 쓸 캘린더도 미리 (실패해도 시작은 계속)
+        await preloadCal(K.weekStartYmd_(today()), 7).catch(function () {}); mark('캘린더');
+        startLog = log.join(' · '); try { console.info('[내 업무관리 키트] 시작: ' + startLog); } catch (e) {}
+        return f;
+      })();
       readyResolve(p);
       return p;
     },
     call: call,
     useSheet: useSheet,
     sheetUrl: function () { return book ? book.url : ''; },
+    startLog: function () { return startLog; },
     reload: async function () { if (book) { await loadBook(book.id); dropCal(); } },
     _book: function () { return book; }, _K: K, _flush: flush
   };
