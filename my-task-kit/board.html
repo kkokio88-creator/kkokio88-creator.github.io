@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#5B5CF6">
+<title>제보 게시판 · 내 업무관리 키트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root { --bg: #F4F5F8; --card: #fff; --fill: #F2F4F6; --t1: #191F28; --t2: #4E5968; --t3: #8B95A1; --g: #5B5CF6; --gt: #EEEEFF; --line: #EEF0F3;
+    --red: #F04452; --redt: #FEECEE; --amber: #B7791F; --ambert: #FFF4DB; --blue: #3182F6; --bluet: #E8F3FF; --green: #12B886; --greent: #E6FAF3; --pink: #F0508C; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #101113; --card: #1B1D20; --fill: #24282D; --t1: #F2F4F6; --t2: #C3C9D0; --t3: #8B95A1; --g: #A2A3FF; --gt: #23234A; --line: #2A2E33;
+    --redt: #3A1C20; --ambert: #2E2614; --amber: #F2C063; --bluet: #172A45; --greent: #12302A; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--t1); font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.6; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 28px 16px 80px; }
+  a { color: var(--g); }
+  .back { display: inline-block; font-weight: 600; text-decoration: none; padding: 8px 0; font-size: 15px; color: var(--t3); }
+  h1 { font-size: 28px; letter-spacing: -0.03em; margin: 6px 0 4px; }
+  .lead { color: var(--t2); margin: 0 0 18px; font-size: 16px; }
+  .seg { display: flex; background: var(--fill); border-radius: 14px; padding: 4px; margin: 0 0 16px; }
+  .seg button { flex: 1; min-height: 44px; border: 0; border-radius: 11px; background: transparent; font: inherit; font-weight: 700; font-size: 15.5px; color: var(--t3); cursor: pointer; }
+  .seg button.on { background: var(--card); color: var(--t1); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .card { background: var(--card); border-radius: 22px; padding: 22px 20px; margin: 0 0 12px; }
+  label.f { display: block; font-size: 14.5px; font-weight: 700; color: var(--t2); margin: 0 0 8px; }
+  label.f span { font-weight: 500; color: var(--t3); }
+  .in, textarea { width: 100%; border: 1.5px solid transparent; background: var(--fill); border-radius: 14px; padding: 14px 16px; font: inherit; font-size: 16.5px; color: var(--t1); outline: none; margin: 0 0 16px; }
+  .in { height: 52px; } textarea { min-height: 120px; resize: vertical; }
+  .in:focus, textarea:focus { border-color: var(--g); background: var(--card); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+  .chips button { min-height: 42px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--fill); color: var(--t2); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .chips button.on { background: var(--gt); color: var(--g); box-shadow: inset 0 0 0 1.5px var(--g); }
+  .chk { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; color: var(--t2); margin: 0 0 8px; cursor: pointer; }
+  .chk input { width: 20px; height: 20px; accent-color: var(--g); margin: 2px 0 0; flex: none; }
+  pre { background: var(--fill); border-radius: 12px; padding: 12px; font-size: 12.5px; color: var(--t2); white-space: pre-wrap; margin: 0 0 14px; display: none; }
+  pre.on { display: block; }
+  .btn { width: 100%; min-height: 54px; border: 0; border-radius: 16px; background: var(--g); color: #fff; font: inherit; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 26px rgba(91,92,246,.3); }
+  .btn:disabled { opacity: .6; }
+  .err { color: var(--red); font-weight: 600; font-size: 14.5px; min-height: 22px; margin-top: 10px; text-align: center; }
+  .note { font-size: 13.5px; color: var(--t3); margin: 12px 0 0; }
+  .hp { position: absolute; left: -9999px; }
+  .item { display: block; background: var(--card); border-radius: 18px; padding: 16px 18px; margin: 0 0 10px; }
+  .top { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--t3); font-weight: 600; }
+  .top .sp { flex: 1; }
+  .st { font-size: 12.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; }
+  .s-접수 { background: var(--fill); color: var(--t2); } .s-확인중 { background: var(--bluet); color: var(--blue); } .s-수정중 { background: var(--ambert); color: var(--amber); }
+  .s-해결됨 { background: var(--greent); color: var(--green); } .s-답변함 { background: var(--gt); color: var(--g); } .s-보류, .s-중복 { background: var(--fill); color: var(--t3); }
+  .item .t { font-size: 16.5px; font-weight: 700; margin: 6px 0 0; letter-spacing: -0.01em; }
+  .item .b { font-size: 14.5px; color: var(--t2); margin: 6px 0 0; white-space: pre-wrap; }
+  .reply { background: var(--fill); border-radius: 12px; padding: 10px 12px; font-size: 14.5px; color: var(--t1); margin: 10px 0 0; white-space: pre-wrap; }
+  .reply b { color: var(--g); }
+  .steps { display: flex; gap: 4px; margin: 10px 0 0; }
+  .steps i { flex: 1; height: 4px; border-radius: 4px; background: var(--fill); }
+  .steps i.on { background: var(--g); }
+  .empty { text-align: center; color: var(--t3); padding: 30px 0; }
+  .done { text-align: center; }
+  .done .n { font-size: 44px; font-weight: 800; color: var(--g); letter-spacing: -0.03em; }
+  .copy { margin-top: 10px; background: var(--fill); border: 0; border-radius: 12px; min-height: 44px; padding: 0 16px; font: inherit; font-weight: 700; color: var(--t1); cursor: pointer; }
+  .tabp { display: none; } .tabp.on { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="help.html">← 도움말</a>
+  <h1>제보 게시판</h1>
+  <p class="lead">불편하거나 안 되는 게 있으면 알려 주세요. 처리 과정을 여기서 볼 수 있어요.</p>
+  <div class="seg" role="tablist">
+    <button class="on" data-tab="write" role="tab">제보하기</button><button data-tab="all" role="tab">전체 제보</button><button data-tab="mine" role="tab">내 제보</button>
+  </div>
+
+  <div class="tabp on" id="tab-write">
+    <form class="card" id="form" novalidate>
+      <label class="f">어떤 건가요?</label>
+      <div class="chips" id="kind"><button type="button" class="on">오류</button><button type="button">불편</button><button type="button">제안</button><button type="button">질문</button></div>
+      <label class="f" for="title">한 줄로 알려 주세요</label>
+      <input class="in" id="title" maxlength="80" placeholder="예) 완료 동그라미가 안 눌려요">
+      <label class="f" for="body">자세히 <span>(선택)</span></label>
+      <textarea id="body" maxlength="3000" placeholder="언제, 어디서, 무엇을 눌렀을 때 그랬는지 적어 주시면 빨리 고칠 수 있어요"></textarea>
+      <label class="f" for="email">처리되면 알려 드릴 이메일 <span>(선택)</span></label>
+      <input class="in" id="email" type="email" inputmode="email" autocomplete="email" placeholder="비워 두면 이 화면의 '내 제보'에서 확인해요">
+      <div class="hp" aria-hidden="true"><input id="website" tabindex="-1" autocomplete="off"></div>
+      <label class="chk"><input type="checkbox" id="diagOn" checked><span>기기 정보 함께 보내기 (브라우저·화면 크기·버전) <a href="#" id="diagShow">보기</a></span></label>
+      <pre id="diag"></pre>
+      <button class="btn" id="send" type="submit">보내기</button>
+      <div class="err" id="err" role="alert"></div>
+      <p class="note">내 할 일 내용은 보내지 않아요. 제목·분류·처리 상태는 전체 제보에 공개되니 개인정보는 적지 마세요. 자세한 내용과 이메일은 공개되지 않아요.</p>
+    </form>
+    <div class="card done" id="done" hidden>
+      <div class="n" id="doneNo"></div>
+      <h2 style="margin:4px 0 6px;font-size:21px">제보를 받았어요. 고마워요!</h2>
+      <p class="lead" style="margin:0" id="doneMsg">처리 상태는 '내 제보'에서 볼 수 있어요.</p>
+      <button class="copy" id="copyLink" type="button">다른 기기에서 볼 링크 복사</button>
+      <button class="copy" id="again" type="button">하나 더 제보하기</button>
+    </div>
+  </div>
+
+  <div class="tabp" id="tab-all"><div id="all"><div class="empty">불러오는 중…</div></div></div>
+  <div class="tabp" id="tab-mine"><div id="mine"><div class="empty">불러오는 중…</div></div></div>
+</div>
+
+<script>
+  var API = 'https://script.google.com/macros/s/AKfycbwWL9zc73fGZVbQ2Iv8RpCzL17y4kDozMzpOInNu9GoH4g1HRujOfBLUw2CrCVz89aMoA/exec';
+  var STEPS = ['접수', '확인 중', '수정 중', '해결됨'];
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  function post(o) {
+    return fetch(API, { method: 'POST', credentials: 'omit', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(o) })
+      .then(function (r) { return r.json(); }).then(function (j) { if (!j.ok) throw new Error(j.error || '잠시 뒤 다시 시도해 주세요.'); return j; });
+  }
+  // 내 제보 코드: 이 브라우저에만 보관 (#mine=코드 링크로 다른 기기에 옮길 수 있음)
+  function codes() { try { return JSON.parse(localStorage.getItem('kitReports') || '[]'); } catch (e) { return []; } }
+  function addCode(c) { var l = codes(); if (l.indexOf(c) < 0) l.push(c); try { localStorage.setItem('kitReports', JSON.stringify(l.slice(-50))); } catch (e) {} }
+  var q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.slice(1));
+  (h.get('mine') || '').split(',').forEach(function (c) { if (/^[0-9a-f]{16}$/.test(c)) addCode(c); });
+
+  // 탭
+  function tab(name) {
+    document.querySelectorAll('[data-tab]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
+    document.querySelectorAll('.tabp').forEach(function (p) { p.classList.toggle('on', p.id === 'tab-' + name); });
+    if (name === 'all') loadAll(); if (name === 'mine') loadMine();
+  }
+  document.querySelectorAll('[data-tab]').forEach(function (b) { b.onclick = function () { tab(b.getAttribute('data-tab')); }; });
+
+  function badge(s) { return '<span class="st s-' + esc(String(s).replace(/\s/g, '')) + '">' + esc(s) + '</span>'; }
+  function steps(s) { var i = STEPS.indexOf(s); if (i < 0) return ''; return '<div class="steps">' + STEPS.map(function (x, j) { return '<i class="' + (j <= i ? 'on' : '') + '"></i>'; }).join('') + '</div>'; }
+  function itemHtml(x, mine) {
+    return '<div class="item"><div class="top"><span>#' + esc(x.no) + '</span><span>' + esc(x.kind) + '</span><span>' + esc(x.date) + '</span><span class="sp"></span>' + badge(x.status) + '</div>' +
+      '<div class="t">' + esc(x.title) + '</div>' + (mine && x.body ? '<div class="b">' + esc(x.body) + '</div>' : '') + steps(x.status) +
+      (x.reply || x.version ? '<div class="reply">' + (x.version ? '<b>v' + esc(x.version) + '에 반영</b>\n' : '') + esc(x.reply) + '</div>' : '') + '</div>';
+  }
+  function loadAll() {
+    post({ action: 'board' }).then(function (j) {
+      $('all').innerHTML = j.items.length ? j.items.map(function (x) { return itemHtml(x, false); }).join('') : '<div class="empty">아직 제보가 없어요</div>';
+    }).catch(function (e) { $('all').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
+  }
+  function loadMine() {
+    var l = codes();
+    if (!l.length) { $('mine').innerHTML = '<div class="empty">이 브라우저에서 보낸 제보가 없어요.<br>메일로 받은 링크로 열면 여기에 나타나요.</div>'; return; }
+    post({ action: 'mine', codes: l }).then(function (j) {
+      $('mine').innerHTML = j.items.length ? j.items.map(function (x) { return itemHtml(x, true); }).join('') : '<div class="empty">제보를 찾지 못했어요</div>';
+    }).catch(function (e) { $('mine').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
+  }
+
+  // 제보하기
+  var kind = '오류';
+  $('kind').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; kind = b.textContent; [].forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); }); };
+  var diag = ['페이지: 제보 게시판' + (q.get('from') ? ' (' + q.get('from') + '에서 열림)' : ''), '앱 버전: ' + (q.get('v') || '-'), '브라우저: ' + navigator.userAgent, '화면: ' + innerWidth + '×' + innerHeight, '언어: ' + navigator.language].join('\n');
+  if (q.get('err')) diag += '\n최근 오류:\n' + q.get('err').slice(0, 1500);
+  $('diag').textContent = diag;
+  $('diagShow').onclick = function (e) { e.preventDefault(); $('diag').classList.toggle('on'); };
+  if (q.get('kind')) [].forEach.call($('kind').children, function (x) { if (x.textContent === q.get('kind')) x.click(); });
+  var lastLink = '';
+  $('form').onsubmit = function (e) {
+    e.preventDefault(); $('err').textContent = '';
+    var title = $('title').value.trim();
+    if (title.length < 2) { $('err').textContent = '무슨 일인지 한 줄로 적어 주세요.'; return $('title').focus(); }
+    var b = $('send'); b.disabled = true; b.textContent = '보내는 중…';
+    post({ action: 'report', kind: kind, title: title, body: $('body').value, email: $('email').value.trim(), diag: $('diagOn').checked ? diag : '', website: $('website').value, from: q.get('from') || 'board' })
+      .then(function (j) {
+        if (j.code) addCode(j.code);
+        lastLink = location.origin + location.pathname + '#mine=' + j.code;
+        $('doneNo').textContent = '#' + j.no; $('form').hidden = true; $('done').hidden = false;
+        if ($('email').value.trim()) $('doneMsg').textContent = '처리되면 메일로 알려 드릴게요. \'내 제보\'에서도 볼 수 있어요.';
+      })
+      .catch(function (x) { $('err').textContent = x.message === 'Failed to fetch' ? '연결이 불안정해요. 다시 눌러 주세요.' : x.message; })
+      .then(function () { b.disabled = false; b.textContent = '보내기'; });
+  };
+  $('copyLink').onclick = function () { var b = this; (navigator.clipboard ? navigator.clipboard.writeText(lastLink) : Promise.reject()).then(function () { b.textContent = '복사했어요 ✓'; }, function () { prompt('이 링크를 복사해 두세요', lastLink); }); };
+  $('again').onclick = function () { $('form').reset(); $('done').hidden = true; $('form').hidden = false; $('title').focus(); };
+  if (h.get('mine') || q.get('tab') === 'mine') tab('mine'); else if (q.get('tab') === 'all') tab('all');
+</script>
+</body>
+</html>

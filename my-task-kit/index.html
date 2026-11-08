@@ -1116,7 +1116,7 @@
       '</div><button class="txtlink" data-nt-test>아침 브리핑 지금 받아보기</button><div class="gap"></div>' +
       '<div class="card"><a class="row" href="' + esc(d.sheetUrl || '#') + '" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'green') + '<div class="tx"><div class="t">구글 시트 열기</div></div>' + CHEV + '</a></div>' +
       (d.pageUrl ? '<div class="gap"></div><div class="card"><a class="row" href="' + esc(d.pageUrl) + 'help.html" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'gray') + '<div class="tx"><div class="t">도움말 · 개인정보 안내</div></div>' + CHEV + '</a></div>' : '') +
-      '<div class="gap"></div><div class="card"><a class="row" id="report" href="#" style="text-decoration:none;color:inherit">' + tile('bell', 'red') + '<div class="tx"><div class="t">문제 신고하기</div><div class="m">버전과 최근 오류가 메일에 담겨요</div></div>' + CHEV + '</a></div>' +
+      '<div class="gap"></div><div class="card"><a class="row" id="report" href="#" style="text-decoration:none;color:inherit">' + tile('bell', 'red') + '<div class="tx"><div class="t">문제 제보 · 처리 확인</div><div class="m">제보 게시판에서 처리 상태를 볼 수 있어요</div></div>' + CHEV + '</a></div>' +
       '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') + '</div>';
     stagger($('moreBody'));
   }
@@ -1316,11 +1316,10 @@
   $('moreBody').addEventListener('click', function (e) {
     if (!e.target.closest('#report')) return;
     e.preventDefault();
-    var body = ['어떤 문제가 있었나요? (아래에 적어 주세요)', '', '', '──── 자동으로 담긴 정보 ────',
-      '화면 버전: v' + KIT.version + ' / 시트 코드: v' + ((data && data.kitVersion) || '?'),
-      '브라우저: ' + navigator.userAgent, '화면: ' + innerWidth + '×' + innerHeight + ' · ' + (isPC() ? 'PC' : '휴대폰'),
-      '보내지 않은 담기: ' + outbox.length + '개', '최근 오류:'].concat(errLog.length ? errLog : ['없음']).join('\n');
-    location.href = 'mailto:kkokio88@gmail.com?subject=' + encodeURIComponent('[내 업무관리 키트] 문제 신고 v' + KIT.version) + '&body=' + encodeURIComponent(body);
+    // 제보 게시판으로: 버전·화면·최근 오류를 미리 채워서 연다 (내 할 일 내용은 보내지 않음)
+    var page = (data && data.pageUrl) || 'https://kkokio88-creator.github.io/my-task-kit/';
+    var info = ['시트 코드 v' + ((data && data.kitVersion) || '?'), (isPC() ? 'PC' : '휴대폰'), '보내지 않은 담기 ' + outbox.length + '개'].concat(errLog).join('\n');
+    window.open(page + 'board.html?from=app&v=' + encodeURIComponent(KIT.version) + '&err=' + encodeURIComponent(info), '_blank', 'noopener');
   });
   $('moreBody').addEventListener('change', function (e) {
     var inp = e.target.closest('[data-nt]'); if (!inp) return;
