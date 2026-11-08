@@ -71,7 +71,7 @@
     });
   }
   $$('[data-reveal]').forEach(function (el) {
-    ScrollTrigger.create({ trigger: el, start: 'top 88%', onEnter: function () { el.classList.add('on'); }, onLeaveBack: function () { el.classList.remove('on'); } });
+    ScrollTrigger.create({ trigger: el, start: 'top 72%', onEnter: function () { el.classList.add('on'); }, onLeaveBack: function () { el.classList.remove('on'); } });
   });
 
   // ══════════ 이미지 시퀀스 스크럽 엔진 ══════════
@@ -94,6 +94,7 @@
   }
   function Seq(name) { this.name = name; this.started = false; this.reset(pickSet()); }
   Seq.prototype.reset = function (set) {
+    if (this.imgs && this.ok && this.ok.some(Boolean)) this.prev = { imgs: this.imgs, ok: this.ok, n: this.n, set: this.set };
     this.set = set; this.n = FRAMES[this.name][set]; this.imgs = new Array(this.n); this.ok = new Array(this.n); this.queue = []; this.busy = 0;
     if (this.started) { this.started = false; this.start(); }
   };
@@ -153,7 +154,15 @@
   };
   Seq.prototype.toView = function (nx, ny, p) { var c = this.cover(p || 0); return { x: c.x + nx * c.iw * c.k, y: c.y + ny * c.ih * c.k }; };
   Seq.prototype.blit = function (p, alpha) {
-    var i = this.nearest(p); if (i < 0) return false;
+    var i = this.nearest(p);
+    if (i < 0 && this.prev) {
+      // 새 묶음 첫 프레임이 오기 전: 이전 묶음의 가장 가까운 프레임을 같은 cover 계산으로 그린다
+      var pv = this.prev, j = Math.round(clamp(warp(this.name, p)) * (pv.n - 1)), d2;
+      for (d2 = 0; d2 < pv.n; d2++) { if (pv.ok[j - d2]) { j = j - d2; break; } if (pv.ok[j + d2]) { j = j + d2; break; } }
+      if (pv.ok[j]) { var s2 = fxSize(), im = pv.imgs[j], k2 = Math.max(s2.w / im.naturalWidth, s2.h / im.naturalHeight); fctx.globalAlpha = alpha; fctx.drawImage(im, (s2.w - im.naturalWidth * k2) / 2, (s2.h - im.naturalHeight * k2) / 2, im.naturalWidth * k2, im.naturalHeight * k2); fctx.globalAlpha = 1; }
+      return false;
+    }
+    if (i < 0) return false;
     var c = this.cover(p);
     fctx.globalAlpha = alpha; fctx.drawImage(this.imgs[i], c.x, c.y, c.iw * c.k, c.ih * c.k); fctx.globalAlpha = 1;
     return this.name + i + '@' + alpha.toFixed(2);
@@ -295,8 +304,8 @@
         var x0 = sr.left + sr.width * 0.5 - stg.left, y0 = sr.top + sr.height * 0.17 - stg.top;
         var x1 = ul.left + Math.min(ul.width, 220) / 2 - stg.left, y1 = ul.top + 26 - stg.top;
         var e = ease(k), x = lerp(x0, x1, e), y = lerp(y0, y1, e) - Math.sin(Math.PI * k) * 90;
-        fly.style.opacity = Math.min(1, k * 8, (1 - k) * 8);
-        fly.style.transform = 'translate(' + (x - fly.offsetWidth / 2) + 'px,' + (y - fly.offsetHeight / 2) + 'px) rotate(' + (Math.sin(Math.PI * k) * -6) + 'deg) scale(' + lerp(1, 0.8, e) + ')';
+        fly.style.opacity = Math.min(1, k * 8, (1 - k) * 5);
+        fly.style.transform = 'translate(' + (x - fly.offsetWidth / 2) + 'px,' + (y - fly.offsetHeight / 2) + 'px) rotate(' + (Math.sin(Math.PI * k) * -6) + 'deg) scale(' + lerp(1, 0.62, e) + ')';
       } else fly.style.opacity = 0;
       // 다 날아간 카드는 칸에 쌓인다
       var landed = {}, key = '';

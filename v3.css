@@ -645,3 +645,12 @@ html:not(.js) .tray { width: 30vw; }
 .marquee { padding: 26px 0; }
 .mq-in { font-size: clamp(26px, 3.6vw, 52px); letter-spacing: -0.03em; }
 .mq-row.rev .mq-in { color: #A9A8C8; -webkit-text-stroke: 0; font-weight: 700; font-size: clamp(20px, 2.6vw, 38px); }
+
+/* 서브카피: 아래에서 올라오지 않고 제자리에서, 제목보다 살짝 늦게 */
+.js .sub[data-at], .js .sub[data-reveal], .js .big2[data-at], .js .eyebrow[data-at] { transform: none; transition: opacity .7s var(--expo) .15s; }
+#c10 .big2 { font-size: clamp(18px, 1.9vw, 28px); color: rgba(255, 255, 255, .78); margin-top: .5em; font-weight: 700; letter-spacing: -0.02em; }
+/* C10: 3D 그림 속 글자가 비치지 않게 가운데를 완전히 덮는다 */
+.trust-dim { background: linear-gradient(180deg, rgba(5, 5, 10, .35), #05050A 36%, #05050A); }
+.tn .acct { display: block; margin: -4px auto 10px; width: max-content; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(190, 190, 255, .7); font-style: normal; font-size: 12px; font-weight: 700; color: #D9D8FF; }
+@media (max-aspect-ratio: 1/1), (max-width: 760px) { .tn .acct { grid-column: 2; margin: 0 0 2px; } }
+.eyebrow3 { margin: 0 0 10px; font-size: 15px; font-weight: 800; color: var(--g); }
