@@ -713,3 +713,12 @@ html:not(.js) .tray { width: 30vw; }
   .sort-phone { padding: 3px; border-radius: 26px; } .scr { border-radius: 23px; }
   .hp-panel .ph { padding: 3px; border-radius: 26px; } .hp-panel video { border-radius: 23px; }
 }
+
+/* 신청 폼: 필수 항목 · 기타 직접 입력 · 신청 이유 */
+.st input:not([type=checkbox]), .st textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 14px; padding: 13px 14px; font: inherit; font-size: 16px; outline: 0; background: #fff; color: var(--t1); transition: border-color .2s; }
+.st input:not([type=checkbox]):focus, .st textarea:focus { border-color: var(--g); }
+.st textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
+#fRoleEtc { margin-top: 8px; }
+.st .cnt { margin: 2px 4px 0; font-size: 13px; font-weight: 700; color: var(--t4); text-align: right; }
+.st .cnt.ok { color: var(--g); }
+.js .st.on { max-height: 420px; }

@@ -332,7 +332,7 @@
     $$('#signup .su-steps li').forEach(function (el, i) { el.classList.toggle('on', i <= suMax); });
   }
   function signupSteps() {
-    var stage = $('#c11 .su-stage'), AT = [0, 0.1, 0.22, 0.34, 0.46];
+    var stage = $('#c11 .su-stage'), AT = [0, 0.08, 0.18, 0.28, 0.38, 0.48];
     function stick() { stage.style.setProperty('--st', Math.min(88, innerHeight - stage.offsetHeight - 8) + 'px'); }
     addEventListener('resize', stick);
     $('#c11 .su-steps li').classList.add('on');
@@ -565,16 +565,25 @@
         var b = e.target.closest('button'); if (!b) return;
         var was = b.classList.contains('on'); $$('button', g).forEach(function (x) { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
         if (!was) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); }
+        if (g.dataset.name === 'role') { var etcIn = $('#fRoleEtc'); etcIn.hidden = !(b.hasAttribute('data-etc') && !was); if (!etcIn.hidden) etcIn.focus(); }
       });
     });
+    var rIn = $('#fReason'), rCnt = $('#fReasonCnt');
+    rIn.addEventListener('input', function () { var n = rIn.value.replace(/\s/g, '').length; rCnt.textContent = n + ' / 20자'; rCnt.classList.toggle('ok', n >= 20); });
     var chip = function (name) { var b = $('.chips[data-name="' + name + '"] .on', form); return b ? b.textContent : ''; };
 
     form.addEventListener('submit', function (e) {
-      e.preventDefault(); revealTo(4); msg.textContent = '';
+      e.preventDefault(); revealTo(5); msg.textContent = '';
       var em = email.value.trim();
       if (!/^[^\s@<>()]+@[^\s@<>()]+\.[a-z]{2,}$/i.test(em)) { msg.textContent = '이메일 주소를 확인해 주세요.'; email.focus(); return; }
+      var nm = form.elements.namedItem('name').value.trim(), etc = $('#fRoleEtc'), role = chip('role'), use = chip('use'), reason = $('#fReason').value.trim();
+      if (role === '기타') role = etc.value.trim() ? '기타: ' + etc.value.trim() : '';
+      if (!nm) { msg.textContent = '이름을 적어 주세요.'; form.elements.namedItem('name').focus(); return; }
+      if (!role) { msg.textContent = chip('role') === '기타' ? '하는 일을 적어 주세요.' : '하는 일을 골라 주세요.'; if (chip('role') === '기타') etc.focus(); return; }
+      if (!use) { msg.textContent = '어디에 쓰고 싶은지 골라 주세요.'; return; }
+      if (reason.replace(/\s/g, '').length < 20) { msg.textContent = '신청한 이유를 20자 이상 적어 주세요.'; $('#fReason').focus(); return; }
       if (!form.agree.checked) { msg.textContent = '개인정보 수집·이용에 동의해 주세요.'; return; }
-      var body = { email: em, name: form.elements.namedItem('name').value.trim(), role: chip('role'), use: chip('use'), agree: true, marketing: form.marketing.checked, website: form.website.value, source: src || 'direct' };
+      var body = { email: em, name: nm, role: role, use: use, reason: reason, agree: true, marketing: form.marketing.checked, website: form.website.value, source: src || 'direct' };
       btn.disabled = true; btn.textContent = '보내는 중…';
       var ctrl = window.AbortController ? new AbortController() : null, timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
       fetch(SIGNUP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), signal: ctrl && ctrl.signal })
@@ -586,13 +595,13 @@
         .catch(function (err) {
           msg.textContent = err && err.name !== 'AbortError' && err.message && !/fetch|network|JSON|Unexpected/i.test(err.message) ? err.message : '잠시 문제가 생겼어요. 조금 뒤 다시 시도해 주세요.';
         })
-        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '시트 사본 링크 받기'; });
+        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '평생 무료로 신청하기'; });
     });
     function done(r) {
       $('#sentH').textContent = r.again ? '이미 신청하셨어요.' : '메일함을 확인해 주세요.';
-      $('#sentP').textContent = !r.ready ? '첫 사용자분들께 차례로 열어 드리고 있어요. 준비되면 이 주소로 내 시트 만들기 링크를 바로 보내 드릴게요.'
-        : r.again ? '메일함에서 ‘내 시트 만들기 링크’ 메일을 찾아 버튼을 누르세요. 스팸함도 확인해 주세요.'
-        : '방금 보낸 메일의 ‘내 시트 만들기’ 버튼을 누르면 5분 안에 시작할 수 있어요.';
+      $('#sentP').textContent = !r.ready ? '첫 사용자분들께 차례로 열어 드리고 있어요. 준비되면 이 주소로 시작 링크를 바로 보내 드릴게요.'
+        : r.again ? '메일함에서 ‘시작 링크와 사용법’ 메일을 찾아 주세요. 스팸함도 확인해 주세요.'
+        : '방금 보낸 메일에 시작 링크, 사용법, 사용자 커뮤니티 카톡방 링크가 있어요.';
       card.classList.add('fly');
       setTimeout(function () {
         form.hidden = true; var s = $('#sent'); s.hidden = false;

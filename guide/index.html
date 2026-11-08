@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>사용법 — 내 업무관리 키트</title>
+<meta name="description" content="내 업무관리 키트 사용법: 시작하기, 담기, 수집함 정리, 오늘 할 일과 하루 쓰기를 실제 앱 화면으로 하나씩 따라 해요.">
+<link rel="icon" href="../favicon.ico">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* 우리 앱 스타일: Pretendard · 인디고 바이올렛 · 토스풍 카드 · 앰비언트 라이트 */
+:root { --g: #5B5CF6; --g2: #4A4BE0; --gt: #EEEEFF; --t1: #191F28; --t2: #4E5968; --t3: #6B7684; --t4: #A3ACB6; --line: #E9ECEF; --fill: #F2F4F6; --bg: #F4F5F7;
+  --l1: #6D6BFF; --l2: #FF7AC6; --l3: #5FD3F3; --amber: #F2A20C; --expo: cubic-bezier(.16, 1, .3, 1); --spring: cubic-bezier(.34, 1.56, .64, 1); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--t1); letter-spacing: -0.02em; -webkit-font-smoothing: antialiased; overflow: hidden; }
+a { color: inherit; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+:focus-visible { outline: 3px solid #8B8CFF; outline-offset: 3px; border-radius: 8px; }
+.app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; }
+
+/* 위: 제목 · 챕터 진행 */
+.top { display: flex; align-items: center; gap: 20px; padding: 18px clamp(16px, 4vw, 48px); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; text-decoration: none; white-space: nowrap; }
+.brand i { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #7B6BFF, #E06BD8); display: grid; place-items: center; }
+.brand i::after { content: ''; width: 10px; height: 5px; border-left: 2.5px solid #fff; border-bottom: 2.5px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
+.brand small { color: var(--t3); font-weight: 600; font-size: 14px; }
+.chaps { display: flex; gap: 8px; margin-left: auto; list-style: none; padding: 0; }
+.chaps li { display: flex; flex-direction: column; gap: 6px; min-width: 72px; font-size: 13px; font-weight: 700; color: var(--t4); }
+.chaps li i { height: 5px; border-radius: 3px; background: #E3E6EB; overflow: hidden; }
+.chaps li i b { display: block; height: 100%; width: 0; background: var(--g); border-radius: 3px; transition: width .5s var(--expo); }
+.chaps li.on { color: var(--g); }
+.chaps li.done { color: var(--t2); }
+
+/* 가운데: 폰 + 설명 */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: center; gap: clamp(24px, 5vw, 80px); padding: 0 clamp(16px, 5vw, 80px); min-height: 0; max-width: 1240px; margin: 0 auto; width: 100%; }
+.phone-wrap { position: relative; display: flex; justify-content: center; align-items: center; height: 100%; min-height: 0; padding: 12px 0; }
+.amb { position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; background: conic-gradient(from 0deg, var(--l1), var(--l2), var(--l3), #9C8CFF, var(--l1)); filter: blur(70px); opacity: .28; animation: spin 14s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.phone { position: relative; height: min(76vh, 720px); aspect-ratio: 390 / 844; padding: 4px; border-radius: 36px; background: #0f1015; box-shadow: 0 40px 90px rgba(17, 24, 39, .25), inset 0 0 0 1px #2a2b33; }
+.scr { position: relative; width: 100%; height: 100%; border-radius: 32px; overflow: hidden; background: var(--bg); }
+.scr img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: top; opacity: 0; transition: opacity .45s var(--expo); }
+.scr img.tall { object-fit: cover; }
+.scr img.on { opacity: 1; }
+/* 스포트라이트: 볼 곳만 밝게 */
+.spot { position: absolute; border-radius: 16px; box-shadow: 0 0 0 2000px rgba(17, 18, 40, .5); outline: 2.5px solid rgba(139, 140, 255, .95); outline-offset: 2px; opacity: 0; transition: left .6s var(--expo), top .6s var(--expo), width .6s var(--expo), height .6s var(--expo), opacity .4s; pointer-events: none; }
+.spot.on { opacity: 1; }
+/* 누르는 곳: 커서가 움직여 톡 누른다 */
+.tap { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: rgba(255, 255, 255, .9); box-shadow: 0 6px 18px rgba(17, 18, 40, .35), inset 0 0 0 3px var(--g); opacity: 0; pointer-events: none; transition: left .9s var(--expo), top .9s var(--expo), opacity .3s; }
+.tap.on { opacity: 1; animation: press 1.8s ease-in-out .9s infinite; }
+.tap::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid var(--g); opacity: 0; animation: ripple 1.8s ease-out .9s infinite; }
+@keyframes press { 0%, 35%, 100% { transform: scale(1); } 45% { transform: scale(.78); } 60% { transform: scale(1); } }
+@keyframes ripple { 0%, 40% { transform: scale(.6); opacity: 0; } 48% { opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
+
+.side { min-width: 0; }
+.eb { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border-radius: 999px; background: var(--gt); color: var(--g); font-size: 14px; font-weight: 800; }
+.ttl { margin: 16px 0 0; font-size: clamp(30px, 3.6vw, 52px); font-weight: 800; letter-spacing: -0.045em; line-height: 1.12; word-break: keep-all; }
+.ttl .w { display: inline-block; white-space: nowrap; }
+.ttl .c { display: inline-block; transform: translateY(.5em); opacity: 0; transition: transform .7s var(--expo), opacity .5s; transition-delay: calc(var(--i) * 20ms); }
+.ttl.on .c { transform: none; opacity: 1; }
+.ttl em { font-style: normal; color: var(--g); }
+.desc { margin: 14px 0 0; font-size: clamp(16px, 1.35vw, 19px); color: var(--t2); line-height: 1.6; word-break: keep-all; }
+.acts { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 10px; counter-reset: a; }
+.acts li { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .04), 0 2px 10px rgba(17, 24, 39, .05); font-size: 16px; line-height: 1.5; word-break: keep-all; opacity: 0; transform: translateY(12px); transition: opacity .5s var(--expo), transform .6s var(--expo); transition-delay: calc(.25s + var(--i) * .1s); }
+.acts li::before { counter-increment: a; content: counter(a); flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--g); color: #fff; font-size: 14px; font-weight: 800; display: grid; place-items: center; margin-top: 1px; }
+.acts li b { color: var(--t1); }
+.acts.on li { opacity: 1; transform: none; }
+.tip { margin: 14px 0 0; padding: 12px 16px; border-radius: 14px; background: #FFF8E6; color: #8A5A00; font-size: 14.5px; line-height: 1.55; word-break: keep-all; }
+.tip:empty { display: none; }
+/* 해 봤어요 확인 */
+.did { display: inline-flex; align-items: center; gap: 12px; margin-top: 20px; padding: 12px 18px 12px 12px; border-radius: 16px; border: 1.5px dashed #C9CBFF; color: var(--g); font-weight: 800; font-size: 15px; transition: background .3s, border-color .3s; }
+.did i { width: 28px; height: 28px; border-radius: 9px; border: 2px solid var(--g); display: grid; place-items: center; background: #fff; transition: background .3s; }
+.did svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 30; stroke-dashoffset: 30; transition: stroke-dashoffset .4s var(--expo) .05s; }
+.did.on { background: var(--gt); border-style: solid; }
+.did.on i { background: var(--g); }
+.did.on svg { stroke-dashoffset: 0; }
+
+/* 표지·마무리 */
+.cover { text-align: left; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+.ccard { display: flex; gap: 14px; align-items: center; padding: 18px; border-radius: 20px; background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .04), 0 2px 10px rgba(17, 24, 39, .05); text-align: left; opacity: 0; transform: translateY(14px) scale(.97); transition: opacity .5s var(--expo), transform .7s var(--spring); transition-delay: calc(.2s + var(--i) * .08s); }
+.on .ccard { opacity: 1; transform: none; }
+.ccard b { flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--gt); color: var(--g); font-size: 16px; display: grid; place-items: center; }
+.ccard span { font-weight: 800; font-size: 17px; } .ccard small { display: block; color: var(--t3); font-weight: 600; font-size: 13.5px; margin-top: 2px; }
+.links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 22px; border-radius: 16px; font-weight: 800; font-size: 16px; text-decoration: none; transition: transform .2s var(--spring), box-shadow .2s; }
+.btn:hover { transform: translateY(-2px); }
+.btn.pri { background: var(--g); color: #fff; box-shadow: 0 12px 30px rgba(91, 92, 246, .35); }
+.btn.talk { background: #FEE500; color: #191919; }
+.btn.sub { background: #fff; color: var(--t1); box-shadow: 0 1px 2px rgba(17, 24, 39, .06), 0 2px 10px rgba(17, 24, 39, .06); }
+
+/* 아래: 이동 */
+.bottom { display: flex; align-items: center; gap: 12px; padding: 14px clamp(16px, 4vw, 48px) 20px; }
+.nav { min-height: 48px; padding: 0 20px; border-radius: 14px; font-weight: 800; font-size: 15px; }
+.prev { background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .06); color: var(--t2); }
+.next { background: var(--g); color: #fff; box-shadow: 0 10px 26px rgba(91, 92, 246, .3); margin-left: 12px; }
+.nav:disabled { opacity: .35; cursor: default; }
+.count { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--t3); font-variant-numeric: tabular-nums; }
+.keys { font-size: 13px; color: var(--t4); font-weight: 600; }
+
+@media (max-width: 860px), (max-aspect-ratio: 1/1) {
+  body { overflow: auto; }
+  .app { position: static; min-height: 100svh; }
+  .top { flex-wrap: wrap; gap: 10px; padding-bottom: 6px; }
+  .chaps { margin-left: 0; width: 100%; } .chaps li { flex: 1; min-width: 0; font-size: 12px; }
+  .main { grid-template-columns: 1fr; gap: 12px; padding-bottom: 8px; }
+  .phone { height: min(52svh, 480px); border-radius: 28px; padding: 3px; } .scr { border-radius: 25px; }
+  .side { text-align: left; }
+  .ttl { font-size: 28px; margin-top: 10px; }
+  .acts { margin-top: 16px; } .acts li { font-size: 15px; padding: 12px 14px; }
+  .bottom { position: sticky; bottom: 0; background: linear-gradient(transparent, var(--bg) 30%); }
+  .keys { display: none; }
+  .cards { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="../"><i aria-hidden="true"></i>내 업무관리 키트 <small>사용법</small></a>
+    <ol class="chaps" aria-label="챕터"></ol>
+  </header>
+
+  <main class="main">
+    <div class="phone-wrap" aria-hidden="true">
+      <div class="amb"></div>
+      <div class="phone"><div class="scr" id="scr"><i class="spot" id="spot"></i><i class="tap" id="tap"></i></div></div>
+    </div>
+    <section class="side" id="side" aria-live="polite"></section>
+  </main>
+
+  <footer class="bottom">
+    <button class="nav prev" id="prev" type="button">← 이전</button>
+    <button class="nav next" id="next" type="button">다음 →</button>
+    <span class="keys">키보드 ← → 로도 넘겨요</span>
+    <span class="count" id="count"></span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // 링크: 앱 · 커뮤니티 카톡방 · 도움말
+  var APP = '../app/', TALK = 'https://open.kakao.com/o/gmiCVeWi', HELP = '../my-task-kit/help.html';
+  var CH = ['시작하기', '담기', '정리하기', '하루 쓰기'];
+  // spot·tap: 실제 앱 화면(390×844) 위 비율(%). img가 1:2 녹화 화면이면 tall:true
+  var S = [
+    { cover: true, ch: -1 },
+    { ch: 0, img: 'start', eb: '1. 시작하기', t: '메일의 [시작 링크]를 열어요.', d: '신청하면 받은 메일에 시작 링크가 있어요. PC든 휴대폰이든 같은 링크예요.',
+      a: ['메일에서 <b>내 업무관리 키트 시작하기</b> 버튼을 눌러요.', '<b>구글로 시작하기</b>를 눌러요.', '쓸 <b>구글 계정</b>을 골라요.'], spot: [4, 35.8, 92, 7], tap: [50, 39.3] },
+    { ch: 0, img: 'start', eb: '1. 시작하기', t: '경고가 떠도 [괜찮아요].', d: '구글 심사를 받는 중이라 나오는 안내예요. 내 데이터는 내 계정 밖으로 나가지 않아요.',
+      a: ['"확인하지 않은 앱"이 뜨면 <b>고급 ▸ 이동</b>을 눌러요.', '권한 화면에서 <b>모두 선택 ▸ 계속</b>을 눌러요.', '내 구글 드라이브에 <b>내 시트가 저절로</b> 생겨요.'],
+      tip: '앱은 자기가 만든 시트와 내 캘린더만 다뤄요. 다른 드라이브 파일은 볼 수 없어요.', spot: [4, 44.6, 92, 15.2] },
+    { ch: 0, img: 'home', eb: '1. 시작하기', t: '[오늘 화면]이 열리면 준비 끝.', d: '처음에는 예시 할 일이 들어 있어요. 써 보면서 익히고, 필요 없으면 지우면 돼요.',
+      a: ['맨 위 <b>입력칸</b>이 가장 자주 쓰는 곳이에요.', '휴대폰에서는 브라우저 메뉴의 <b>홈 화면에 추가</b>를 누르면 앱처럼 열려요.'], spot: [4, 14.6, 92, 9.6] },
+    { ch: 1, img: 'type', eb: '2. 담기', t: '떠오르면, [한 줄].', d: '판단은 나중에 해요. 지금은 머릿속에서 꺼내 적기만 하면 돼요.',
+      a: ['입력칸을 누르고 떠오른 일을 적어요.', '<b>엔터</b>나 <b>＋</b>를 누르면 담겨요.', '생각나는 대로 계속 적어도 돼요.'], spot: [4, 14.6, 92, 9.6], tap: [86, 19.2] },
+    { ch: 1, img: 'home-added', eb: '2. 담기', t: '담은 일은 [수집함]으로.', d: '입력칸 아래 수집함 숫자가 올라가요. 쌓아 뒀다가 하루 한 번 정리해요.',
+      a: ['<b>수집함</b>을 누르면 정리를 시작해요.', '아래 탭의 수집함으로 가도 같아요.'], spot: [4, 25.4, 30, 4.6], tap: [17, 27.7] },
+    { ch: 2, img: 'drop-ask', eb: '3. 정리하기', t: '한 장씩, [해야 할 일인가요?]', d: '수집함은 카드를 한 장씩 보여 주고 딱 하나만 물어요.',
+      a: ['해야 하면 <b>네, 해야 해요</b>.', '아니면 <b>아니요</b>.', '2분이면 끝나는 일은 <b>바로 끝냄</b>.'], spot: [3, 13.8, 94, 30.2], tap: [70, 29.6] },
+    { ch: 2, img: 'drop-no', eb: '3. 정리하기', t: '아니라면, [어디에 둘까요?]', d: '할 일이 아닌 것도 버리지 말고 제자리에 두면 머릿속이 가벼워져요.',
+      a: ['<b>버리기</b>: 필요 없는 일', '<b>언젠가 할지도</b>: 지금은 아니지만 나중에 볼 일', '<b>참고로 보관</b>: 할 일은 아닌 정보(비밀번호, 메모 등)'], spot: [5, 23.4, 90, 22.4], tap: [29.5, 29.6] },
+    { ch: 2, img: 'ref-ref', eb: '3. 정리하기', t: '2분이면 [그 자리에서] 끝.', d: '문자 한 통, 전화 한 통처럼 금방 끝나는 일은 미루지 말고 바로 해요.',
+      a: ['<b>2분이면 끝나요 · 바로 끝냄</b>을 눌러요.', '완료로 기록되고 다음 카드가 나와요.'], spot: [5, 36.4, 60, 5], tap: [33, 39.3] },
+    { ch: 2, img: 'hero-yes', eb: '3. 정리하기', t: '해야 할 일이면, [어떻게 할까요?]', d: '네 갈래 중 하나만 고르면 정리가 끝나요.',
+      a: ['<b>내가 할 일</b>: 날짜 없이 할 일 목록으로', '<b>날짜 정하기</b>: 오늘·내일·이번 주말 등', '<b>맡기기</b>: 다른 사람에게 부탁한 일', '<b>여러 단계예요</b>: 프로젝트로 묶어요'], spot: [5, 21, 90, 27], tap: [70, 29.6] },
+    { ch: 2, img: 'hero-sched', eb: '3. 정리하기', t: '날짜는 [한 번에] 골라요.', d: '자주 쓰는 날짜가 버튼으로 나와요. 직접 고를 수도 있어요.',
+      a: ['<b>오늘</b>을 누르면 오늘 할 일로 들어가요.', '다른 날은 <b>직접 고르기</b>에서 정해요.'], spot: [4, 71.4, 92, 5.6], tap: [12.5, 74.3] },
+    { ch: 2, img: 'hero-done', eb: '3. 정리하기', t: '[수집함이 비었어요.]', d: '다 정리하면 머릿속이 가벼워져요. 하루 한 번이면 충분해요.',
+      a: ['<b>오늘 할 일 보기</b>를 누르면 오늘 화면으로 가요.'], spot: [10, 9, 80, 28] },
+    { ch: 3, img: 'today-star', eb: '4. 하루 쓰기', t: '오늘은 [★ 이것만].', d: '꼭 할 일에 ★를 달면 맨 위로 올라와요. 3개만 고르는 게 좋아요.',
+      a: ['할 일을 누르고 <b>꼭 하기</b>를 눌러요.', '<b>3개만 고르기</b>로 한 번에 골라도 돼요.'], spot: [3, 43.6, 94, 6.6] },
+    { ch: 3, img: 'swipe', tall: true, eb: '4. 하루 쓰기', t: '끝낸 일은 [옆으로 밀어요].', d: '오른쪽으로 한 번 밀면 완료예요. 실수했으면 아래 되돌리기를 눌러요.',
+      a: ['할 일을 <b>오른쪽으로 밀면</b> 완료.', '<b>왼쪽으로 밀면</b> 내일로 미뤄요.', '동그라미를 눌러도 완료돼요.'], spot: [3, 30, 94, 40] },
+    { ch: 3, img: 'timeline', eb: '4. 하루 쓰기', t: '빈 시간에 [알아서] 놓여요.', d: '시간표를 켜면 구글 캘린더 일정 사이 빈 시간에 오늘 할 일이 놓여요.',
+      a: ['오늘 화면의 <b>시간표</b>를 눌러요.', '할 일을 <b>끌어다 넣으면</b> 내 캘린더에 들어가요.'], spot: [3, 32.8, 94, 58], tap: [91, 23.8] },
+    { ch: 3, img: 'focus', eb: '4. 하루 쓰기', t: '하나에만, [25분 집중].', d: '할 일을 누르고 집중을 시작하면 타이머가 돌아요. 끝나면 완료로 기록돼요.',
+      a: ['할 일을 누르고 <b>집중</b>을 눌러요.', '다 하면 <b>완료</b>, 잠깐 쉬려면 <b>멈춤</b>.'], spot: [8, 60, 84, 10], tap: [50, 65] },
+    { ch: 3, img: 'remind', tall: true, eb: '4. 하루 쓰기', t: '맡긴 일도 [놓치지 않게].', d: '누구에게 맡겼는지, 며칠째인지 보여요. 확인할 날이 되면 위로 올라와요.',
+      a: ['맡긴 일을 누르고 <b>리마인드 문구 복사</b>를 눌러요.', '카톡에 붙여 넣어 보내면 돼요.', '받았으면 <b>받았어요</b>로 끝내요.'], spot: [3, 66, 94, 8.5], tap: [40, 70.5] },
+    { ch: 3, img: 'weekly', tall: true, eb: '4. 하루 쓰기', t: '금요일엔 [한 주 돌아보기].', d: '주간 검토가 질문을 하나씩 던져요. 답하면서 머릿속에 남은 일을 꺼내요.',
+      a: ['더보기 ▸ <b>주간 검토</b>를 눌러요.', '질문에 떠오르는 대로 적고 <b>다음</b>.', '10분이면 다음 주가 가벼워져요.'], spot: [3, 18, 94, 30] },
+    { end: true, ch: 3 }
+  ];
+  var scr = document.getElementById('scr'), spot = document.getElementById('spot'), tap = document.getElementById('tap'), side = document.getElementById('side');
+  var chaps = document.querySelector('.chaps'), count = document.getElementById('count'), prev = document.getElementById('prev'), next = document.getElementById('next');
+  var imgs = {};
+  S.forEach(function (s) { if (s.img && !imgs[s.img]) { var im = document.createElement('img'); im.src = 'img/' + s.img + '.webp'; im.alt = ''; if (s.tall) im.className = 'tall'; scr.insertBefore(im, spot); imgs[s.img] = im; } });
+  CH.forEach(function (c) { var li = document.createElement('li'); li.innerHTML = c + '<i><b></b></i>'; chaps.appendChild(li); });
+  var chEls = [].slice.call(chaps.children);
+
+  function title(t) { // [강조]는 보라색, 단어 단위로 줄바꿈
+    var out = '', i = 0;
+    t.split(/(\[[^\]]+\])/).forEach(function (part) {
+      if (!part) return;
+      var em = part.charAt(0) === '[', body = em ? part.slice(1, -1) : part;
+      var words = body.split(' ').map(function (w) { return '<span class="w">' + Array.from(w).map(function (ch) { return '<span class="c" style="--i:' + (i++) + '">' + ch + '</span>'; }).join('') + '</span>'; }).join(' ');
+      out += em ? '<em>' + words + '</em>' : words;
+    });
+    return out;
+  }
+  var cur = -1, did = {};
+  function show(n) {
+    n = Math.max(0, Math.min(S.length - 1, n)); if (n === cur) return; cur = n;
+    var s = S[n];
+    try { history.replaceState(null, '', '#' + n); } catch (e) {}
+    // 화면
+    Object.keys(imgs).forEach(function (k) { imgs[k].classList.toggle('on', k === (s.img || (s.end ? 'today-star' : 'home'))); });
+    if (s.spot) { spot.style.left = s.spot[0] + '%'; spot.style.top = s.spot[1] + '%'; spot.style.width = s.spot[2] + '%'; spot.style.height = s.spot[3] + '%'; spot.classList.add('on'); } else spot.classList.remove('on');
+    tap.classList.remove('on');
+    if (s.tap) { tap.style.left = s.tap[0] + '%'; tap.style.top = s.tap[1] + '%'; void tap.offsetWidth; tap.classList.add('on'); }
+    // 챕터 진행
+    chEls.forEach(function (li, i) {
+      var inCh = S.filter(function (x) { return x.ch === i && !x.end; }), idx = inCh.indexOf(s), p = s.end || s.ch > i ? 1 : s.ch === i ? (idx + 1) / inCh.length : 0;
+      li.classList.toggle('on', s.ch === i && !s.end); li.classList.toggle('done', p >= 1 && !(s.ch === i && !s.end));
+      li.querySelector('b').style.width = (p * 100) + '%';
+    });
+    // 설명
+    var h;
+    if (s.cover) {
+      h = '<div class="cover"><span class="eb">사용법 · 5분</span><h1 class="ttl">하나씩 [따라 해 봐요].</h1><p class="desc">실제 앱 화면으로 시작부터 하루 쓰기까지 짚어 드려요. 오른쪽 아래 <b>다음</b>을 누르거나 키보드 → 로 넘겨요.</p><div class="cards">' +
+        CH.map(function (c, i) { var sub = ['구글 계정으로 1분', '떠오르면 한 줄', '하루 한 번, 한 장씩', '★ · 시간표 · 집중 · 주간 검토'][i]; return '<button class="ccard" data-go="' + S.findIndex(function (x) { return x.ch === i; }) + '" style="--i:' + i + '"><b>' + (i + 1) + '</b><div><span>' + c + '</span><small>' + sub + '</small></div></button>'; }).join('') + '</div></div>';
+    } else if (s.end) {
+      h = '<span class="eb">다 봤어요</span><h1 class="ttl">이제 [시작해요].</h1><p class="desc">막히는 곳이 있으면 사용자 커뮤니티 카톡방에 물어보세요. 바라는 기능도 함께 나눠요.</p>' +
+        '<div class="links"><a class="btn pri" href="' + APP + '">앱 열기</a><a class="btn talk" href="' + TALK + '" target="_blank" rel="noopener">💬 사용자 커뮤니티 카톡방</a><a class="btn sub" href="' + HELP + '">도움말</a></div>';
+    } else {
+      h = '<span class="eb">' + s.eb + '</span><h1 class="ttl">' + title(s.t) + '</h1><p class="desc">' + s.d + '</p><ol class="acts">' +
+        s.a.map(function (x, i) { return '<li style="--i:' + i + '">' + x + '</li>'; }).join('') + '</ol><p class="tip">' + (s.tip || '') + '</p>' +
+        '<button class="did' + (did[n] ? ' on' : '') + '" type="button" aria-pressed="' + !!did[n] + '"><i><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i>앱에서 해 봤어요</button>';
+    }
+    side.innerHTML = s.cover ? h.replace('<h1 class="ttl">하나씩 [따라 해 봐요].</h1>', '<h1 class="ttl">' + title('하나씩 [따라 해 봐요].') + '</h1>') : s.end ? h.replace('<h1 class="ttl">이제 [시작해요].</h1>', '<h1 class="ttl">' + title('이제 [시작해요].') + '</h1>') : h;
+    requestAnimationFrame(function () { requestAnimationFrame(function () { $$('.ttl, .acts, .cover, .side > *').forEach(function (e) { e.classList.add('on'); }); }); });
+    prev.disabled = n === 0; next.textContent = s.end ? '처음으로' : n === 0 ? '시작 →' : '다음 →';
+    count.textContent = (n + 1) + ' / ' + S.length;
+  }
+  function $$(q) { return [].slice.call(side.querySelectorAll(q)); }
+  side.addEventListener('click', function (e) {
+    var go = e.target.closest('[data-go]'); if (go) return show(+go.dataset.go);
+    var d = e.target.closest('.did'); if (!d) return;
+    did[cur] = !did[cur]; d.classList.toggle('on', did[cur]); d.setAttribute('aria-pressed', did[cur]);
+    // 해 봤다고 체크하면 잠시 뒤 다음 장면으로
+    if (did[cur]) { var at = cur; setTimeout(function () { if (cur === at && did[at]) show(at + 1); }, 650); }
+  });
+  prev.addEventListener('click', function () { show(cur - 1); });
+  next.addEventListener('click', function () { show(S[cur].end ? 0 : cur + 1); });
+  addEventListener('keydown', function (e) {
+    if (e.target.closest && e.target.closest('input, textarea')) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); show(cur + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(cur - 1); }
+  });
+  // 휴대폰: 좌우로 밀어 넘기기
+  var x0 = null; addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  addEventListener('touchend', function (e) { if (x0 === null) return; var dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 60) show(cur + (dx < 0 ? 1 : -1)); x0 = null; });
+  show(parseInt((location.hash || '#0').slice(1), 10) || 0);
+})();
+</script>
+</body>
+</html>

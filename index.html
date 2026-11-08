@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preload" as="image" href="seq/hero/d/0001.webp" media="(min-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="seq/hero/m/0001.webp" media="(max-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="v3.css?v=cb41806b">
+<link rel="stylesheet" href="v3.css?v=aa1b7a99">
 <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
@@ -280,13 +280,13 @@
     <div class="wrap">
       <p class="eyebrow3" data-reveal>개인 사용 기준</p>
       <h2 class="big" data-split data-reveal>신청만 하면, 평생 무료.</h2>
-      <p class="sub hilite" data-hilite>결제 정보도, 회원가입도 없어요. 구글 계정으로 버튼 한 번이면 시작해요.</p>
+      <p class="sub hilite" data-hilite>결제 정보는 받지 않아요. 신청하면 시작 링크와 사용법을 메일로 보내 드려요.</p>
       <ul class="freelist">
         <li data-reveal><b>0원</b><span>개인 사용은 평생 무료</span></li>
         <li data-reveal><b>구글 계정 하나</b><span>따로 가입할 필요 없어요</span></li>
         <li data-reveal><b>1분</b><span>내 드라이브에 내 시트가 저절로 생겨요</span></li>
       </ul>
-      <a class="bigcta" href="app/" data-reveal data-magnet>구글로 시작하기</a>
+      <a class="bigcta" href="#c11" data-go data-reveal data-magnet>평생 무료로 신청하기</a>
     </div>
   </section>
 
@@ -322,7 +322,7 @@
         </li>
         <li class="qa" data-qa>
           <div class="ask"><span class="who">직장인 · 투두 앱을 포기한 적 있는</span><p>앱은 설정이 복잡해서 깔아 놓고 결국 안 쓰게 돼요.</p></div>
-          <div class="ans"><span class="who">내 업무관리 키트</span><p>설치 없이 구글 계정으로 버튼 한 번이면 시작해요. 개인 사용은 평생 무료예요.</p></div>
+          <div class="ans"><span class="who">내 업무관리 키트</span><p>설치 없이 구글 계정으로 시작해요. 개인 사용은 평생 무료예요.</p></div>
         </li>
       </ul>
     </div>
@@ -352,14 +352,11 @@
     <div class="stage su-stage">
       <div class="su-head">
         <h2 class="big" data-split data-reveal>평생 무료, 1분이면 시작해요.</h2>
-        <p class="sub" data-reveal>구글로 시작하면 <b>내 드라이브에 내 시트</b>가 바로 생기고 오늘 화면이 열려요.</p>
-        <a class="gstart" href="app/" data-reveal data-magnet><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.9 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.1-13.4-9.9l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span>구글로 시작하기</span></a>
-        <p class="gfine" data-reveal>휴대폰·PC 어디서나 같은 주소 · 처음 권한 화면에서 <b>모두 선택</b>을 눌러 주세요</p>
-        <p class="gor" data-reveal>회사 계정이라 구글 로그인이 막히면, 아래에 메일을 남겨 주세요. 시트 사본 링크를 보내 드려요.</p>
+        <p class="sub" data-reveal>신청하면 <b>시작 링크 · 사용법 · 사용자 커뮤니티 카톡방</b>을 메일로 보내 드려요.</p>
       </div>
       <div class="formcard" id="formcard">
         <form id="signup" novalidate>
-          <ol class="su-steps" aria-hidden="true"><li>이메일</li><li>이름</li><li>하는 일</li><li>쓰는 곳</li><li>동의</li></ol>
+          <ol class="su-steps" aria-hidden="true"><li>이메일</li><li>이름</li><li>하는 일</li><li>쓰는 곳</li><li>신청 이유</li><li>동의</li></ol>
           <div class="title-line">
             <i class="ck" aria-hidden="true"></i>
             <label class="sr" for="fEmail">이메일</label>
@@ -367,26 +364,32 @@
           </div>
           <div class="more">
             <div class="st" data-step="1">
-              <label class="fl" for="fName">이름 <small>(선택)</small></label>
-              <input id="fName" name="name" autocomplete="name" maxlength="40" placeholder="뭐라고 불러 드릴까요?">
+              <label class="fl" for="fName">이름</label>
+              <input id="fName" name="name" autocomplete="name" maxlength="40" placeholder="뭐라고 불러 드릴까요?" required>
             </div>
             <div class="st" data-step="2">
-              <p class="fl">하는 일 <small>(선택)</small></p>
-              <div class="chips" data-name="role">
-                <button type="button">직장인</button><button type="button">팀장</button><button type="button">1인 사업자</button><button type="button">프리랜서</button><button type="button">학생</button><button type="button">기타</button>
+              <p class="fl" id="lRole">하는 일</p>
+              <div class="chips" data-name="role" role="group" aria-labelledby="lRole">
+                <button type="button">직장인</button><button type="button">팀장</button><button type="button">1인 사업자</button><button type="button">프리랜서</button><button type="button">학생</button><button type="button" data-etc>기타</button>
               </div>
+              <input id="fRoleEtc" name="roleEtc" maxlength="40" placeholder="하는 일을 적어 주세요" hidden aria-label="하는 일 직접 입력">
             </div>
             <div class="st" data-step="3">
-              <p class="fl">어디에 쓰고 싶나요? <small>(선택)</small></p>
-              <div class="chips" data-name="use">
+              <p class="fl" id="lUse">어디에 쓰고 싶나요?</p>
+              <div class="chips" data-name="use" role="group" aria-labelledby="lUse">
                 <button type="button">회사 일</button><button type="button">개인 일</button><button type="button">둘 다</button>
               </div>
             </div>
             <div class="st" data-step="4">
+              <label class="fl" for="fReason">신청한 이유 <small>(20자 이상)</small></label>
+              <textarea id="fReason" name="reason" rows="3" maxlength="500" placeholder="예: 회의가 많아서 받은 일을 자꾸 놓쳐요. 한곳에 모아 정리하고 싶어요." required></textarea>
+              <p class="cnt" id="fReasonCnt" aria-live="polite">0 / 20자</p>
+            </div>
+            <div class="st" data-step="5">
               <div class="hp" aria-hidden="true"><label>웹사이트<input name="website" tabindex="-1" autocomplete="off"></label></div>
-              <label class="agree"><input type="checkbox" name="agree" required><span><b>(필수)</b> 개인정보 수집·이용에 동의해요. 이메일·이름·하는 일을 사용 안내를 보내는 데만 써요. <a href="privacy.html">개인정보 처리방침 보기</a></span></label>
+              <label class="agree"><input type="checkbox" name="agree" required><span><b>(필수)</b> 개인정보 수집·이용에 동의해요. 이메일·이름·하는 일·쓰는 곳·신청 이유를 사용 안내와 서비스 개선에 써요. <a href="privacy.html">개인정보 처리방침 보기</a></span></label>
               <label class="agree"><input type="checkbox" name="marketing"><span>(선택) 새 버전·활용 팁 소식을 받을게요.</span></label>
-              <button class="submit" type="submit" data-magnet>시트 사본 링크 받기</button>
+              <button class="submit" type="submit" data-magnet>평생 무료로 신청하기</button>
               <p class="msg" id="fMsg" role="status" aria-live="polite"></p>
             </div>
           </div>
@@ -408,7 +411,7 @@
       <details><summary>정말 평생 무료인가요?</summary><p>네, 개인 사용은 평생 무료예요. 내 구글 드라이브에 내 시트를 만들어 쓰는 방식이라 서버 비용이 없고, 회원가입도 없어요.</p></details>
       <details><summary>내 할 일은 어디에 저장되나요?</summary><p><b>내 구글 드라이브의 내 시트에만</b> 저장돼요. 앱은 내 브라우저에서 구글에 바로 저장하고, 운영자 서버는 없어요. 앱은 자기가 만든 시트만 볼 수 있어서 내 다른 파일도 못 봐요. 키트를 만든 사람도 내 시트를 볼 수 없어요.</p></details>
       <details><summary>"Google에서 확인하지 않은 앱" 경고가 떠요</summary><p>구글 심사를 받는 중이라 나오는 안내예요. <b>고급 ▸ 내 업무관리 키트(으)로 이동</b>을 누르고, 권한 화면에서 <b>모두 선택</b> 후 계속을 누르면 돼요. 앱이 쓰는 권한은 "이 앱이 만든 파일"과 "캘린더"뿐이에요.</p></details>
-      <details><summary>휴대폰에서도 쓸 수 있나요?</summary><p>네. 휴대폰에서 이 홈페이지의 <b>구글로 시작하기</b>를 누르고 같은 구글 계정으로 로그인하면 PC와 같은 시트를 이어서 써요. 브라우저 메뉴에서 <b>홈 화면에 추가</b>하면 앱처럼 열려요.</p></details>
+      <details><summary>휴대폰에서도 쓸 수 있나요?</summary><p>네. 휴대폰에서 메일로 받은 <b>시작 링크</b>를 열고 같은 구글 계정으로 로그인하면 PC와 같은 시트를 이어서 써요. 브라우저 메뉴에서 <b>홈 화면에 추가</b>하면 앱처럼 열려요.</p></details>
       <details><summary>업데이트하면 내 데이터는요?</summary><p>그대로예요. 앱은 열 때마다 최신 버전이고, 새 버전은 시트에 열을 추가만 하고 지우지 않아요.</p></details>
       <details><summary>무엇이 되고, 무엇이 아직 안 되나요?</summary><p>구글 계정 하나면 돼요. 구글 캘린더 일정과 함께 보고, 할 일을 시간표에 끌어다 넣으면 내 캘린더에 들어가요. 메일 알림, 지메일·카톡에서 바로 담기, AI 자동 분류, 팀 공유는 <b>아직 안 돼요.</b></p></details>
     </div>
@@ -422,6 +425,6 @@
 <script src="vendor/gsap.min.js" defer></script>
 <script src="vendor/ScrollTrigger.min.js" defer></script>
 <script src="vendor/lenis.min.js" defer></script>
-<script src="v3.js?v=76671fba" defer></script>
+<script src="v3.js?v=8d0402c7" defer></script>
 </body>
 </html>
