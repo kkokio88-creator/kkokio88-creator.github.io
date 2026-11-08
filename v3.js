@@ -124,7 +124,8 @@
     }
   };
   // 장면 안에서 스크롤과 프레임의 대응을 고르게: 급한 구간에 스크롤을 더 배분한다
-  var WARP = { card: [[0, 0], [0.26, 0.3], [0.66, 0.56], [1, 1]] };
+  // zoom: 카드 클로즈업(흰 화면 뒤 어둡게 비치면 잔상처럼 보임)은 건너뛰고 카드가 폰에 내려앉은 뒤부터
+  var WARP = { card: [[0, 0], [0.26, 0.3], [0.66, 0.56], [1, 1]], zoom: [[0, 0.4], [1, 1]] };
   function warp(name, p) {
     var w = WARP[name]; if (!w) return p;
     for (var i = 1; i < w.length; i++) if (p <= w[i][0]) return lerp(w[i - 1][1], w[i][1], seg(p, w[i - 1][0], w[i][0]));
@@ -255,7 +256,7 @@
     ];
     var N = B.length, lastKey = '', cur = null;
     function layout() {
-      if (innerWidth / innerHeight < 1 || innerWidth <= 1000) { copyBox.style.left = ''; copyBox.style.width = ''; return; }
+      if (innerWidth / innerHeight < 1 || innerWidth <= 760) { copyBox.style.left = ''; copyBox.style.width = ''; return; }
       var pr = phone.getBoundingClientRect(), br = binsBox.getBoundingClientRect(), l = pr.right + 48;
       copyBox.style.left = l + 'px'; copyBox.style.width = Math.max(220, br.left - 48 - l) + 'px';
     }
@@ -283,7 +284,7 @@
         var sr = scr.getBoundingClientRect(), stg = sec.querySelector('.stage').getBoundingClientRect(), ul = $('ul', bins[fb.bin]).getBoundingClientRect();
         if (fly.textContent !== fb.t) fly.textContent = fb.t;
         var x0 = sr.left + sr.width * 0.5 - stg.left, y0 = sr.top + sr.height * 0.17 - stg.top;
-        var x1 = ul.left + Math.min(ul.width, 220) / 2 - stg.left, y1 = ul.top + 14 - stg.top;
+        var x1 = ul.left + Math.min(ul.width, 220) / 2 - stg.left, y1 = ul.top + 26 - stg.top;
         var e = ease(k), x = lerp(x0, x1, e), y = lerp(y0, y1, e) - Math.sin(Math.PI * k) * 90;
         fly.style.opacity = Math.min(1, k * 8, (1 - k) * 8);
         fly.style.transform = 'translate(' + (x - fly.offsetWidth / 2) + 'px,' + (y - fly.offsetHeight / 2) + 'px) rotate(' + (Math.sin(Math.PI * k) * -6) + 'deg) scale(' + lerp(1, 0.8, e) + ')';
@@ -557,7 +558,7 @@
         .catch(function (err) {
           msg.textContent = err && err.name !== 'AbortError' && err.message && !/fetch|network|JSON|Unexpected/i.test(err.message) ? err.message : '잠시 문제가 생겼어요. 조금 뒤 다시 시도해 주세요.';
         })
-        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '시트 사본 링크 받기'; });
+        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '무료로 시작하기'; });
     });
     function done(r) {
       $('#sentH').textContent = r.again ? '이미 신청하셨어요.' : '메일함을 확인해 주세요.';

@@ -456,7 +456,7 @@ html:not(.js) .tray { width: 30vw; }
 .bin[data-bin="now"] li::before { content: '✓ '; color: var(--g); }
 .bin.today { background: #FFF8E6; } .bin.today li::before { content: '★ '; color: var(--amber); }
 .flyc { position: absolute; left: 0; top: 0; z-index: 6; padding: 10px 14px; border-radius: 14px; background: #fff; font-size: 14px; font-weight: 800; box-shadow: 0 18px 40px rgba(40, 40, 120, .25); border: 1.5px solid transparent; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(120deg, #8B8CFF, #FF8FCF, #7FDDF5) border-box; white-space: nowrap; opacity: 0; pointer-events: none; will-change: transform; }
-@media (max-width: 1000px), (max-aspect-ratio: 1/1) {
+@media (max-width: 760px), (max-aspect-ratio: 1/1) {
   .steps { top: 62px; gap: 4px; } .steps li { padding: 6px 10px 6px 6px; font-size: 13px; } .steps b { width: 20px; height: 20px; font-size: 11px; }
   .sort-phone { left: 50%; translate: -50% 0; top: 108px; bottom: auto; height: calc(100svh - 108px - 250px); padding: 7px; border-radius: 32px; }
   .scr { border-radius: 26px; }
@@ -603,10 +603,25 @@ html:not(.js) .tray { width: 30vw; }
 .js [data-tile] { clip-path: inset(10% 8% 10% 8% round 28px); opacity: 0; }
 [data-magnet] { will-change: transform; }
 
-/* C11 구글로 시작하기 (v2 앱) */
-.su-head .gstart { display: inline-flex; align-items: center; justify-content: center; gap: 12px; margin-top: 22px; min-height: 60px; padding: 0 30px; border-radius: 18px; background: #fff; color: #1F1F1F; border: 1px solid #DADCE0; font-size: 18px; font-weight: 800; text-decoration: none; box-shadow: 0 14px 34px rgba(60, 60, 140, .16); }
-.su-head .gstart:hover { box-shadow: 0 18px 40px rgba(60, 60, 140, .24); }
-.su-head .gstart:focus-visible { outline: 3px solid #5B5CF6; outline-offset: 3px; }
-.su-head .gfine, .su-head .gor { padding: 0 16px; }
-.su-head .gfine { margin-top: 12px; font-size: 14px; color: #6B7684; }
-.su-head .gor { margin: 26px auto 0; max-width: 520px; font-size: 14.5px; color: #8B95A1; }
+/* ══ Aside 검수 반영 ══ */
+/* C2: 제목이 떠오르는 카드와 겹치지 않게 — PC는 왼쪽, 세로 화면은 아래 */
+#c2 .top-copy { top: 50%; transform: translateY(-50%); left: 0; right: auto; width: 30%; padding-left: max(var(--pad), 4vw); text-align: left; }
+#c2 .top-copy .big { font-size: clamp(36px, 4.2vw, 68px); }
+@media (max-aspect-ratio: 1/1) {
+  #c2 .top-copy { top: auto; bottom: 0; transform: none; width: auto; right: 0; padding: 80px var(--pad) 6vh; text-align: center; background: linear-gradient(transparent, rgba(11, 16, 48, .92) 45%); }
+}
+/* 챕터 경계: 한 줄로 뚝 바뀌지 않게 그라데이션 띠 */
+.ch.sort::before, .ch.focus::before, .ch.hl::before { content: ''; position: absolute; left: 0; right: 0; top: -180px; height: 180px; z-index: 3; pointer-events: none; }
+.ch.sort::before { background: linear-gradient(rgba(255, 255, 255, 0), #fff); }
+.ch.focus::before { background: linear-gradient(rgba(0, 0, 0, 0), #000); }
+.ch.hl::before { background: linear-gradient(rgba(255, 255, 255, 0), #fff); }
+#c10::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 200px; z-index: 3; pointer-events: none; background: linear-gradient(#fff, rgba(255, 255, 255, 0)); }
+/* C4: 좁은·낮은 화면에서 폰을 더 크게 */
+@media (max-width: 760px), (max-aspect-ratio: 1/1) {
+  .sort-phone { top: 100px; height: calc(100svh - 100px - 200px); }
+  .sort-copy { bottom: 116px; height: 76px; } .sc h3 { font-size: 22px; } .sc p { font-size: 13px; margin-top: 4px; }
+  .bins { height: 96px; bottom: 12px; }
+}
+@media (max-height: 640px) and (max-aspect-ratio: 1/1) { .sc p { display: none; } .sort-copy { height: 34px; } .sort-phone { height: calc(100svh - 100px - 158px); } }
+/* C5: 큰 화면에서 가운데 빈 띠를 줄인다 */
+@media (min-width: 1600px) and (min-aspect-ratio: 1/1) { .dtrack { height: 54vh; bottom: 13vh; } }
