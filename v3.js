@@ -75,12 +75,20 @@
 
   // ══════════ 이미지 시퀀스 스크럽 엔진 ══════════
   function pickSet() { return innerWidth / innerHeight < 1 ? 'm' : 'd'; }
-  function Seq(name, canvas) {
-    this.name = name; this.canvas = canvas; this.ctx = canvas.getContext('2d');
-    this.p = 0; this.last = -1; this.started = false; this.reset(pickSet());
+  // 시퀀스 장면들은 화면에 고정된 캔버스 하나(#seqfx)에 그린다. 구역마다 캔버스를 두면 경계에서 폰이 잘리고
+  // 다음 구역에서 새 폰이 올라오므로, 붙어 있는 장면 사이(①→②→③)는 같은 화면에서 이어 그리고 겹쳐 바꾼다.
+  var fx = document.createElement('canvas'); fx.id = 'seqfx'; fx.setAttribute('aria-hidden', 'true');
+  $('#bg').after(fx);
+  var fctx = fx.getContext('2d'), fxDpr = 1;
+  function fxSize() {
+    fxDpr = Math.min(devicePixelRatio || 1, 2);
+    var w = innerWidth, h = innerHeight;
+    if (fx.width !== Math.round(w * fxDpr) || fx.height !== Math.round(h * fxDpr)) { fx.width = Math.round(w * fxDpr); fx.height = Math.round(h * fxDpr); paintKey = ''; }
+    return { w: w, h: h };
   }
+  function Seq(name) { this.name = name; this.started = false; this.reset(pickSet()); }
   Seq.prototype.reset = function (set) {
-    this.set = set; this.n = FRAMES[this.name][set]; this.imgs = new Array(this.n); this.ok = new Array(this.n); this.queue = []; this.busy = 0; this.last = -1;
+    this.set = set; this.n = FRAMES[this.name][set]; this.imgs = new Array(this.n); this.ok = new Array(this.n); this.queue = []; this.busy = 0;
     if (this.started) { this.started = false; this.start(); }
   };
   Seq.prototype.url = function (i) { return 'seq/' + this.name + '/' + this.set + '/' + String(i + 1).padStart(4, '0') + '.webp'; };
@@ -88,8 +96,8 @@
   Seq.prototype.start = function () {
     if (this.started) return; this.started = true;
     var order = [0], seen = { 0: 1 }, n = this.n;
+    if (!seen[n - 1]) { seen[n - 1] = 1; order.push(n - 1); }
     [4, 2, 1].forEach(function (step) { for (var i = 0; i < n; i += step) if (!seen[i]) { seen[i] = 1; order.push(i); } });
-    if (!seen[n - 1]) order.push(n - 1);
     this.queue = order; this.pump();
   };
   Seq.prototype.pump = function () {
@@ -100,51 +108,67 @@
         var img = new Image(); img.decoding = 'async'; img.src = self.url(i);
         var done = function (good) {
           if (set !== self.set) return;
-          self.busy--; if (good) { self.imgs[i] = img; self.ok[i] = true; if (self.last === -1 || Math.abs(self.idx() - i) < Math.abs(self.idx() - self.last)) self.draw(true); }
+          self.busy--; if (good) { self.imgs[i] = img; self.ok[i] = true; paint(true); }
           self.pump();
         };
         (img.decode ? img.decode() : new Promise(function (r) { img.onload = r; })).then(function () { done(true); }, function () { done(false); });
       })(this.queue.shift());
     }
   };
-  Seq.prototype.idx = function () { return Math.round(this.p * (this.n - 1)); };
-  Seq.prototype.nearest = function (i) {
+  Seq.prototype.nearest = function (p) {
+    var i = Math.round(clamp(p) * (this.n - 1));
     for (var d = 0; d < this.n; d++) { if (this.ok[i - d]) return i - d; if (this.ok[i + d]) return i + d; }
     return -1;
   };
-  Seq.prototype.size = function () {
-    var dpr = Math.min(devicePixelRatio || 1, 2), w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-    if (this.canvas.width !== Math.round(w * dpr) || this.canvas.height !== Math.round(h * dpr)) { this.canvas.width = Math.round(w * dpr); this.canvas.height = Math.round(h * dpr); this.last = -1; }
-    return { w: w, h: h, dpr: dpr };
-  };
   // 프레임 좌표(0~1) → 화면 좌표(px). 그리기와 같은 cover 계산
   Seq.prototype.cover = function () {
-    var s = this.size(), img = this.imgs[this.last] || this.imgs[this.nearest(this.idx())];
-    var iw = img ? img.naturalWidth : (this.set === 'd' ? 1600 : 900), ih = img ? img.naturalHeight : (this.set === 'd' ? 900 : 1600);
-    var k = Math.max(s.w / iw, s.h / ih);
-    return { k: k, x: (s.w - iw * k) / 2, y: (s.h - ih * k) / 2, iw: iw, ih: ih, s: s };
+    var s = fxSize(), iw = this.set === 'd' ? 1600 : 900, ih = this.set === 'd' ? 900 : 1600, k = Math.max(s.w / iw, s.h / ih);
+    return { k: k, x: (s.w - iw * k) / 2, y: (s.h - ih * k) / 2, iw: iw, ih: ih };
   };
   Seq.prototype.toView = function (nx, ny) { var c = this.cover(); return { x: c.x + nx * c.iw * c.k, y: c.y + ny * c.ih * c.k }; };
-  Seq.prototype.draw = function (force) {
-    var i = this.nearest(this.idx());
-    if (i < 0 || (i === this.last && !force)) return;
-    var c = this.cover(); this.last = i;
-    this.ctx.setTransform(c.s.dpr, 0, 0, c.s.dpr, 0, 0);
-    this.ctx.drawImage(this.imgs[i], c.x, c.y, c.iw * c.k, c.ih * c.k);
+  Seq.prototype.blit = function (p, alpha) {
+    var i = this.nearest(p); if (i < 0) return false;
+    var c = this.cover();
+    fctx.globalAlpha = alpha; fctx.drawImage(this.imgs[i], c.x, c.y, c.iw * c.k, c.ih * c.k); fctx.globalAlpha = 1;
+    return this.name + i + '@' + alpha.toFixed(2);
   };
 
-  var seqs = [];
+  var seqs = [], seqSecs = [];
   $$('.ch[data-seq]').forEach(function (sec, n) {
-    var seq = new Seq(sec.dataset.seq, $('.seqc', sec)); sec._seq = seq; seqs.push(seq);
+    var seq = new Seq(sec.dataset.seq); sec._seq = seq; seqs.push(seq); seqSecs.push(sec);
     if (n === 0) seq.start();
     // 다음 챕터가 화면 1개 거리에 오면 미리 불러온다
     else ScrollTrigger.create({ trigger: sec, start: 'top bottom+=100%', once: true, onEnter: function () { seq.start(); } });
   });
+  // 지금 스크롤 위치에서 그릴 장면과 섞는 비율을 정한다.
+  var paintKey = '';
+  function paint(force) {
+    var y = scrollY, vh = innerHeight, jobs = [];
+    seqSecs.forEach(function (sec, i) {
+      var top = sec.getBoundingClientRect().top + y, a = top, b = top + sec.offsetHeight - vh;
+      var prev = seqSecs[i - 1], next = seqSecs[i + 1];
+      var prevAdj = prev && Math.abs(prev.getBoundingClientRect().top + y + prev.offsetHeight - top) < 2;
+      var nextAdj = next && Math.abs(next.getBoundingClientRect().top + y - (top + sec.offsetHeight)) < 2;
+      if (y >= a && y <= b) jobs.push([sec._seq, (y - a) / (b - a), 1]);
+      else if (y > b && y < b + vh) {
+        if (nextAdj) jobs.push([sec._seq, 1, 1], [next._seq, 0, ease(seg(y, b + vh * 0.15, b + vh * 0.85))]);
+        else jobs.push([sec._seq, 1, 1]);
+      } else if (y < a && y > a - vh && !prevAdj) jobs.push([sec._seq, 0, 1]);
+    });
+    if (!jobs.length) return;
+    fxSize();
+    var key = jobs.map(function (j) { return j[0].name + j[0].nearest(j[1]) + j[2].toFixed(2); }).join('|') + fx.width;
+    if (key === paintKey && !force) return;
+    paintKey = key;
+    fctx.setTransform(fxDpr, 0, 0, fxDpr, 0, 0);
+    jobs.forEach(function (j) { if (j[2] > 0.005) j[0].blit(j[1], j[2]); });
+  }
+  if (lenis) lenis.on('scroll', function () { paint(); }); else addEventListener('scroll', function () { paint(); }, { passive: true });
   var lastSet = pickSet();
   addEventListener('resize', function () {
     var s = pickSet();
-    seqs.forEach(function (q) { if (s !== lastSet) q.reset(s); q.last = -1; q.draw(true); });
-    if (s !== lastSet) { lastSet = s; loadAnchors(); }
+    if (s !== lastSet) { seqs.forEach(function (q) { q.reset(s); }); lastSet = s; loadAnchors(); }
+    paint(true);
   });
 
   // ── 장면 ③ 층 이름표: 렌더링 때 기록한 3D 좌표를 그대로 따라간다 ──
@@ -174,13 +198,13 @@
 
   // ══════════ 장면별 진행률 ══════════
   var scenes = {
-    c1: function (p, sec) { sec._seq.p = p; sec._seq.draw(); },
-    c2: function (p, sec) { sec._seq.p = p; sec._seq.draw(); },
-    c3: function (p, sec) { sec._seq.p = p; sec._seq.draw(); labels(p); },
+    c1: function () { paint(); },
+    c2: function () { paint(); },
+    c3: function (p) { paint(); labels(p); },
     c4: journey(),
     c5: day(),
     c6: focus(),
-    c10: function (p, sec) { sec._seq.p = p; sec._seq.draw(); }
+    c10: function () { paint(); }
   };
   Object.keys(scenes).forEach(function (id) {
     var sec = document.getElementById(id);
@@ -285,7 +309,12 @@
 
   // ── C7 하이라이트 캐러셀 ──
   (function () {
-    var car = $('.car'), tiles = $$('.tile', car), dotsEl = $('#c7 .dots'), active = 0, idle = 0, inView = false;
+    var car = $('.car'), tiles = $$('.tile', car), dotsEl = $('#c7 .dots'), active = 0, idle = 0, inView = false, paused = false, pauseBtn = $('#c7 .pause');
+    pauseBtn.addEventListener('click', function () {
+      paused = !paused; pauseBtn.setAttribute('aria-pressed', paused); pauseBtn.textContent = paused ? '자동 재생 켜기' : '자동 재생 멈춤';
+      $$('video', car).forEach(function (v) { if (paused) v.pause(); });
+      if (!paused) mark(), tiles.forEach(function (t) { io.unobserve(t); if (inView) io.observe(t); });
+    });
     tiles.forEach(function (t, i) {
       var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-label', (i + 1) + '번 영상: ' + $('b', t).textContent);
       b.addEventListener('click', function () { go(i); idle = Date.now(); }); dotsEl.appendChild(b);
@@ -302,18 +331,18 @@
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (e) {
         var v = $('video', e.target);
-        if (e.isIntersecting && e.intersectionRatio > 0.55 && inView) { v.preload = 'auto'; var pr = v.play(); if (pr) pr.catch(function () {}); } else v.pause();
+        if (e.isIntersecting && e.intersectionRatio > 0.55 && inView && !paused) { v.preload = 'auto'; var pr = v.play(); if (pr) pr.catch(function () {}); } else v.pause();
       });
     }, { root: car, threshold: [0, 0.55, 1] });
     ScrollTrigger.create({ trigger: '#c7', start: 'top 80%', end: 'bottom 20%', onToggle: function (self) {
       inView = self.isActive; tiles.forEach(function (t) { io.unobserve(t); if (inView) io.observe(t); else $('video', t).pause(); });
     } });
-    setInterval(function () { if (inView && Date.now() - idle > 8000 && !document.hidden) go((active + 1) % tiles.length); }, 7000);
+    setInterval(function () { if (inView && !paused && Date.now() - idle > 8000 && !document.hidden) go((active + 1) % tiles.length); }, 7000);
     mark();
   })();
 
   // ── C8 맡긴 일 며칠째 ──
-  (function () { var el = $('.dcount'), n = 1; setInterval(function () { n = n % 3 + 1; el.textContent = n; el.style.color = n === 3 ? '#C27C00' : ''; }, 1600); })();
+  (function () { var els = [$('.dcount'), $('.dcount2')], n = 1; setInterval(function () { n = n % 3 + 1; els.forEach(function (el) { el.textContent = n; el.style.color = n === 3 ? '#C27C00' : ''; }); }, 1600); })();
 
   // ── C9 숫자 올라가기 ──
   $$('.cu').forEach(function (el) {

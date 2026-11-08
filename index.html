@@ -7,8 +7,17 @@
 <meta name="description" content="구글 시트 사본 하나로 시작하는 무료 개인 업무관리 앱. 휴대폰과 PC에서 앱처럼 쓰고, 데이터는 내 구글 드라이브에만 남아요.">
 <meta property="og:title" content="내 업무관리 키트 — 할 일, 가볍게.">
 <meta property="og:description" content="무료 · 가입 없음 · 내 구글 시트로. 담기 2번, 끝내기 1번.">
-<meta property="og:image" content="seq/hero/d/0140.webp">
+<meta property="og:image" content="https://kkokio88-creator.github.io/assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="할 일, 가볍게. — 휴대폰 화면에 켜진 내 업무관리 키트">
+<meta property="og:url" content="https://kkokio88-creator.github.io/">
+<meta property="og:site_name" content="내 업무관리 키트">
+<meta property="og:locale" content="ko_KR">
 <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://kkokio88-creator.github.io/">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="theme-color" content="#05050A">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235B5CF6'/%3E%3Cpath d='M19 33l9 9 17-19' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -19,6 +28,7 @@
 <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
+<a class="skip" href="#c11">신청으로 바로가기</a>
 <div id="bg" aria-hidden="true"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
 
@@ -35,12 +45,11 @@
   </div>
 </header>
 
-<main id="top">
+<main id="top" tabindex="-1">
 
   <!-- C1 히어로 리빌 (시퀀스 ①) -->
   <section class="ch seq dark" id="c1" data-bg="#05050A" data-theme="dark" data-seq="hero" style="--len: 200">
     <div class="stage">
-      <canvas class="seqc" aria-hidden="true"></canvas>
       <noscript><picture class="poster"><source media="(max-aspect-ratio: 1/1)" srcset="seq/hero/m/0140.webp"><img src="seq/hero/d/0140.webp" alt="휴대폰 화면에 켜진 내 업무관리 키트 홈 화면"></picture></noscript>
       <div class="copy hero-copy">
         <p class="eyebrow" data-at="0">내 업무관리 키트</p>
@@ -54,7 +63,6 @@
   <!-- C2 카드가 떠오른다 (시퀀스 ②) -->
   <section class="ch seq dark" id="c2" data-bg="#0B1030" data-theme="dark" data-seq="card" style="--len: 150">
     <div class="stage">
-      <canvas class="seqc" aria-hidden="true"></canvas>
       <noscript><picture class="poster"><source media="(max-aspect-ratio: 1/1)" srcset="seq/card/m/0060.webp"><img src="seq/card/d/0120.webp" alt="휴대폰 화면 위로 떠오른 유리 할 일 카드: 팀장님께 보고서 초안 보내기"></picture></noscript>
       <div class="copy top-copy">
         <h2 class="big" data-split data-at="0.5">떠오르면, 한 줄.</h2>
@@ -66,7 +74,6 @@
   <!-- C3 분해 (시퀀스 ③) -->
   <section class="ch seq dark" id="c3" data-bg="#0B1030" data-theme="dark" data-seq="explode" style="--len: 200">
     <div class="stage">
-      <canvas class="seqc" aria-hidden="true"></canvas>
       <noscript><picture class="poster"><source media="(max-aspect-ratio: 1/1)" srcset="seq/explode/m/0075.webp"><img src="seq/explode/d/0150.webp" alt="앱 화면이 입력칸·수집함·오늘·시간표·캘린더 다섯 층으로 펼쳐진 모습"></picture></noscript>
       <svg class="lbl-lines" aria-hidden="true"></svg>
       <ul class="lbls" aria-label="화면의 다섯 겹">
@@ -191,7 +198,7 @@
       <figure class="tile" data-clip="remind"><div class="ph"><video muted loop playsinline preload="none" poster="clips/remind.webp"><source src="clips/remind.webm" type="video/webm"><source src="clips/remind.mp4" type="video/mp4"></video></div><figcaption><b>맡긴 일 리마인드</b>며칠째인지 보고, 문구는 복사해서 카톡에.</figcaption></figure>
       <figure class="tile" data-clip="weekly"><div class="ph"><video muted loop playsinline preload="none" poster="clips/weekly.webp"><source src="clips/weekly.webm" type="video/webm"><source src="clips/weekly.mp4" type="video/mp4"></video></div><figcaption><b>주간 검토</b>질문에 답하며 머리 비우기.</figcaption></figure>
     </div>
-    <div class="dots" role="tablist" aria-label="영상 고르기"></div>
+    <div class="carctl"><div class="dots" role="tablist" aria-label="영상 고르기"></div><button type="button" class="pause" aria-pressed="false">자동 재생 멈춤</button></div>
   </section>
 
   <!-- C8 벤토 그리드 -->
@@ -220,11 +227,11 @@
       </div>
       <div class="b b-dark" data-reveal>
         <h3>다크 모드</h3>
-        <div class="dm" aria-hidden="true"><img src="assets/v3/home-light.webp" alt="" loading="lazy" width="585" height="1266"><img class="d" src="assets/v3/home-dark.webp" alt="" loading="lazy" width="585" height="1266"></div>
+        <div class="dm"><img src="assets/v3/home-light.webp" alt="밝은 화면의 오늘 할 일" loading="lazy" width="585" height="1266"><img class="d" src="assets/v3/home-dark.webp" alt="다크 모드로 바뀐 같은 화면" loading="lazy" width="585" height="1266"></div>
       </div>
       <div class="b b-pc" data-reveal>
         <h3>PC에서도, 휴대폰에서도</h3>
-        <div class="pcm" aria-hidden="true"><img src="assets/v3/pc.webp" alt="" loading="lazy" width="1280" height="820"><img class="ph2" src="assets/v3/home-light.webp" alt="" loading="lazy" width="585" height="1266"></div>
+        <div class="pcm"><img src="assets/v3/pc.webp" alt="PC 웹 화면의 오늘 할 일" loading="lazy" width="1280" height="820"><img class="ph2" src="assets/v3/home-light.webp" alt="휴대폰 화면의 오늘 할 일" loading="lazy" width="585" height="1266"></div>
         <p>휴대폰은 홈 화면에 추가하면 앱처럼.</p>
       </div>
       <div class="b b-sheet" data-reveal>
@@ -234,10 +241,17 @@
       </div>
       <div class="b b-wait" data-reveal>
         <h3>맡긴 일 · <span class="dcount">1</span>일째</h3>
+        <div class="wtmini" aria-hidden="true">
+          <div class="wr"><i class="av">김</i><div><b>신규 입사자 계정 발급 요청</b><span>김대리 · <em class="dcount2">1</em>일째</span></div></div>
+          <span class="copy-chip">리마인드 문구 복사</span><span class="copied">복사했어요 · 카톡에 붙여 넣기</span>
+        </div>
         <p>누구에게, 며칠째인지. 리마인드 문구는 복사해서 보내요.</p>
       </div>
       <div class="b b-star" data-reveal>
         <h3>★ 오늘 꼭 할 3가지</h3>
+        <ul class="stmini" aria-hidden="true">
+          <li><i>★</i>받은 메일함 정리</li><li><i>★</i>분기 보고서 초안 목차 쓰기</li><li><i>★</i>세무사님께 부가세 자료 일정 전화로 확인</li><li class="dim">주간회의 안건 3개 정리해서 공유</li>
+        </ul>
         <p>집중 모드 타이머, 오늘 마무리, 주간 검토 8단계.</p>
       </div>
     </div>
@@ -258,7 +272,6 @@
   <!-- C10 내 데이터 (시퀀스 ④) -->
   <section class="ch seq dark" id="c10" data-bg="#05050A" data-theme="dark" data-seq="zoom" style="--len: 150">
     <div class="stage">
-      <canvas class="seqc" aria-hidden="true"></canvas>
       <noscript><picture class="poster"><source media="(max-aspect-ratio: 1/1)" srcset="seq/zoom/m/0110.webp"><img src="seq/zoom/d/0110.webp" alt="휴대폰이 내 구글 드라이브 폴더 안에 들어 있는 모습"></picture></noscript>
       <div class="copy top-copy">
         <h2 class="big" data-split data-at="0.08">운영자도 못 봐요.</h2>
@@ -300,7 +313,7 @@
             <button type="button">회사 일</button><button type="button">개인 일</button><button type="button">둘 다</button>
           </div>
           <div class="hp" aria-hidden="true"><label>웹사이트<input name="website" tabindex="-1" autocomplete="off"></label></div>
-          <label class="agree"><input type="checkbox" name="agree" required><span><b>(필수)</b> 개인정보 수집·이용에 동의해요. 이메일·이름·하는 일을 사용 안내를 보내는 데만 써요. <a href="privacy.html">자세히</a></span></label>
+          <label class="agree"><input type="checkbox" name="agree" required><span><b>(필수)</b> 개인정보 수집·이용에 동의해요. 이메일·이름·하는 일을 사용 안내를 보내는 데만 써요. <a href="privacy.html">개인정보 처리방침 보기</a></span></label>
           <label class="agree"><input type="checkbox" name="marketing"><span>(선택) 새 버전·활용 팁 소식을 받을게요.</span></label>
           <button class="submit" type="submit">무료로 시작하기</button>
           <p class="msg" id="fMsg" role="status" aria-live="polite"></p>
@@ -332,7 +345,7 @@
     </div>
     <footer class="foot">
       <p><b>내 업무관리 키트</b> · 구글 시트로 만든 무료 개인 업무관리 앱</p>
-      <p><a href="privacy.html">개인정보 처리방침</a> · <a href="https://kkokio88-creator.github.io/my-task-kit/help.html">도움말</a></p>
+      <p><a href="privacy.html">개인정보 처리방침</a> · <a href="my-task-kit/help.html">도움말</a></p>
     </footer>
   </section>
 </main>
