@@ -501,6 +501,11 @@
     tiles.forEach(function (t, i) { gsap.fromTo(t, { y: 30 + (i % 2) * 40 }, { y: -(10 + (i % 2) * 40), ease: 'none', scrollTrigger: { trigger: t.parentNode, start: 'top bottom', end: 'bottom top', scrub: true } }); });
   })();
 
+  // ── 먼저 써 본 분들의 말: 차례로 떠올라 떠다닌다 ──
+  $$('[data-vb]').forEach(function (el) {
+    ScrollTrigger.create({ trigger: el.parentNode, start: 'top 78%', onEnter: function () { el.classList.add('on'); }, onLeaveBack: function () { el.classList.remove('on'); } });
+  });
+
   // ── 이런 고민: 말풍선이 차례로 떠오르고 키트의 답이 이어진다 ──
   $$('[data-qa]').forEach(function (el, i) {
     ScrollTrigger.create({ trigger: el, start: 'top 78%', onEnter: function () { setTimeout(function () { el.classList.add('on'); }, i * 220); }, onLeaveBack: function () { el.classList.remove('on'); } });
@@ -581,7 +586,7 @@
         .catch(function (err) {
           msg.textContent = err && err.name !== 'AbortError' && err.message && !/fetch|network|JSON|Unexpected/i.test(err.message) ? err.message : '잠시 문제가 생겼어요. 조금 뒤 다시 시도해 주세요.';
         })
-        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '시트 사본 링크 받기'; });
+        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '평생 무료로 신청하기'; });
     });
     function done(r) {
       $('#sentH').textContent = r.again ? '이미 신청하셨어요.' : '메일함을 확인해 주세요.';

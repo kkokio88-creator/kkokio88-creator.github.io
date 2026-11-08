@@ -669,10 +669,15 @@ html:not(.js) .tray { width: 30vw; }
 .js [data-qa].on .ask, .js [data-qa].on .ans { opacity: 1; transform: none; }
 @media (max-width: 900px) { .qas { grid-template-columns: 1fr; max-width: 520px; gap: 34px; } }
 
-/* C11 구글로 시작하기 (v2 앱) — 지우지 말 것: 홈페이지의 주 시작 버튼 */
-.su-head .gstart { display: inline-flex; align-items: center; justify-content: center; gap: 12px; margin-top: 22px; min-height: 60px; padding: 0 30px; border-radius: 18px; background: #fff; color: #1F1F1F; border: 1px solid #DADCE0; font-size: 18px; font-weight: 800; text-decoration: none; box-shadow: 0 14px 34px rgba(60, 60, 140, .16); }
-.su-head .gstart:hover { box-shadow: 0 18px 40px rgba(60, 60, 140, .24); }
-.su-head .gstart:focus-visible { outline: 3px solid #5B5CF6; outline-offset: 3px; }
-.su-head .gfine, .su-head .gor { padding: 0 16px; }
-.su-head .gfine { margin-top: 12px; font-size: 14px; color: #6B7684; }
-.su-head .gor { margin: 26px auto 0; max-width: 520px; font-size: 14.5px; color: #8B95A1; }
+/* ══ 먼저 써 본 분들의 말: 떠다니는 말풍선 ══ */
+.voices { padding: 10vh 0 6vh; background: #fff; text-align: center; }
+.vbs { list-style: none; margin: 56px auto 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; gap: 22px; flex-wrap: wrap; max-width: 1100px; }
+.vb { position: relative; max-width: 320px; }
+.vb p { margin: 0; padding: 24px 26px; border-radius: 26px; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(120deg, #8B8CFF, #FF8FCF, #7FDDF5) border-box; border: 1.5px solid transparent; box-shadow: 0 22px 50px rgba(40, 40, 120, .14); font-size: clamp(18px, 1.5vw, 21px); font-weight: 700; line-height: 1.5; letter-spacing: -0.02em; word-break: keep-all; text-align: left; }
+.vb::after { content: ''; position: absolute; left: 34px; bottom: -9px; width: 18px; height: 18px; background: #fff; border-right: 1.5px solid #C9B9F5; border-bottom: 1.5px solid #C9B9F5; transform: rotate(45deg); }
+.vb:nth-child(2) { margin-top: 40px; } .vb:nth-child(2)::after { left: auto; right: 34px; }
+.js [data-vb] { opacity: 0; transform: translateY(30px) scale(.92); transition: opacity .7s var(--expo), transform .9s var(--spring); transition-delay: calc(var(--d) * .18s); }
+.js [data-vb].on { opacity: 1; transform: none; animation: bob 5s ease-in-out calc(1s + var(--d) * .6s) infinite; }
+@keyframes bob { 50% { transform: translateY(-8px); } }
+.vb-note { margin: 34px 0 0; font-size: 13px; color: var(--t3); }
+@media (max-width: 760px) { .vbs { flex-direction: column; align-items: stretch; gap: 26px; } .vb { max-width: none; } .vb:nth-child(2) { margin-top: 0; align-self: flex-end; } }
