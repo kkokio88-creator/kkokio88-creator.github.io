@@ -271,7 +271,7 @@
     }
     return function (p) {
       var vw = innerWidth, vh = innerHeight, tw = trackEl.offsetWidth, hw = parseFloat(getComputedStyle(trackEl).getPropertyValue('--hw')) / 100 * vw;
-      var x = (0.1 * vw - 7 * hw) * ease(seg(p, 0.03, 0.86)); // 16시가 가운데 올 때까지
+      var x = (0.45 * vw - 8 * hw) * ease(seg(p, 0.03, 0.86)); // 끝에서 17:00 눈금이 화면 85% 자리에 오도록(잘리지 않게)
       trackEl.style.transform = 'translate3d(' + x + 'px,0,0)';
       var hr = clamp(9 + (vw * 0.5 - (vw * 0.4 + x)) / hw, 9, 17);
       var hh = Math.floor(hr), mm = Math.floor((hr - hh) * 60 / 10) * 10;
@@ -392,7 +392,8 @@
       if (card.classList.contains('open')) return;
       card.classList.add('open');
       gsap.fromTo(more, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.9, ease: 'expo.out', clearProps: 'height' });
-      gsap.from($$('.more > *', form), { y: 14, opacity: 0, duration: 0.8, ease: 'expo.out', stagger: 0.04, delay: 0.1 });
+      // 시작·끝 값을 둘 다 적고 끝나면 인라인 스타일을 지운다(버튼이 opacity 0에 멈춰 남던 문제)
+      gsap.fromTo($$('.more > *', form), { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'expo.out', stagger: 0.04, delay: 0.1, clearProps: 'transform,opacity,translate,rotate,scale' });
     }
     gsap.from(form, { scale: 0.9, y: 40, opacity: 0, duration: 1.1, ease: 'expo.out', scrollTrigger: { trigger: card, start: 'top 85%' } });
     ScrollTrigger.create({ trigger: card, start: 'top 62%', once: true, onEnter: function () { setTimeout(open, 250); } });
@@ -428,9 +429,19 @@
     });
     function done(r) {
       $('#sentH').textContent = r.again ? '이미 신청하셨어요.' : '메일함을 확인해 주세요.';
-      $('#sentP').textContent = r.ready ? '방금 보낸 메일의 ‘내 시트 만들기’ 버튼을 누르면 5분 안에 시작할 수 있어요.' : '첫 사용자분들께 차례로 열어 드리고 있어요. 준비되면 이 주소로 내 시트 만들기 링크를 바로 보내 드릴게요.';
+      $('#sentP').textContent = !r.ready ? '첫 사용자분들께 차례로 열어 드리고 있어요. 준비되면 이 주소로 내 시트 만들기 링크를 바로 보내 드릴게요.'
+        : r.again ? '메일함에서 ‘내 시트 만들기 링크’ 메일을 찾아 버튼을 누르세요. 스팸함도 확인해 주세요.'
+        : '방금 보낸 메일의 ‘내 시트 만들기’ 버튼을 누르면 5분 안에 시작할 수 있어요.';
       card.classList.add('fly');
-      setTimeout(function () { form.hidden = true; var s = $('#sent'); s.hidden = false; gsap.from(s, { scale: 0.85, opacity: 0, duration: 0.9, ease: 'expo.out' }); confetti(150); }, 750);
+      setTimeout(function () {
+        form.hidden = true; var s = $('#sent'); s.hidden = false;
+        // 긴 폼이 작은 완료 카드로 바뀌며 페이지가 짧아지므로, 완료 카드가 화면 가운데 오도록 옮긴다
+        ScrollTrigger.refresh();
+        var y = s.getBoundingClientRect().top + scrollY - Math.max(80, (innerHeight - s.offsetHeight) / 2);
+        if (lenis) lenis.scrollTo(y, { duration: 0.8 }); else scrollTo({ top: y, behavior: 'smooth' });
+        s.focus({ preventScroll: true });
+        gsap.from(s, { scale: 0.85, opacity: 0, duration: 0.9, ease: 'expo.out' }); confetti(150);
+      }, 750);
     }
   })();
 
