@@ -439,7 +439,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "내 업무관리 키트", version: "1.6.0" };
+  var KIT = { name: "내 업무관리 키트", version: "1.6.1" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -588,8 +588,16 @@
     t.classList.toggle('act', !!(undo || retry));
     if (retry) { var rb = document.createElement('button'); rb.className = 'undo'; rb.textContent = '다시 시도'; rb.onclick = function () { t.classList.remove('on'); retry(); }; t.appendChild(rb); }
     if (undo) {
+      // 되돌리기 토스트는 동작 결과(setView)보다 먼저 뜬다 → 지금 data가 '동작 전 화면'이다.
+      // 누르면 서버 응답(수 초)을 기다리지 않고 그 화면을 바로 다시 그린다. 그 사이 다른 변경이 있었으면 건너뛴다.
+      var before = data, genAt = viewGen;
       var b = document.createElement('button'); b.className = 'undo'; b.textContent = '되돌리기';
-      b.onclick = function () { t.classList.remove('on'); call('undoTask', undo).then(function (r) { toast('되돌렸어요'); setView(r.view); if (!undoShown(undo)) load(); }).catch(function (e) { toast(e.message); }); };
+      b.onclick = function () {
+        t.classList.remove('on');
+        if (before && viewGen === genAt + 1) { data = before; viewGen++; renderToday(); }
+        call('undoTask', undo).then(function (r) { toast('되돌렸어요'); setView(r.view); if (!undoShown(undo)) load(); })
+          .catch(function (e) { toast(e.message); load(); });
+      };
       t.appendChild(b);
     }
     t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('on'); }, undo || retry ? 6500 : 1800);
@@ -614,11 +622,18 @@
     return !due || todayList(data).some(function (t) { return t.id === u.id; });
   }
   var prefetched = false; // 처음 받은 뒤 한 번: 캘린더(이번 달·이번 주)·모든 할 일을 미리 받아 두어 탭을 열면 바로 보이게
-  function load() {
+  // 앱을 막 열 때(앱스크립트가 깨어나는 중·휴대폰 네트워크 전환)는 첫 요청이 잠깐 실패하기 쉽다.
+  // 저장본 화면이 떠 있으면 조용히 한 번 더 받아 보고, 그래도 안 될 때만 알린다. 링크 문제는 다시 시도하지 않는다.
+  function load(retried) {
     $('date').classList.add('syncing');
     var gen = viewGen;
     return call('getAppData').then(function (d) { $('date').classList.remove('syncing'); if (viewGen === gen || !data) setView(d); if (outbox.length) flushOutbox(); if (!prefetched) { prefetched = true; setTimeout(function () { prefetchCal(); prefetchAll(); }, 2500); } })
-      .catch(function (e) { $('date').classList.remove('syncing'); if (data) toast('새로고침 실패'); else $('todayA').innerHTML = '<div class="card" style="margin-top:14px"><div class="empty">' + tile('bell', 'red') + '<br>' + esc(e.message) + '</div></div>'; });
+      .catch(function (e) {
+        if (!retried && e && e.kind !== 'link') return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return load(true); });
+        $('date').classList.remove('syncing');
+        if (data) { if (!(e && e.kind === 'link')) toast('최신 내용을 받지 못했어요', null, function () { load(); }); }
+        else $('todayA').innerHTML = '<div class="card" style="margin-top:14px"><div class="empty">' + tile('bell', 'red') + '<br>' + esc(e.message) + '</div></div>';
+      });
   }
 
   document.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { go(b.getAttribute('data-go')); }); });

@@ -216,7 +216,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: '내 업무관리 키트',
-  VERSION: '1.6.0',       // 코드 버전 (화면 표시용)
+  VERSION: '1.6.1',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 5,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
