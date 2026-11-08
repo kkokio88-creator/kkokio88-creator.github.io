@@ -557,7 +557,7 @@
         .catch(function (err) {
           msg.textContent = err && err.name !== 'AbortError' && err.message && !/fetch|network|JSON|Unexpected/i.test(err.message) ? err.message : '잠시 문제가 생겼어요. 조금 뒤 다시 시도해 주세요.';
         })
-        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '무료로 시작하기'; });
+        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '시트 사본 링크 받기'; });
     });
     function done(r) {
       $('#sentH').textContent = r.again ? '이미 신청하셨어요.' : '메일함을 확인해 주세요.';
