@@ -697,3 +697,19 @@ html:not(.js) .tray { width: 30vw; }
 .su-head .gfine, .su-head .gor { padding: 0 16px; }
 .su-head .gfine { margin-top: 12px; font-size: 14px; color: #6B7684; }
 .su-head .gor { margin: 26px auto 0; max-width: 520px; font-size: 14.5px; color: #8B95A1; }
+
+/* ══ 폰 목업: 얇은 베젤, 화면 안 잘리게 ══
+   테두리가 두꺼우면 안쪽 화면 비율이 달라져 cover 맞춤에서 가장자리가 잘리고, 큰 모서리가 날짜·탭을 깎는다.
+   → 베젤 4px(휴대폰 3px), 화면은 contain(앱 배경색과 같은 바탕), 모서리는 내용을 깎지 않을 만큼만. */
+.sort-phone { padding: 4px; border-radius: 34px; background: #0f1015; box-shadow: 0 40px 90px rgba(17, 24, 39, .22), inset 0 0 0 1px #2a2b33; }
+.scr { border-radius: 30px; background: #F4F5F7; }
+.scr img { object-fit: contain; }
+.hl-sticky .ph { border-radius: 34px; background: #0f1015; }
+.dv { left: 4px; top: 4px; width: calc(100% - 8px); height: calc(100% - 8px); border-radius: 30px; object-fit: contain; background: #F4F5F7; }
+.hp-panel .ph { padding: 4px; border-radius: 34px; background: #0f1015; }
+.hp-panel video { border-radius: 30px; object-fit: contain; background: #F4F5F7; }
+.pcm .ph2 { border-width: 2px; border-radius: 14px; }
+@media (max-width: 760px), (max-aspect-ratio: 1/1) {
+  .sort-phone { padding: 3px; border-radius: 26px; } .scr { border-radius: 23px; }
+  .hp-panel .ph { padding: 3px; border-radius: 26px; } .hp-panel video { border-radius: 23px; }
+}
