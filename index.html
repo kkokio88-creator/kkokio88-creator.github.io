@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preload" as="image" href="seq/hero/d/0001.webp" media="(min-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="seq/hero/m/0001.webp" media="(max-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="v3.css?v=934c855a">
+<link rel="stylesheet" href="v3.css?v=432a890d">
 <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
@@ -61,7 +61,7 @@
   </section>
 
   <!-- C2 카드가 떠오른다 (시퀀스 ②) -->
-  <section class="ch seq dark" id="c2" data-bg="#0B1030" data-theme="dark" data-seq="card" style="--len: 150">
+  <section class="ch seq dark" id="c2" data-bg="#0B1030" data-theme="dark" data-seq="card" style="--len: 230">
     <div class="stage">
       <noscript><picture class="poster"><source media="(max-aspect-ratio: 1/1)" srcset="seq/card/m/0060.webp"><img src="seq/card/d/0120.webp" alt="휴대폰 화면 위로 떠오른 유리 할 일 카드: 팀장님께 보고서 초안 보내기"></picture></noscript>
       <div class="copy top-copy">
@@ -90,55 +90,44 @@
     </div>
   </section>
 
-  <!-- C4 카드의 여행 (가로 핀) -->
-  <section class="ch light journey" id="c4" data-bg="#FFFFFF" data-theme="light" style="--len: 300">
+  <!-- C4 떠오른 일이 정리되는 과정 (고정, 실제 앱 화면) -->
+  <section class="ch light sort" id="c4" data-bg="#FFFFFF" data-theme="light" style="--len: 390">
     <div class="stage">
-      <div class="rail" aria-hidden="true"><i class="rail-fill"></i>
-        <span style="--x:0">담기</span><span style="--x:1">해야 할 일인가요?</span><span style="--x:2">어떻게 할까요?</span><span style="--x:3">오늘 ★</span>
-      </div>
-      <div class="track">
-        <article class="panel" data-st="1">
-          <p class="st-no">정류장 1</p>
-          <h3>담기</h3>
-          <p class="st-q">떠오른 그대로 한 줄.</p>
-          <figure class="vis vis-input"><img src="assets/v3/input.webp" alt="실제 앱의 입력칸: 떠오르는 일을 적어 보세요" loading="lazy" width="748" height="200"></figure>
-        </article>
-        <article class="panel" data-st="2">
-          <p class="st-no">정류장 2</p>
-          <h3>해야 할 일인가요?</h3>
-          <p class="st-q">아니라면 버리거나, 언젠가, 참고로.</p>
-          <div class="trays">
-            <div class="tray"><b>버리기</b><div class="mini m1">광고 메일 확인</div></div>
-            <div class="tray"><b>언젠가</b><div class="mini m2">엑셀 피벗테이블 제대로 배우기</div></div>
-            <div class="tray"><b>참고</b><div class="mini m3">회의실 와이파이 비번</div></div>
-          </div>
-        </article>
-        <article class="panel" data-st="3">
-          <p class="st-no">정류장 3</p>
-          <h3>어떻게 할까요?</h3>
-          <p class="st-q">2분이면 바로 끝내고, 아니면 네 갈래.</p>
-          <div class="fork">
-            <svg class="fork-lines" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M0 0 C 150 0, 190 30, 400 30"/><path d="M0 0 C 150 0, 190 110, 400 110"/>
-              <path d="M0 0 C 150 0, 190 190, 400 190"/><path d="M0 0 C 150 0, 190 270, 400 270"/>
-            </svg>
-            <ul class="fork-opts"><li class="pick" style="--y:10">내가 할 일</li><li style="--y:36.7">날짜 정하기</li><li style="--y:63.3">맡기기</li><li style="--y:90">여러 단계예요</li></ul>
-          </div>
-        </article>
-        <article class="panel" data-st="4">
-          <p class="st-no">정류장 4</p>
-          <h3>오늘은 이것만.</h3>
-          <p class="st-q">★ 꼭 할 3가지만 고르면 하루가 가벼워요.</p>
-          <figure class="vis vis-today"><img src="assets/v3/today.webp" alt="실제 앱의 오늘 할 일 목록" loading="lazy" width="748" height="996"></figure>
-        </article>
-      </div>
-      <div class="tcard" aria-hidden="true">
-        <div class="tcard-in">
-          <div class="face front"><i class="ck"></i><div><em class="tag">수집함</em><p>팀장님께 보고서 초안 보내기</p></div></div>
-          <div class="face back"><p class="q">해야 할 일인가요?</p><div class="yn"><span class="yes">네, 해야 해요</span><span>아니요</span></div></div>
+      <ol class="steps" aria-label="정리 단계">
+        <li data-s="0"><b>1</b>담기</li><li data-s="1"><b>2</b>거르기</li><li data-s="2"><b>3</b>정하기</li><li data-s="3"><b>4</b>오늘 할 일</li>
+      </ol>
+      <div class="sort-phone">
+        <div class="scr">
+          <img data-k="type" src="assets/v3/flow/type.webp" alt="입력칸에 팀장님께 보고서 초안 보내기를 적는 화면" width="780" height="1688">
+          <img data-k="drop-ask" src="assets/v3/flow/drop-ask.webp" alt="수집함: 광고 메일 확인, 해야 할 일인가요?" width="780" height="1688">
+          <img data-k="drop-no" src="assets/v3/flow/drop-no.webp" alt="그럼 어디에 둘까요? 버리기·언젠가 할지도·참고로 보관" width="780" height="1688" loading="lazy">
+          <img data-k="drop-drop" src="assets/v3/flow/drop-drop.webp" alt="버렸어요. 다음 카드 독서 모임 알아보기" width="780" height="1688" loading="lazy">
+          <img data-k="someday-no" src="assets/v3/flow/someday-no.webp" alt="그럼 어디에 둘까요?" width="780" height="1688" loading="lazy">
+          <img data-k="someday-someday" src="assets/v3/flow/someday-someday.webp" alt="언젠가로 옮겼어요. 다음 카드 회의실 와이파이 비번" width="780" height="1688" loading="lazy">
+          <img data-k="ref-no" src="assets/v3/flow/ref-no.webp" alt="그럼 어디에 둘까요?" width="780" height="1688" loading="lazy">
+          <img data-k="ref-ref" src="assets/v3/flow/ref-ref.webp" alt="참고로 보관했어요. 다음 카드 택배 반품 신청" width="780" height="1688" loading="lazy">
+          <img data-k="now-now" src="assets/v3/flow/now-now.webp" alt="끝! 잘했어요. 다음 카드 팀장님께 보고서 초안 보내기" width="780" height="1688" loading="lazy">
+          <img data-k="hero-yes" src="assets/v3/flow/hero-yes.webp" alt="어떻게 할까요? 내가 할 일·날짜 정하기·맡기기·여러 단계예요" width="780" height="1688" loading="lazy">
+          <img data-k="hero-sched" src="assets/v3/flow/hero-sched.webp" alt="언제 할까요? 오늘·내일·이번 주말" width="780" height="1688" loading="lazy">
+          <img data-k="hero-done" src="assets/v3/flow/hero-done.webp" alt="수집함이 비었어요. 머릿속이 가벼워졌어요" width="780" height="1688" loading="lazy">
+          <img data-k="today-star" src="assets/v3/flow/today-star.webp" alt="오늘 할 일 맨 위에 ★ 팀장님께 보고서 초안 보내기" width="780" height="1688" loading="lazy">
+          <i class="tapdot" aria-hidden="true"></i>
         </div>
-        <span class="star">★</span>
       </div>
+      <div class="sort-copy">
+        <div class="sc" data-s="0"><h3>떠오르면, 한 줄.</h3><p>판단은 나중에. 입력칸에 적으면 수집함에 모여요.</p></div>
+        <div class="sc" data-s="1"><h3>해야 할 일인가요?</h3><p>아니라면 버리거나, 언젠가로, 참고로. 2분이면 그 자리에서 끝내요.</p></div>
+        <div class="sc" data-s="2"><h3>어떻게 할까요?</h3><p>내가 할지, 날짜를 정할지, 맡길지, 여러 단계인지 한 번에 골라요.</p></div>
+        <div class="sc" data-s="3"><h3>오늘 할 일로.</h3><p>수집함은 비고, 꼭 할 일엔 ★. 머릿속이 가벼워져요.</p></div>
+      </div>
+      <div class="bins" aria-label="정리된 곳">
+        <div class="bin" data-bin="drop"><b>버리기</b><span>필요 없는 일</span><ul></ul></div>
+        <div class="bin" data-bin="someday"><b>언젠가 할지도</b><span>지금은 아닌 일</span><ul></ul></div>
+        <div class="bin" data-bin="ref"><b>참고로 보관</b><span>할 일은 아닌 정보</span><ul></ul></div>
+        <div class="bin" data-bin="now"><b>바로 끝냄</b><span>2분이면 끝나는 일</span><ul></ul></div>
+        <div class="bin today" data-bin="today"><b>오늘 할 일</b><span>날짜를 정한 일</span><ul></ul></div>
+      </div>
+      <div class="flyc" aria-hidden="true"></div>
     </div>
   </section>
 
@@ -184,29 +173,47 @@
     </div>
   </section>
 
-  <!-- C7 하이라이트 캐러셀 -->
-  <section class="ch light hl" id="c7" data-bg="#FFFFFF" data-theme="light">
-    <div class="wrap">
-      <h2 class="big" data-split data-reveal>직접 보세요.</h2>
-      <p class="sub" data-reveal>실제 앱 화면을 그대로 녹화했어요. (예시 데이터)</p>
+  <!-- C7 직접 보세요: 휴대폰 하나씩, 가로로 -->
+  <section class="ch light hl" id="c7" data-bg="#FFFFFF" data-theme="light" style="--len: 620">
+    <div class="stage">
+      <div class="hl-head"><h2 class="mid">직접 보세요.</h2><p>실제 앱 화면 그대로예요.</p></div>
+      <div class="hl-track">
+        <article class="hp-panel">
+          <div class="ph"><video muted loop playsinline preload="none" poster="clips/capture.webp" aria-label="담기 실제 앱 화면 녹화"><source src="clips/capture.webm" type="video/webm"><source src="clips/capture.mp4" type="video/mp4"></video></div>
+          <div class="hp-txt"><p class="hp-no">1 / 6</p><h3>담기</h3><p>떠오르면 입력칸에 한 줄, 엔터.</p></div>
+        </article>
+        <article class="hp-panel">
+          <div class="ph"><video muted loop playsinline preload="none" poster="clips/inbox.webp" aria-label="두 번 누르면 정리 실제 앱 화면 녹화"><source src="clips/inbox.webm" type="video/webm"><source src="clips/inbox.mp4" type="video/mp4"></video></div>
+          <div class="hp-txt"><p class="hp-no">2 / 6</p><h3>두 번 누르면 정리</h3><p>수집함에서 "네" → "내가 할 일".</p></div>
+        </article>
+        <article class="hp-panel">
+          <div class="ph"><video muted loop playsinline preload="none" poster="clips/swipe.webp" aria-label="밀면 끝 실제 앱 화면 녹화"><source src="clips/swipe.webm" type="video/webm"><source src="clips/swipe.mp4" type="video/mp4"></video></div>
+          <div class="hp-txt"><p class="hp-no">3 / 6</p><h3>밀면 끝</h3><p>오른쪽으로 한 번 밀면 완료.</p></div>
+        </article>
+        <article class="hp-panel">
+          <div class="ph"><video muted loop playsinline preload="none" poster="clips/timeline.webp" aria-label="시간표 → 캘린더 실제 앱 화면 녹화"><source src="clips/timeline.webm" type="video/webm"><source src="clips/timeline.mp4" type="video/mp4"></video></div>
+          <div class="hp-txt"><p class="hp-no">4 / 6</p><h3>시간표 → 캘린더</h3><p>빈 시간에 배치하고, 그대로 구글 캘린더에.</p></div>
+        </article>
+        <article class="hp-panel">
+          <div class="ph"><video muted loop playsinline preload="none" poster="clips/remind.webp" aria-label="맡긴 일 리마인드 실제 앱 화면 녹화"><source src="clips/remind.webm" type="video/webm"><source src="clips/remind.mp4" type="video/mp4"></video></div>
+          <div class="hp-txt"><p class="hp-no">5 / 6</p><h3>맡긴 일 리마인드</h3><p>며칠째인지 보고, 문구는 복사해서 카톡에.</p></div>
+        </article>
+        <article class="hp-panel">
+          <div class="ph"><video muted loop playsinline preload="none" poster="clips/weekly.webp" aria-label="주간 검토 실제 앱 화면 녹화"><source src="clips/weekly.webm" type="video/webm"><source src="clips/weekly.mp4" type="video/mp4"></video></div>
+          <div class="hp-txt"><p class="hp-no">6 / 6</p><h3>주간 검토</h3><p>질문에 답하며 머리 비우기.</p></div>
+        </article>
+      </div>
+      <div class="hl-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
-    <div class="car" tabindex="0" aria-label="기능 하이라이트 영상">
-      <figure class="tile" data-clip="capture"><div class="ph"><video muted loop playsinline preload="none" poster="clips/capture.webp"><source src="clips/capture.webm" type="video/webm"><source src="clips/capture.mp4" type="video/mp4"></video></div><figcaption><b>담기</b>떠오르면 입력칸에 한 줄, 엔터.</figcaption></figure>
-      <figure class="tile" data-clip="inbox"><div class="ph"><video muted loop playsinline preload="none" poster="clips/inbox.webp"><source src="clips/inbox.webm" type="video/webm"><source src="clips/inbox.mp4" type="video/mp4"></video></div><figcaption><b>수집함 정리</b>두 번 누르면 정리 끝.</figcaption></figure>
-      <figure class="tile" data-clip="swipe"><div class="ph"><video muted loop playsinline preload="none" poster="clips/swipe.webp"><source src="clips/swipe.webm" type="video/webm"><source src="clips/swipe.mp4" type="video/mp4"></video></div><figcaption><b>옆으로 밀어 완료</b>오른쪽으로 한 번이면 끝.</figcaption></figure>
-      <figure class="tile" data-clip="timeline"><div class="ph"><video muted loop playsinline preload="none" poster="clips/timeline.webp"><source src="clips/timeline.webm" type="video/webm"><source src="clips/timeline.mp4" type="video/mp4"></video></div><figcaption><b>시간표 → 캘린더</b>빈 시간에 배치하고, 그대로 캘린더에.</figcaption></figure>
-      <figure class="tile" data-clip="remind"><div class="ph"><video muted loop playsinline preload="none" poster="clips/remind.webp"><source src="clips/remind.webm" type="video/webm"><source src="clips/remind.mp4" type="video/mp4"></video></div><figcaption><b>맡긴 일 리마인드</b>며칠째인지 보고, 문구는 복사해서 카톡에.</figcaption></figure>
-      <figure class="tile" data-clip="weekly"><div class="ph"><video muted loop playsinline preload="none" poster="clips/weekly.webp"><source src="clips/weekly.webm" type="video/webm"><source src="clips/weekly.mp4" type="video/mp4"></video></div><figcaption><b>주간 검토</b>질문에 답하며 머리 비우기.</figcaption></figure>
-    </div>
-    <div class="carctl"><div class="dots" role="tablist" aria-label="영상 고르기"></div><button type="button" class="pause" aria-pressed="false">자동 재생 멈춤</button></div>
   </section>
 
-  <!-- C8 벤토 그리드 -->
+  <!-- C8 알아서 챙겨 주는 네 가지 -->
   <section class="ch gray bento-sec" id="c8" data-bg="#F4F5F7" data-theme="light">
     <div class="wrap">
-      <h2 class="big" data-split data-reveal>하루와 한 주가 다 들어 있어요.</h2>
+      <h2 class="big" data-split data-reveal>알아서 챙겨 줘요.</h2>
+      <p class="sub" data-reveal>캘린더, 반복 업무, 맡긴 일, 한 주 돌아보기까지.</p>
     </div>
-    <div class="bento">
+    <div class="bento four">
       <div class="b b-cal" data-reveal>
         <h3>캘린더 사이에 쏙</h3>
         <div class="wkmini" aria-hidden="true">
@@ -220,25 +227,6 @@
         <div class="rtmini" aria-hidden="true"><div class="r r1"><i></i>받은 메일함 정리<span>평일</span></div><div class="r r2"><i></i>받은 메일함 정리<span>내일</span></div></div>
         <p>매일 · 평일 · 매주 월 · 매월 말일. 끝내면 다음 회차가 생겨요.</p>
       </div>
-      <div class="b b-mail" data-reveal>
-        <h3>나에게만 오는 메일</h3>
-        <div class="env" aria-hidden="true"><i class="flap"></i><i class="paper">주간 검토</i></div>
-        <p>금요일 주간 검토 메일, 평일 아침 브리핑.</p>
-      </div>
-      <div class="b b-dark" data-reveal>
-        <h3>다크 모드</h3>
-        <div class="dm"><img src="assets/v3/home-light.webp" alt="밝은 화면의 오늘 할 일" loading="lazy" width="585" height="1266"><img class="d" src="assets/v3/home-dark.webp" alt="다크 모드로 바뀐 같은 화면" loading="lazy" width="585" height="1266"></div>
-      </div>
-      <div class="b b-pc" data-reveal>
-        <h3>PC에서도, 휴대폰에서도</h3>
-        <div class="pcm"><img src="assets/v3/pc.webp" alt="PC 웹 화면의 오늘 할 일" loading="lazy" width="1280" height="820"><img class="ph2" src="assets/v3/home-light.webp" alt="휴대폰 화면의 오늘 할 일" loading="lazy" width="585" height="1266"></div>
-        <p>휴대폰은 홈 화면에 추가하면 앱처럼.</p>
-      </div>
-      <div class="b b-sheet" data-reveal>
-        <h3>시트는 그대로</h3>
-        <div class="sh" aria-hidden="true"><div class="col">제목</div><div class="col">상태</div><div class="col">마감</div><div class="col new">새 열</div></div>
-        <p>업데이트해도 열을 더할 뿐, 지우지 않아요.</p>
-      </div>
       <div class="b b-wait" data-reveal>
         <h3>맡긴 일 · <span class="dcount">1</span>일째</h3>
         <div class="wtmini" aria-hidden="true">
@@ -247,88 +235,100 @@
         </div>
         <p>누구에게, 며칠째인지. 리마인드 문구는 복사해서 보내요.</p>
       </div>
-      <div class="b b-star" data-reveal>
-        <h3>★ 오늘 꼭 할 3가지</h3>
-        <ul class="stmini" aria-hidden="true">
-          <li><i>★</i>받은 메일함 정리</li><li><i>★</i>분기 보고서 초안 목차 쓰기</li><li><i>★</i>세무사님께 부가세 자료 일정 전화로 확인</li><li class="dim">주간회의 안건 3개 정리해서 공유</li>
-        </ul>
-        <p>집중 모드 타이머, 오늘 마무리, 주간 검토 8단계.</p>
+      <div class="b b-mail" data-reveal>
+        <h3>금요일엔 한 주 돌아보기</h3>
+        <div class="env" aria-hidden="true"><i class="flap"></i><i class="paper">주간 검토</i></div>
+        <p>금요일 주간 검토 메일과 평일 아침 브리핑이 나에게만 와요.</p>
       </div>
     </div>
   </section>
 
-  <!-- C9 숫자 -->
-  <section class="ch light nums" id="c9" data-bg="#FFFFFF" data-theme="light">
+  <!-- C9 누구나 무료 -->
+  <section class="ch light free" id="c9" data-bg="#FFFFFF" data-theme="light">
     <div class="wrap">
-      <ul class="numgrid">
-        <li data-reveal><b><span class="cu" data-to="1">1</span>번</b><span>옆으로 밀어 끝내기<sup>¹</sup></span></li>
-        <li data-reveal><b><span class="cu" data-to="2">2</span>번</b><span>떠오른 일 담기<sup>¹</sup></span></li>
-        <li data-reveal><b><span class="cu" data-to="0">0</span>원</b><span>무료, 가입 없음</span></li>
-        <li data-reveal><b><span class="cu" data-to="0">0</span>대</b><span>운영자 서버</span></li>
+      <h2 class="big" data-split data-reveal>신청하면, 누구나 무료.</h2>
+      <p class="sub" data-reveal>결제 정보도, 회원가입도 없어요. 신청하면 <b>내 시트 만들기 링크</b>를 메일로 보내 드려요.</p>
+      <ul class="freelist">
+        <li data-reveal><b>0원</b><span>개인은 무료로 써요</span></li>
+        <li data-reveal><b>구글 계정 하나</b><span>따로 가입할 필요 없어요</span></li>
+        <li data-reveal><b>5분</b><span>내 시트 사본 만들고 바로 시작</span></li>
       </ul>
+      <a class="bigcta" href="#c11" data-go data-reveal>무료로 신청하기</a>
     </div>
   </section>
 
   <!-- C10 내 데이터 (시퀀스 ④) -->
-  <section class="ch seq dark" id="c10" data-bg="#05050A" data-theme="dark" data-seq="zoom" style="--len: 150">
+  <section class="ch seq dark" id="c10" data-bg="#05050A" data-theme="dark" data-seq="zoom" style="--len: 210">
     <div class="stage">
       <noscript><picture class="poster"><source media="(max-aspect-ratio: 1/1)" srcset="seq/zoom/m/0110.webp"><img src="seq/zoom/d/0110.webp" alt="휴대폰이 내 구글 드라이브 폴더 안에 들어 있는 모습"></picture></noscript>
       <div class="copy top-copy">
         <h2 class="big" data-split data-at="0.08">운영자도 못 봐요.</h2>
         <p class="big2" data-at="0.5">서버가 없거든요.</p>
       </div>
-      <div class="net" data-at="0.7">
-        <svg viewBox="0 0 600 120" aria-hidden="true">
-          <path class="ln l1" d="M120 60 H 250"/><path class="ln l2" d="M350 60 H 480"/>
-          <path class="strike" d="M470 30 L 590 90"/>
-        </svg>
-        <div class="node n1">내 휴대폰</div><div class="node n2">내 구글 계정<small>내 시트</small></div><div class="node n3">운영자 서버</div>
+      <div class="trust-dim" data-at="0.6" aria-hidden="true"></div>
+      <div class="trust" data-at="0.62">
+        <div class="tn t1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg><b>내 휴대폰·PC</b><span>화면만 보여 줘요</span></div>
+        <div class="tl tl1" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="tn t2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 12h8M8 15h5"/></svg><b>내 구글 드라이브</b><span>할 일은 여기에만 저장돼요</span></div>
+        <div class="tl tl2" aria-hidden="true"><em>✕</em></div>
+        <div class="tn t3"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="7" rx="2"/><rect x="4" y="14" width="16" height="7" rx="2"/><path d="M8 6.5h.01M8 17.5h.01"/></svg><b>운영자 서버</b><span>없어요</span></div>
       </div>
-      <p class="fine" data-at="0.75">할 일은 내 구글 드라이브의 내 시트에만. 단, 내 휴대폰 링크를 남에게 주면 그 사람은 볼 수 있어요.</p>
+      <p class="trust-cap" data-at="0.72"><b>그래서 키트를 만든 사람도 내 할 일을 볼 수 없어요.</b><br>단, 내 휴대폰 링크를 남에게 주면 그 사람은 볼 수 있으니 혼자만 쓰세요.</p>
     </div>
   </section>
 
-  <!-- C11 신청 -->
-  <section class="ch light signup" id="c11" data-bg="#FFFFFF" data-theme="light">
-    <div class="wrap">
-      <h2 class="big" data-split data-reveal>당신의 첫 카드를 적어 보세요.</h2>
-      <p class="sub" data-reveal>신청하면 <b>내 시트 만들기 링크</b>를 메일로 보내 드려요. 무료예요.</p>
-    </div>
-    <div class="formcard" id="formcard">
-      <form id="signup" novalidate>
-        <div class="title-line">
-          <i class="ck" aria-hidden="true"></i>
-          <label class="sr" for="fEmail">이메일</label>
-          <input id="fEmail" name="email" type="email" inputmode="email" autocomplete="email" placeholder="이메일 주소를 적어 보세요" required>
-        </div>
-        <div class="more">
-          <label class="fl" for="fName">이름 <small>(선택)</small></label>
-          <input id="fName" name="name" autocomplete="name" maxlength="40" placeholder="뭐라고 불러 드릴까요?">
-          <p class="fl">하는 일 <small>(선택)</small></p>
-          <div class="chips" data-name="role">
-            <button type="button">직장인</button><button type="button">팀장</button><button type="button">1인 사업자</button><button type="button">프리랜서</button><button type="button">학생</button><button type="button">기타</button>
-          </div>
-          <p class="fl">어디에 쓰고 싶나요? <small>(선택)</small></p>
-          <div class="chips" data-name="use">
-            <button type="button">회사 일</button><button type="button">개인 일</button><button type="button">둘 다</button>
-          </div>
-          <div class="hp" aria-hidden="true"><label>웹사이트<input name="website" tabindex="-1" autocomplete="off"></label></div>
-          <label class="agree"><input type="checkbox" name="agree" required><span><b>(필수)</b> 개인정보 수집·이용에 동의해요. 이메일·이름·하는 일을 사용 안내를 보내는 데만 써요. <a href="privacy.html">개인정보 처리방침 보기</a></span></label>
-          <label class="agree"><input type="checkbox" name="marketing"><span>(선택) 새 버전·활용 팁 소식을 받을게요.</span></label>
-          <button class="submit" type="submit">무료로 시작하기</button>
-          <p class="msg" id="fMsg" role="status" aria-live="polite"></p>
-        </div>
-      </form>
-      <div class="sent" id="sent" tabindex="-1" role="status" aria-live="polite" hidden>
-        <div class="envl" aria-hidden="true"></div>
-        <h3 id="sentH">메일함을 확인해 주세요.</h3>
-        <p id="sentP"></p>
+  <!-- C11 신청: 화면에 고정된 채 스크롤에 따라 한 단계씩 펼쳐진다 -->
+  <section class="ch light signup" id="c11" data-bg="#FFFFFF" data-theme="light" style="--len: 175">
+    <div class="stage su-stage">
+      <div class="su-head">
+        <h2 class="big" data-split data-reveal>당신의 첫 카드를 적어 보세요.</h2>
+        <p class="sub" data-reveal>신청하면 <b>내 시트 만들기 링크</b>를 메일로 보내 드려요.</p>
       </div>
-      <noscript><p class="nojs">신청서를 보내려면 자바스크립트를 켜 주세요.</p></noscript>
+      <div class="formcard" id="formcard">
+        <form id="signup" novalidate>
+          <ol class="su-steps" aria-hidden="true"><li>이메일</li><li>이름</li><li>하는 일</li><li>쓰는 곳</li><li>동의</li></ol>
+          <div class="title-line">
+            <i class="ck" aria-hidden="true"></i>
+            <label class="sr" for="fEmail">이메일</label>
+            <input id="fEmail" name="email" type="email" inputmode="email" autocomplete="email" placeholder="이메일 주소를 적어 보세요" required>
+          </div>
+          <div class="more">
+            <div class="st" data-step="1">
+              <label class="fl" for="fName">이름 <small>(선택)</small></label>
+              <input id="fName" name="name" autocomplete="name" maxlength="40" placeholder="뭐라고 불러 드릴까요?">
+            </div>
+            <div class="st" data-step="2">
+              <p class="fl">하는 일 <small>(선택)</small></p>
+              <div class="chips" data-name="role">
+                <button type="button">직장인</button><button type="button">팀장</button><button type="button">1인 사업자</button><button type="button">프리랜서</button><button type="button">학생</button><button type="button">기타</button>
+              </div>
+            </div>
+            <div class="st" data-step="3">
+              <p class="fl">어디에 쓰고 싶나요? <small>(선택)</small></p>
+              <div class="chips" data-name="use">
+                <button type="button">회사 일</button><button type="button">개인 일</button><button type="button">둘 다</button>
+              </div>
+            </div>
+            <div class="st" data-step="4">
+              <div class="hp" aria-hidden="true"><label>웹사이트<input name="website" tabindex="-1" autocomplete="off"></label></div>
+              <label class="agree"><input type="checkbox" name="agree" required><span><b>(필수)</b> 개인정보 수집·이용에 동의해요. 이메일·이름·하는 일을 사용 안내를 보내는 데만 써요. <a href="privacy.html">개인정보 처리방침 보기</a></span></label>
+              <label class="agree"><input type="checkbox" name="marketing"><span>(선택) 새 버전·활용 팁 소식을 받을게요.</span></label>
+              <button class="submit" type="submit">무료로 시작하기</button>
+              <p class="msg" id="fMsg" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </form>
+        <div class="sent" id="sent" tabindex="-1" role="status" aria-live="polite" hidden>
+          <div class="envl" aria-hidden="true"></div>
+          <h3 id="sentH">메일함을 확인해 주세요.</h3>
+          <p id="sentP"></p>
+        </div>
+        <noscript><p class="nojs">신청서를 보내려면 자바스크립트를 켜 주세요.</p></noscript>
+      </div>
     </div>
   </section>
 
-  <!-- C12 자주 묻는 질문 · 각주 · 푸터 -->
+  <!-- C12 자주 묻는 질문 · 푸터 -->
   <section class="ch light faq" id="c12" data-bg="#FFFFFF" data-theme="light">
     <div class="wrap narrow">
       <h2 class="mid">자주 묻는 질문</h2>
@@ -338,10 +338,6 @@
       <details><summary>휴대폰에서도 쓸 수 있나요?</summary><p>네. 시트 메뉴에서 받은 <b>휴대폰·웹 화면 링크</b>를 홈 화면에 추가하면 앱처럼 써요. 구글 시트 앱 안에서는 버튼이 동작하지 않으니 꼭 웹 화면 링크로 여세요.</p></details>
       <details><summary>업데이트하면 내 데이터는요?</summary><p>그대로예요. 새 버전은 열을 추가만 하고 지우지 않아요. 지금은 새 코드를 붙여 넣는 방식이고, 새 버전이 나오면 앱에서 알려 드려요.</p></details>
       <details><summary>무엇이 되고, 무엇이 아직 안 되나요?</summary><p>구글 계정 하나면 돼요. 구글 캘린더를 쓰면 일정 사이 빈 시간에 할 일을 배치하고 캘린더에 넣을 수 있어요. 지메일·카톡에서 바로 담기, AI 자동 분류, 팀 공유는 <b>아직 안 돼요.</b></p></details>
-      <ol class="notes">
-        <li>¹ 휴대폰 화면 기준 실측. 실제 앱 화면에서 유저 플로우 46개의 터치 수를 셌어요(2026년 11월). 담기 2번 = 입력칸 누르기 + 엔터.</li>
-        <li>화면 속 앱은 실제 앱을 예시 데이터로 캡처·녹화한 것이에요. 휴대폰은 특정 기종이 아닌 일반형으로 그렸어요.</li>
-      </ol>
     </div>
     <footer class="foot">
       <p><b>내 업무관리 키트</b> · 구글 시트로 만든 무료 개인 업무관리 앱</p>
@@ -353,6 +349,6 @@
 <script src="vendor/gsap.min.js" defer></script>
 <script src="vendor/ScrollTrigger.min.js" defer></script>
 <script src="vendor/lenis.min.js" defer></script>
-<script src="v3.js?v=1be60a50" defer></script>
+<script src="v3.js?v=d3bae262" defer></script>
 </body>
 </html>

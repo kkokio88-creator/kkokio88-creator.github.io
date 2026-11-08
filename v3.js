@@ -45,6 +45,7 @@
       var id = a.getAttribute('href'); var el = id === '#top' ? document.body : $(id);
       if (!el) return; e.preventDefault();
       if (lenis) lenis.scrollTo(id === '#top' ? 0 : el, { duration: 1.6 }); else el.scrollIntoView({ behavior: 'smooth' });
+      try { history.replaceState(null, '', id === '#top' ? location.pathname + location.search : id); } catch (err) {}
     });
   });
 
@@ -75,6 +76,11 @@
 
   // ══════════ 이미지 시퀀스 스크럽 엔진 ══════════
   function pickSet() { return innerWidth / innerHeight < 1 ? 'm' : 'd'; }
+  var pageLoaded = document.readyState === 'complete';
+  // 첫 장면의 나머지 프레임: 첫 스크롤 때 또는 페이지가 뜨고 3.5초 뒤에 이어 받는다(첫 화면 용량 2MB 이하)
+  function release() { if (pageLoaded) return; pageLoaded = true; seqs.forEach(function (q) { q.pump(); }); }
+  addEventListener('load', function () { setTimeout(release, 3500); });
+  ['wheel', 'touchstart', 'keydown'].forEach(function (ev) { addEventListener(ev, release, { once: true, passive: true }); });
   // 시퀀스 장면들은 화면에 고정된 캔버스 하나(#seqfx)에 그린다. 구역마다 캔버스를 두면 경계에서 폰이 잘리고
   // 다음 구역에서 새 폰이 올라오므로, 붙어 있는 장면 사이(①→②→③)는 같은 화면에서 이어 그리고 겹쳐 바꾼다.
   var fx = document.createElement('canvas'); fx.id = 'seqfx'; fx.setAttribute('aria-hidden', 'true');
@@ -97,32 +103,42 @@
     if (this.started) return; this.started = true;
     var order = [0], seen = { 0: 1 }, n = this.n;
     if (!seen[n - 1]) { seen[n - 1] = 1; order.push(n - 1); }
-    [4, 2, 1].forEach(function (step) { for (var i = 0; i < n; i += step) if (!seen[i]) { seen[i] = 1; order.push(i); } });
+    [8, 4, 2, 1].forEach(function (step) { for (var i = 0; i < n; i += step) if (!seen[i]) { seen[i] = 1; order.push(i); } });
+    // 첫 장면은 8장 간격까지만 먼저 받고(첫 화면 용량), 나머지는 페이지가 다 뜬 뒤 이어 받는다
+    this.hold = this.first ? Math.ceil(n / 8) + 2 : 0;
     this.queue = order; this.pump();
   };
   Seq.prototype.pump = function () {
     var self = this, set = this.set;
-    while (this.busy < 6 && this.queue.length) {
+    while (this.busy < 6 && this.queue.length && !(this.hold && !pageLoaded && (this.loaded || 0) + this.busy >= this.hold)) {
       (function (i) {
         self.busy++;
         var img = new Image(); img.decoding = 'async'; img.src = self.url(i);
         var done = function (good) {
           if (set !== self.set) return;
-          self.busy--; if (good) { self.imgs[i] = img; self.ok[i] = true; paint(true); }
+          self.busy--; self.loaded = (self.loaded || 0) + 1; if (good) { self.imgs[i] = img; self.ok[i] = true; paint(true); }
           self.pump();
         };
         (img.decode ? img.decode() : new Promise(function (r) { img.onload = r; })).then(function () { done(true); }, function () { done(false); });
       })(this.queue.shift());
     }
   };
+  // 장면 안에서 스크롤과 프레임의 대응을 고르게: 급한 구간에 스크롤을 더 배분한다
+  var WARP = { card: [[0, 0], [0.26, 0.3], [0.66, 0.56], [1, 1]] };
+  function warp(name, p) {
+    var w = WARP[name]; if (!w) return p;
+    for (var i = 1; i < w.length; i++) if (p <= w[i][0]) return lerp(w[i - 1][1], w[i][1], seg(p, w[i - 1][0], w[i][0]));
+    return p;
+  }
   Seq.prototype.nearest = function (p) {
+    p = warp(this.name, p);
     var i = Math.round(clamp(p) * (this.n - 1));
     for (var d = 0; d < this.n; d++) { if (this.ok[i - d]) return i - d; if (this.ok[i + d]) return i + d; }
     return -1;
   };
   // 프레임 좌표(0~1) → 화면 좌표(px). 그리기와 같은 cover 계산
   Seq.prototype.cover = function () {
-    var s = fxSize(), iw = this.set === 'd' ? 1600 : 900, ih = this.set === 'd' ? 900 : 1600, k = Math.max(s.w / iw, s.h / ih);
+    var s = fxSize(), iw = this.set === 'd' ? 1920 : 1080, ih = this.set === 'd' ? 1080 : 1920, k = Math.max(s.w / iw, s.h / ih);
     return { k: k, x: (s.w - iw * k) / 2, y: (s.h - ih * k) / 2, iw: iw, ih: ih };
   };
   Seq.prototype.toView = function (nx, ny) { var c = this.cover(); return { x: c.x + nx * c.iw * c.k, y: c.y + ny * c.ih * c.k }; };
@@ -136,7 +152,7 @@
   var seqs = [], seqSecs = [];
   $$('.ch[data-seq]').forEach(function (sec, n) {
     var seq = new Seq(sec.dataset.seq); sec._seq = seq; seqs.push(seq); seqSecs.push(sec);
-    if (n === 0) seq.start();
+    if (n === 0) { seq.first = true; seq.start(); }
     // 다음 챕터가 화면 1개 거리에 오면 미리 불러온다
     else ScrollTrigger.create({ trigger: sec, start: 'top bottom+=100%', once: true, onEnter: function () { seq.start(); } });
   });
@@ -201,10 +217,12 @@
     c1: function () { paint(); },
     c2: function () { paint(); },
     c3: function (p) { paint(); labels(p); },
-    c4: journey(),
+    c4: sortFlow(),
     c5: day(),
     c6: focus(),
-    c10: function () { paint(); }
+    c7: highlights(),
+    c10: function () { paint(); },
+    c11: signupSteps()
   };
   Object.keys(scenes).forEach(function (id) {
     var sec = document.getElementById(id);
@@ -213,45 +231,95 @@
     run(0);
   });
 
-  // ── C4 카드의 여행 (가로 핀) ──
-  function journey() {
-    var sec = $('#c4'), track = $('.track', sec), card = $('.tcard', sec), inner = $('.tcard-in', sec), star = $('.star', card);
-    var fill = $('.rail-fill', sec), dots = $$('.rail span', sec), minis = $$('.mini', sec), paths = $$('.fork-lines path', sec), opts = $$('.fork-opts li', sec);
-    var lens = paths.map(function (p) { var L = p.getTotalLength ? p.getTotalLength() : 500; p.style.strokeDasharray = L; p.style.strokeDashoffset = L; return L; });
-    // 정류장 위치: 멈춤(dwell)과 이동을 번갈아
-    var KEYS = [[0, 0], [0.1, 0], [0.28, 1], [0.44, 1], [0.6, 2], [0.72, 2], [0.88, 3], [1, 3]];
-    function pos(p) {
-      for (var i = 1; i < KEYS.length; i++) if (p <= KEYS[i][0]) { var a = KEYS[i - 1], b = KEYS[i]; return lerp(a[1], b[1], ease(seg(p, a[0], b[0]))); }
-      return 3;
+  // ── C4 떠오른 일이 정리되는 과정: 실제 앱 화면을 넘기며, 처리한 카드는 오른쪽 칸으로 날아간다 ──
+  function sortFlow() {
+    var sec = $('#c4'), scr = $('.scr', sec), imgs = {}, dot = $('.tapdot', sec), fly = $('.flyc', sec);
+    var stepEls = $$('.steps li', sec), copyEls = $$('.sc', sec), copyBox = $('.sort-copy', sec), phone = $('.sort-phone', sec), binsBox = $('.bins', sec), bins = {};
+    $$('img', scr).forEach(function (im) { imgs[im.dataset.k] = im; });
+    $$('.bin', sec).forEach(function (b) { bins[b.dataset.bin] = b; });
+    // tap: 실제 앱 화면(390×844)에서 누르는 버튼 위치(비율). fly: 처리된 카드와 갈 칸, self면 이 화면에서 바로 날아간다
+    var B = [
+      { img: 'type', step: 0, tap: [0.86, 0.19] },
+      { img: 'drop-ask', step: 1, tap: [0.70, 0.296] },
+      { img: 'drop-no', step: 1, tap: [0.295, 0.296], fly: { t: '광고 메일 확인', bin: 'drop' } },
+      { img: 'drop-drop', step: 1, tap: [0.70, 0.296] },
+      { img: 'someday-no', step: 1, tap: [0.70, 0.296], fly: { t: '독서 모임 알아보기', bin: 'someday' } },
+      { img: 'someday-someday', step: 1, tap: [0.70, 0.296] },
+      { img: 'ref-no', step: 1, tap: [0.295, 0.423], fly: { t: '회의실 와이파이 비번', bin: 'ref' } },
+      { img: 'ref-ref', step: 1, tap: [0.33, 0.393], fly: { t: '택배 반품 신청', bin: 'now' } },
+      { img: 'now-now', step: 2, tap: [0.295, 0.296] },
+      { img: 'hero-yes', step: 2, tap: [0.70, 0.296] },
+      { img: 'hero-sched', step: 2, tap: [0.125, 0.743] },
+      { img: 'hero-done', step: 3, fly: { t: '팀장님께 보고서 초안 보내기', bin: 'today', self: true } },
+      { img: 'today-star', step: 3 }
+    ];
+    var N = B.length, lastKey = '', cur = null;
+    function layout() {
+      if (innerWidth / innerHeight < 1 || innerWidth <= 1000) { copyBox.style.left = ''; copyBox.style.width = ''; return; }
+      var pr = phone.getBoundingClientRect(), br = binsBox.getBoundingClientRect(), l = pr.right + 48;
+      copyBox.style.left = l + 'px'; copyBox.style.width = Math.max(220, br.left - 48 - l) + 'px';
     }
+    addEventListener('resize', layout);
     return function (p) {
-      var x = pos(p), moving = x - Math.floor(x), vw = innerWidth, vh = innerHeight, portrait = vw / vh < 1;
-      track.style.transform = 'translate3d(' + (-x * vw) + 'px,0,0)';
-      fill.style.transform = 'scaleX(' + (x / 3) + ')';
-      dots.forEach(function (d, i) { d.classList.toggle('on', x >= i - 0.02); });
-      // 카드: 입력칸에서 떠올라, 이동할 때 기울고 튀어 오른다
-      var rise = ease(seg(p, 0, 0.09)), bob = Math.sin(Math.PI * moving);
-      var ty = (1 - rise) * vh * (portrait ? 0.27 : 0.25) - bob * 34;
-      var flip = 180 * ease(seg(p, 0.3, 0.36)) * (1 - ease(seg(p, 0.4, 0.45)));
-      var pick = ease(seg(p, 0.62, 0.68)) * (1 - ease(seg(p, 0.72, 0.8)));
-      var land = ease(seg(p, 0.89, 0.95));
-      var vis = $('.vis-today', sec), listTop = vis ? vis.getBoundingClientRect().top : vh * 0.7;
-      var cardMid = vh * (portrait ? 0.44 : 0.47);
-      ty += land * (listTop - cardMid + 30) - pick * 26;
-      var tx = 0;
-      var sc = lerp(1, 0.86, rise < 1 ? 1 - rise : 0) * (1 - land * 0.12) * (1 - pick * 0.1);
-      card.style.transform = 'translate3d(' + tx + 'px,' + ty + 'px,0) rotate(' + (-6 * bob * (x < 3 ? 1 : 0)) + 'deg) scale(' + sc + ')';
-      inner.style.transform = 'rotateY(' + flip + 'deg)';
-      var st = seg(p, 0.95, 0.99); star.style.opacity = st; star.style.transform = 'scale(' + backOut(st) + ') rotate(' + (1 - st) * -40 + 'deg)';
-      // 정류장 2: 아닌 일은 세 갈래 쟁반으로
-      minis.forEach(function (m, i) {
-        var k = seg(p, 0.33 + i * 0.025, 0.41 + i * 0.025), b = k < 1 ? backOut(k) : 1;
-        m.style.transform = 'translateY(' + ((1 - b) * -vh * 0.5) + 'px) rotate(' + ((1 - k) * (i - 1) * 14) + 'deg)';
-        m.style.opacity = clamp(k * 3);
+      layout();
+      var b = clamp(p, 0, 0.9999) * N, i = Math.floor(b), f = b - i, beat = B[i];
+      // 다음 화면을 스크롤에 맞춰 서서히 겹친다(멈춰 있는 구간이 없게)
+      var nxt = B[i + 1] ? B[i + 1].img : null, mix = nxt ? seg(f, 0.78, 1) : 0;
+      Object.keys(imgs).forEach(function (k2) { imgs[k2].style.opacity = k2 === beat.img ? 1 : k2 === nxt ? mix : 0; });
+      stepEls.forEach(function (el, k) { el.classList.toggle('on', k === beat.step); el.classList.toggle('done', k < beat.step); });
+      copyEls.forEach(function (el, k) { el.classList.toggle('on', k === beat.step); });
+      // 누르는 곳 표시
+      if (beat.tap) {
+        var a = Math.sin(Math.PI * seg(f, 0.3, 0.8));
+        dot.style.left = beat.tap[0] * 100 + '%'; dot.style.top = beat.tap[1] * 100 + '%';
+        dot.style.opacity = a; dot.style.transform = 'scale(' + (0.6 + 0.6 * seg(f, 0.3, 0.7)) + ')';
+      } else dot.style.opacity = 0;
+      // 날아가는 카드: 앞 화면의 카드(다음 화면이 시작될 때) 또는 self(이 화면에서)
+      var fb = null, k = 0;
+      if (beat.fly && beat.fly.self) { fb = beat.fly; k = seg(f, 0.2, 0.8); }
+      else if (i > 0 && B[i - 1].fly && !B[i - 1].fly.self) { fb = B[i - 1].fly; k = seg(f, 0, 0.75); }
+      Object.keys(bins).forEach(function (n) { bins[n].classList.toggle('hit', !!fb && fb.bin === n && k > 0.75 && k < 1); });
+      if (fb && k > 0 && k < 1) {
+        var sr = scr.getBoundingClientRect(), stg = sec.querySelector('.stage').getBoundingClientRect(), ul = $('ul', bins[fb.bin]).getBoundingClientRect();
+        if (fly.textContent !== fb.t) fly.textContent = fb.t;
+        var x0 = sr.left + sr.width * 0.5 - stg.left, y0 = sr.top + sr.height * 0.17 - stg.top;
+        var x1 = ul.left + Math.min(ul.width, 220) / 2 - stg.left, y1 = ul.top + 14 - stg.top;
+        var e = ease(k), x = lerp(x0, x1, e), y = lerp(y0, y1, e) - Math.sin(Math.PI * k) * 90;
+        fly.style.opacity = Math.min(1, k * 8, (1 - k) * 8);
+        fly.style.transform = 'translate(' + (x - fly.offsetWidth / 2) + 'px,' + (y - fly.offsetHeight / 2) + 'px) rotate(' + (Math.sin(Math.PI * k) * -6) + 'deg) scale(' + lerp(1, 0.8, e) + ')';
+      } else fly.style.opacity = 0;
+      // 다 날아간 카드는 칸에 쌓인다
+      var landed = {}, key = '';
+      B.forEach(function (bt, n) {
+        if (!bt.fly) return;
+        var doneAt = bt.fly.self ? n + 0.8 : n + 1 + 0.75;
+        if (b >= doneAt) { (landed[bt.fly.bin] = landed[bt.fly.bin] || []).push(bt.fly.t); key += n; }
       });
-      // 정류장 3: 네 갈래 선을 그린다
-      paths.forEach(function (pa, i) { pa.style.strokeDashoffset = lens[i] * (1 - ease(seg(p, 0.52 + i * 0.02, 0.62 + i * 0.02))); });
-      opts.forEach(function (o, i) { o.style.opacity = seg(p, 0.58 + i * 0.02, 0.62 + i * 0.02); });
+      if (key !== lastKey) {
+        lastKey = key;
+        Object.keys(bins).forEach(function (n) {
+          var ul = $('ul', bins[n]), want = landed[n] || [];
+          if (ul.children.length !== want.length) ul.innerHTML = want.map(function (t) { return '<li>' + t + '</li>'; }).join('');
+        });
+      }
+    };
+  }
+
+  // ── C11 신청: 화면에 고정된 채 스크롤에 따라 한 단계씩 펼쳐진다 ──
+  var suMax = 0;
+  function revealTo(n) {
+    if (n <= suMax) return; suMax = n;
+    $$('#signup .st').forEach(function (el) { el.classList.toggle('on', +el.dataset.step <= suMax); });
+    $$('#signup .su-steps li').forEach(function (el, i) { el.classList.toggle('on', i <= suMax); });
+  }
+  function signupSteps() {
+    var stage = $('#c11 .su-stage'), AT = [0, 0.1, 0.22, 0.34, 0.46];
+    function stick() { stage.style.setProperty('--st', Math.min(64, innerHeight - stage.offsetHeight - 8) + 'px'); }
+    addEventListener('resize', stick);
+    $('#c11 .su-steps li').classList.add('on');
+    return function (p) {
+      var n = 0; AT.forEach(function (a, i) { if (p >= a) n = i; });
+      revealTo(n); stick();
     };
   }
 
@@ -307,39 +375,31 @@
     };
   }
 
-  // ── C7 하이라이트 캐러셀 ──
-  (function () {
-    var car = $('.car'), tiles = $$('.tile', car), dotsEl = $('#c7 .dots'), active = 0, idle = 0, inView = false, paused = false, pauseBtn = $('#c7 .pause');
-    pauseBtn.addEventListener('click', function () {
-      paused = !paused; pauseBtn.setAttribute('aria-pressed', paused); pauseBtn.textContent = paused ? '자동 재생 켜기' : '자동 재생 멈춤';
-      $$('video', car).forEach(function (v) { if (paused) v.pause(); });
-      if (!paused) mark(), tiles.forEach(function (t) { io.unobserve(t); if (inView) io.observe(t); });
-    });
-    tiles.forEach(function (t, i) {
-      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-label', (i + 1) + '번 영상: ' + $('b', t).textContent);
-      b.addEventListener('click', function () { go(i); idle = Date.now(); }); dotsEl.appendChild(b);
-    });
-    var dots = $$('button', dotsEl);
-    function go(i) { var t = tiles[i]; car.scrollTo({ left: t.offsetLeft - (car.clientWidth - t.offsetWidth) / 2, behavior: 'smooth' }); }
-    function mark() {
-      var mid = car.scrollLeft + car.clientWidth / 2, best = 0, bd = 1e9;
-      tiles.forEach(function (t, i) { var d = Math.abs(t.offsetLeft + t.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = i; } });
-      active = best; dots.forEach(function (d, i) { d.classList.toggle('on', i === best); d.setAttribute('aria-selected', i === best); });
+  // ── C7 직접 보세요: 휴대폰 하나씩, 스크롤하면 옆으로 ──
+  function highlights() {
+    var sec = $('#c7'), track = $('.hl-track', sec), panels = $$('.hp-panel', sec), dots = $$('.hl-dots i', sec), vids = $$('video', sec), act = -1;
+    var n = panels.length, KEYS = [[0, 0]];
+    // 한 장마다 멈춰 보여 주고(dwell) 다음 장으로 넘어간다
+    // 첫 장 잠깐 보여 준 뒤, 넘어가는 시간(0.75)을 머무는 시간(0.25)보다 길게: 한 걸음에 화면이 확 바뀌지 않게
+    var span = 0.9 / (n - 1);
+    for (var k = 1; k < n; k++) { var t = 0.05 + (k - 1) * span + span * 0.18; KEYS.push([t, k - 1], [t + span * 0.78, k]); }
+    KEYS.push([1, n - 1]);
+    function pos(p) {
+      for (var i = 1; i < KEYS.length; i++) if (p <= KEYS[i][0]) { var a = KEYS[i - 1], b = KEYS[i]; return b[0] === a[0] ? b[1] : lerp(a[1], b[1], ease(seg(p, a[0], b[0]))); }
+      return n - 1;
     }
-    car.addEventListener('scroll', function () { mark(); }, { passive: true });
-    ['pointerdown', 'wheel', 'touchstart'].forEach(function (ev) { car.addEventListener(ev, function () { idle = Date.now(); }, { passive: true }); });
-    var io = new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        var v = $('video', e.target);
-        if (e.isIntersecting && e.intersectionRatio > 0.55 && inView && !paused) { v.preload = 'auto'; var pr = v.play(); if (pr) pr.catch(function () {}); } else v.pause();
-      });
-    }, { root: car, threshold: [0, 0.55, 1] });
-    ScrollTrigger.create({ trigger: '#c7', start: 'top 80%', end: 'bottom 20%', onToggle: function (self) {
-      inView = self.isActive; tiles.forEach(function (t) { io.unobserve(t); if (inView) io.observe(t); else $('video', t).pause(); });
-    } });
-    setInterval(function () { if (inView && !paused && Date.now() - idle > 8000 && !document.hidden) go((active + 1) % tiles.length); }, 7000);
-    mark();
-  })();
+    ScrollTrigger.create({ trigger: sec, start: 'top bottom+=100%', once: true, onEnter: function () { vids.forEach(function (v) { v.preload = 'auto'; }); } });
+    ScrollTrigger.create({ trigger: sec, start: 'top bottom', end: 'bottom top', onToggle: function (self) { if (!self.isActive) { vids.forEach(function (v) { v.pause(); }); act = -1; } } });
+    return function (p) {
+      var x = pos(p), a = Math.round(x), r = sec.getBoundingClientRect();
+      track.style.transform = 'translate3d(' + (-x * innerWidth) + 'px,0,0)';
+      dots.forEach(function (d, i) { d.classList.toggle('on', i === a); });
+      if (a !== act && r.top < innerHeight && r.bottom > 0) {
+        act = a;
+        vids.forEach(function (v, i) { if (i === a) { v.currentTime = 0; var pr = v.play(); if (pr) pr.catch(function () {}); } else v.pause(); });
+      }
+    };
+  }
 
   // ── C8 맡긴 일 며칠째 ──
   (function () { var els = [$('.dcount'), $('.dcount2')], n = 1; setInterval(function () { n = n % 3 + 1; els.forEach(function (el) { el.textContent = n; el.style.color = n === 3 ? '#C27C00' : ''; }); }, 1600); })();
@@ -387,18 +447,9 @@
     } catch (e) {}
     if (!src && document.referrer) { try { var h = new URL(document.referrer).hostname; if (h !== location.hostname) src = h; } catch (e) {} }
 
-    // 빈 카드 → 신청 폼으로 펼쳐진다
-    function open() {
-      if (card.classList.contains('open')) return;
-      card.classList.add('open');
-      gsap.fromTo(more, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.9, ease: 'expo.out', clearProps: 'height' });
-      // 시작·끝 값을 둘 다 적고 끝나면 인라인 스타일을 지운다(버튼이 opacity 0에 멈춰 남던 문제)
-      gsap.fromTo($$('.more > *', form), { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'expo.out', stagger: 0.04, delay: 0.1, clearProps: 'transform,opacity,translate,rotate,scale' });
-    }
-    gsap.from(form, { scale: 0.9, y: 40, opacity: 0, duration: 1.1, ease: 'expo.out', scrollTrigger: { trigger: card, start: 'top 85%' } });
-    ScrollTrigger.create({ trigger: card, start: 'top 62%', once: true, onEnter: function () { setTimeout(open, 250); } });
-    email.addEventListener('focus', open);
-
+    // 단계 펼치기는 signupSteps()가 스크롤에 맞춰 한다. 입력하거나 초점이 들어오면 그 단계까지 바로 펼친다.
+    form.addEventListener('focusin', function (e) { var st = e.target.closest('.st'); revealTo(st ? +st.dataset.step : 0); });
+    email.addEventListener('input', function () { revealTo(1); });
     $$('.chips', form).forEach(function (g) {
       g.addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
@@ -409,7 +460,7 @@
     var chip = function (name) { var b = $('.chips[data-name="' + name + '"] .on', form); return b ? b.textContent : ''; };
 
     form.addEventListener('submit', function (e) {
-      e.preventDefault(); open(); msg.textContent = '';
+      e.preventDefault(); revealTo(4); msg.textContent = '';
       var em = email.value.trim();
       if (!/^[^\s@<>()]+@[^\s@<>()]+\.[a-z]{2,}$/i.test(em)) { msg.textContent = '이메일 주소를 확인해 주세요.'; email.focus(); return; }
       if (!form.agree.checked) { msg.textContent = '개인정보 수집·이용에 동의해 주세요.'; return; }
