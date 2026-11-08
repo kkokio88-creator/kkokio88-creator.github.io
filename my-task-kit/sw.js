@@ -1,4 +1,4 @@
-// 내 업무관리 키트 — 서비스 워커 (오프라인에서도 화면이 열리게)
+// GTD 워크 — 서비스 워커 (오프라인에서도 화면이 열리게)
 // 화면(index.html)은 네트워크 먼저 → 안 되면 저장해 둔 것. 아이콘·글꼴은 저장해 둔 것 먼저.
 // 데이터(script.google.com · googleusercontent.com)는 절대 저장하지 않는다.
 // VERSION 줄은 tools/build-web.js가 KIT.VERSION으로 바꿔 쓴다.

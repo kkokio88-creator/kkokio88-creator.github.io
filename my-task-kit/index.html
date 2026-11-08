@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="theme-color" content="#5B5CF6"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><title>내 업무관리 키트</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-title" content="내 업무"><script>if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });</script><script>(function () { var h = {}; location.hash.replace(/^#/, '').split('&').forEach(function (p) { var i = p.indexOf('='); if (i > 0) h[p.slice(0, i)] = decodeURIComponent(p.slice(i + 1)); }); var ok = /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/; try { if (h.k && h.api && ok.test(h.api)) { localStorage.setItem('myTaskKitKey', h.k); localStorage.setItem('myTaskKitApi', h.api); } window.KIT_API_URL = localStorage.getItem('myTaskKitApi') || ''; window.KIT_KEY = localStorage.getItem('myTaskKitKey') || ''; } catch (e) { window.KIT_API_URL = ok.test(h.api || '') ? h.api : ''; window.KIT_KEY = h.k || ''; } })();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="theme-color" content="#5B5CF6"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><title>GTD 워크</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-title" content="내 업무"><script>if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });</script><script>(function () { var h = {}; location.hash.replace(/^#/, '').split('&').forEach(function (p) { var i = p.indexOf('='); if (i > 0) h[p.slice(0, i)] = decodeURIComponent(p.slice(i + 1)); }); var ok = /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/; try { if (h.k && h.api && ok.test(h.api)) { localStorage.setItem('myTaskKitKey', h.k); localStorage.setItem('myTaskKitApi', h.api); } window.KIT_API_URL = localStorage.getItem('myTaskKitApi') || ''; window.KIT_KEY = localStorage.getItem('myTaskKitKey') || ''; } catch (e) { window.KIT_API_URL = ok.test(h.api || '') ? h.api : ''; window.KIT_KEY = h.k || ''; } })();</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -503,7 +503,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "내 업무관리 키트", version: "1.7.1" };
+  var KIT = { name: "GTD 워크", version: "1.7.1" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {

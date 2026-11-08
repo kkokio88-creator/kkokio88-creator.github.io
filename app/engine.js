@@ -1,6 +1,6 @@
 /* 자동 생성 파일 — tools/build-web2.js. 직접 고치지 말 것 */
 /*
- * 내 업무관리 키트 v2 엔진 — 서버 없이 브라우저에서 동작
+ * GTD 워크 v2 엔진 — 서버 없이 브라우저에서 동작
  *
  * - 사용자 본인의 구글 시트를 시트 API로 읽어 '메모리 시트'에 올리고,
  *   v1과 똑같은 업무 규칙 코드(.gs)를 그 위에서 실행한 뒤, 바뀐 줄만 다시 저장한다.
@@ -16,7 +16,7 @@ function createKitEngine(opts) {
   var getToken = opts.token; // () => Promise<accessToken>
   var store = opts.storage || { get: function () { return null; }, set: function () {} };
   var API = { drive: 'https://www.googleapis.com/drive/v3', upload: 'https://www.googleapis.com/upload/drive/v3', sheets: 'https://sheets.googleapis.com/v4/spreadsheets', cal: 'https://www.googleapis.com/calendar/v3', user: 'https://www.googleapis.com/oauth2/v3/userinfo' };
-  var SHEET_NAME = '내 업무관리 키트';
+  var SHEET_NAME = 'GTD 워크';
 
   // ── 구글 API 호출 ──────────────────────────────────────────
   async function gapi(method, url, body, retry) {
@@ -234,7 +234,7 @@ function createKitEngine(opts) {
     var list = await gapi('GET', API.drive + '/files?q=' + enc("appProperties has { key='myTaskKit' and value='1' } and trashed=false") + '&orderBy=createdTime&fields=' + enc('files(id,name)'));
     if (list.files && list.files.length) { var id0 = list.files[0].id; store.set('kitSheetId', id0); await loadBook(id0); return { id: id0, created: false }; }
     step('내 드라이브에 시트를 만드는 중이에요');
-    var f = await gapi('POST', API.drive + '/files?fields=id', { name: SHEET_NAME, mimeType: 'application/vnd.google-apps.spreadsheet', appProperties: { myTaskKit: '1' }, description: '내 업무관리 키트가 만든 시트예요. 지우면 앱의 데이터도 사라져요.' });
+    var f = await gapi('POST', API.drive + '/files?fields=id', { name: SHEET_NAME, mimeType: 'application/vnd.google-apps.spreadsheet', appProperties: { myTaskKit: '1' }, description: 'GTD 워크가 만든 시트예요. 지우면 앱의 데이터도 사라져요.' });
     store.set('kitSheetId', f.id);
     // 방금 만든 빈 시트는 다시 읽지 않는다: 기본 탭(sheetId 0) 하나뿐이다. 시간대는 setup 이 서울로 맞춘다
     applyBook({ id: f.id, tz: 'Etc/UTC', sheets: [{ title: 'Sheet1', sheetId: 0, hidden: false, rows: [] }] });
@@ -286,7 +286,7 @@ function createKitEngine(opts) {
       ContentService = env.ContentService, CalendarApp = env.CalendarApp;
     /* ── 00_Config.gs ── */
 /**
- * 내 업무관리 키트 — 설정
+ * GTD 워크 — 설정
  *
  * ┌ 버전 호환 규칙 (새 버전을 만들 때 반드시 지킬 것) ─────────────────────────┐
  * │ 1. 사용자의 구글 시트가 원본이다. 코드는 언제든 통째로 바꿔 끼울 수 있어야 한다. │
@@ -301,7 +301,7 @@ function createKitEngine(opts) {
  */
 
 var KIT = {
-  NAME: '내 업무관리 키트',
+  NAME: 'GTD 워크',
   VERSION: '1.7.1',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 5,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열
   TASK_SHEET: '업무',
@@ -378,7 +378,7 @@ var PRIORITY_ORDER = { '높음': 0, '보통': 1, '': 1, '낮음': 2 };
 var MIGRATIONS = {};
 
 /* ── 10_Util.gs ── */
-/** 내 업무관리 키트 — 공통 도우미 (시트에 의존하지 않는 순수 함수) */
+/** GTD 워크 — 공통 도우미 (시트에 의존하지 않는 순수 함수) */
 
 function colLetter_(n) {
   var s = '';
@@ -594,7 +594,7 @@ function nextOccurrence_(rule, due, today) {
 
 /* ── 20_Schema.gs ── */
 /**
- * 내 업무관리 키트 — 시트 구조 (설치·업데이트·마이그레이션)
+ * GTD 워크 — 시트 구조 (설치·업데이트·마이그레이션)
  *
  * 설정값은 숨김 시트 [_설정]에 저장한다. 스크립트 속성이 아니라 시트에 두는 이유:
  * 시트만 있으면 어떤 버전의 코드를 붙여도 상태를 그대로 읽을 수 있어야 하기 때문.
@@ -868,7 +868,7 @@ function renameStatusValues_(ctx, mapping) {
 }
 
 /* ── 30_Tasks.gs ── */
-/** 내 업무관리 키트 — 업무 읽기·쓰기 */
+/** GTD 워크 — 업무 읽기·쓰기 */
 
 function taskContext_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1283,7 +1283,7 @@ function handleEdit_(e) {
 
 /* ── 35_Projects.gs ── */
 /**
- * 내 업무관리 키트 — 프로젝트 (완료 모습) · 다음 행동 바로 추가
+ * GTD 워크 — 프로젝트 (완료 모습) · 다음 행동 바로 추가
  *
  * GTD에서 프로젝트는 "끝나면 어떤 모습인가"를 한 줄로 정해 둔다.
  * [프로젝트] 시트는 처음으로 완료 모습을 적을 때 생긴다. 열은 머리글 이름으로 찾는다.
@@ -1370,7 +1370,7 @@ function addAction(title, d) {
 
 /* ── 40_Dashboard.gs ── */
 /**
- * 내 업무관리 키트 — [오늘] 시트
+ * GTD 워크 — [오늘] 시트
  *
  * 이 시트는 키트가 매번 다시 그린다(시트를 열 때 자동). 사용자는 [업무] 시트만 고치면 된다.
  * 수식은 열 위치를 그릴 때마다 머리글로 다시 찾으므로, 열 순서를 바꿔도 깨지지 않는다.
@@ -1546,7 +1546,7 @@ function projectListFormula_(title, status, project, nonEmpty, open, empty) {
 }
 
 /* ── 50_Weekly.gs ── */
-/** 내 업무관리 키트 — 주간 검토 메일 (매주 금요일, 나에게만) */
+/** GTD 워크 — 주간 검토 메일 (매주 금요일, 나에게만) */
 
 /** 업무 목록 → 주간 검토 요약 (순수 함수 — 테스트 대상) */
 function buildWeeklySummary_(tasks, today) {
@@ -1683,7 +1683,7 @@ function isWeeklyOn_() {
 }
 
 /* ── 55_Daily.gs ── */
-/** 내 업무관리 키트 — 아침 브리핑 메일 (평일 아침, 나에게만) */
+/** GTD 워크 — 아침 브리핑 메일 (평일 아침, 나에게만) */
 
 var DAILY_HANDLER = 'sendDailyBriefing';
 var DAILY_HOUR = 8;
@@ -1738,7 +1738,7 @@ function setDailyTrigger_(on) {
 
 /* ── 60_Menu.gs ── */
 /**
- * 내 업무관리 키트 — 메뉴·트리거 진입점
+ * GTD 워크 — 메뉴·트리거 진입점
  * 여기 있는 공개 함수 이름(onOpen, onEdit, menu*)은 바꾸지 말 것.
  */
 
@@ -1905,7 +1905,7 @@ function menuAbout() {
 
 /* ── 70_Sample.gs ── */
 /**
- * 내 업무관리 키트 — 예시 업무 (처음 써 보는 사람·영상 시연용)
+ * GTD 워크 — 예시 업무 (처음 써 보는 사람·영상 시연용)
  * 업무 시트가 비어 있을 때만 넣는다. 실제 데이터 위에 덮어쓰지 않는다.
  */
 
@@ -1961,7 +1961,7 @@ function insertSampleTasks_(ss, useLock) {
 
 /* ── 80_WebApp.gs ── */
 /**
- * 내 업무관리 키트 — 웹앱 (휴대폰·PC 브라우저에서 여는 화면)
+ * GTD 워크 — 웹앱 (휴대폰·PC 브라우저에서 여는 화면)
  * 시트 모바일 앱은 앱스크립트를 실행하지 않으므로, 휴대폰에서는 이 웹앱 링크로 쓴다.
  * 공개 함수 이름(doGet, getAppData, completeTask, postponeFollowUp, installFromEditor)은 바꾸지 말 것.
  */
@@ -2110,6 +2110,7 @@ function doPost(e) {
 // ── 구글 캘린더 ─────────────────────────────────────────────
 // 읽기: [_설정] '캘린더'에 고른 캘린더 ID들(쉼표). 비어 있으면 기본 캘린더만.
 // 쓰기: 시간표를 기본 캘린더에 넣을 때만. 키트가 만든 일정은 설명에 KIT_EVENT_TAG_ + 업무 ID를 남긴다.
+// 예전 이름 그대로 둔다: 이미 캘린더에 들어간 일정을 이 표시로 찾아 지우기 때문(이름을 바꿔도 바꾸지 말 것)
 var KIT_EVENT_TAG_ = '[내 업무관리 키트] ';
 
 function selectedCalendarIds_() {
@@ -2683,7 +2684,7 @@ function installFromEditor() {
         // 다음에 열 때 탭 목록·값을 동시에 읽도록 탭 이름을 기억
         store.set('kitTabs:' + f.id, JSON.stringify(book.sheets.map(function (sh) { return sh.getName(); })));
         writeSnap(); saveCal();
-        startLog = log.join(' · '); try { console.info('[내 업무관리 키트] 시작: ' + startLog); } catch (e) {}
+        startLog = log.join(' · '); try { console.info('[GTD 워크] 시작: ' + startLog); } catch (e) {}
         return f;
       })();
       readyResolve(p);

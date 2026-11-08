@@ -1,12 +1,12 @@
 /* 자동 생성 파일 — tools/build-web2.js (원본: web2/sw-src.js) */
-// 내 업무관리 키트 v2 — 서비스 워커: 앱 화면을 이 기기에 저장해 두고 바로 연다
+// GTD 워크 v2 — 서비스 워커: 앱 화면을 이 기기에 저장해 두고 바로 연다
 // - 화면·엔진·로그인 코드(같은 주소)는 저장해 둔 것을 바로 쓰고, 화면(index)은 뒤에서 새로 받아 다음에 열 때 쓴다.
 // - 새 버전이 올라가면 이 파일의 버전이 바뀌어 새 화면을 미리 받아 두고 옛 저장본을 지운다.
 // - 글꼴(jsDelivr, 버전 고정)은 저장해 둔 것 먼저. 구글 로그인·구글 API(시트·캘린더)는 절대 저장하지 않는다.
 // tools/build-web2.js 가 버전과 미리 받을 파일 목록을 채워 web2/sw.js 를 만든다. 이 파일(sw-src.js)을 고칠 것.
-var V = "1.7.1-20bfe8e93e";
+var V = "1.7.1-59cfdcb1a8";
 var CACHE = 'kit-app-' + V, FONT = 'kit-font-1';
-var SHELL = ["./","engine.js?v=20bfe8e93e","auth.js?v=20bfe8e93e","manifest.webmanifest","icons/icon-192.png","icons/apple-touch-icon.png"];
+var SHELL = ["./","engine.js?v=59cfdcb1a8","auth.js?v=59cfdcb1a8","manifest.webmanifest","icons/icon-192.png","icons/apple-touch-icon.png"];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
