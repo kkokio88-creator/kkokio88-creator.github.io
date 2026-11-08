@@ -314,7 +314,7 @@
   }
   function signupSteps() {
     var stage = $('#c11 .su-stage'), AT = [0, 0.1, 0.22, 0.34, 0.46];
-    function stick() { stage.style.setProperty('--st', Math.min(64, innerHeight - stage.offsetHeight - 8) + 'px'); }
+    function stick() { stage.style.setProperty('--st', Math.min(88, innerHeight - stage.offsetHeight - 8) + 'px'); }
     addEventListener('resize', stick);
     $('#c11 .su-steps li').classList.add('on');
     return function (p) {
@@ -392,7 +392,20 @@
     ScrollTrigger.create({ trigger: sec, start: 'top bottom', end: 'bottom top', onToggle: function (self) { if (!self.isActive) { vids.forEach(function (v) { v.pause(); }); act = -1; } } });
     return function (p) {
       var x = pos(p), a = Math.round(x), r = sec.getBoundingClientRect();
-      track.style.transform = 'translate3d(' + (-x * innerWidth) + 'px,0,0)';
+      var desk = innerWidth / innerHeight >= 1 && innerWidth > 760;
+      if (desk) {
+        // PC: 고정된 자리에서 앞 장은 흐려지며 위로, 다음 장은 아래에서 올라오며 겹쳐 바뀐다
+        var base = Math.floor(x), k = x - base;
+        panels.forEach(function (pn, i) {
+          var o = i === base ? 1 - k : i === base + 1 ? k : 0, d = i - x;
+          pn.style.opacity = o; pn.style.visibility = o > 0.01 ? 'visible' : 'hidden';
+          $('.ph', pn).style.transform = 'translateY(' + (d * 60) + 'px) scale(' + (1 - Math.min(1, Math.abs(d)) * 0.06) + ')';
+          $('.hp-txt', pn).style.transform = 'translateY(' + (d * 90) + 'px)';
+        });
+      } else {
+        track.style.transform = 'translate3d(' + (-x * innerWidth) + 'px,0,0)';
+        panels.forEach(function (pn) { pn.style.opacity = ''; pn.style.visibility = ''; $('.ph', pn).style.transform = ''; $('.hp-txt', pn).style.transform = ''; });
+      }
       dots.forEach(function (d, i) { d.classList.toggle('on', i === a); });
       if (a !== act && r.top < innerHeight && r.bottom > 0) {
         act = a;
