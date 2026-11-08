@@ -625,3 +625,23 @@ html:not(.js) .tray { width: 30vw; }
 @media (max-height: 640px) and (max-aspect-ratio: 1/1) { .sc p { display: none; } .sort-copy { height: 34px; } .sort-phone { height: calc(100svh - 100px - 158px); } }
 /* C5: 큰 화면에서 가운데 빈 띠를 줄인다 */
 @media (min-width: 1600px) and (min-aspect-ratio: 1/1) { .dtrack { height: 54vh; bottom: 13vh; } }
+
+/* C7 PC: 설명도 제자리에 고정 — 앞 설명은 살짝 위로 사라지고 다음 설명이 짧은 거리에서 나타난다 */
+@media (min-aspect-ratio: 1/1) and (min-width: 761px) {
+  .hl-pin { height: calc(6 * 62vh); align-items: start; }
+  .hl-sticky { justify-content: center; }
+  .hl-steps { position: sticky; top: calc(50vh - 130px); height: 260px; padding: 0; }
+  .hl-step { position: absolute; left: 0; right: 0; top: 0; min-height: 0; height: 100%; opacity: 0; transform: translateY(24px); transition: opacity .45s var(--expo), transform .55s var(--expo); }
+  .hl-step.on { opacity: 1; transform: none; }
+  .hl-step.past { opacity: 0; transform: translateY(-24px); }
+}
+
+/* C2: 제목 한 줄, 왼쪽 여백 넉넉히 */
+#c2 .top-copy { width: 36%; padding-left: 7vw; }
+#c2 .top-copy .big { font-size: clamp(36px, 3.8vw, 64px); white-space: nowrap; }
+@media (max-aspect-ratio: 1/1) { #c2 .top-copy { width: auto; padding-left: var(--pad); } #c2 .top-copy .big { white-space: normal; font-size: clamp(34px, 9vw, 48px); } }
+
+/* 띠배너: 외곽선 대신 채운 글자, 작고 천천히 — 읽히게 */
+.marquee { padding: 26px 0; }
+.mq-in { font-size: clamp(26px, 3.6vw, 52px); letter-spacing: -0.03em; }
+.mq-row.rev .mq-in { color: #A9A8C8; -webkit-text-stroke: 0; font-weight: 700; font-size: clamp(20px, 2.6vw, 38px); }

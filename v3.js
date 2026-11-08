@@ -138,14 +138,23 @@
     return -1;
   };
   // 프레임 좌표(0~1) → 화면 좌표(px). 그리기와 같은 cover 계산
-  Seq.prototype.cover = function () {
-    var s = fxSize(), iw = this.set === 'd' ? 1920 : 1080, ih = this.set === 'd' ? 1080 : 1920, k = Math.max(s.w / iw, s.h / ih);
-    return { k: k, x: (s.w - iw * k) / 2, y: (s.h - ih * k) / 2, iw: iw, ih: ih };
+  // p를 주면 장면별 가로 이동(offx)까지 넣어 계산한다: 옮긴 만큼 살짝 키워 화면 끝에 빈 띠가 생기지 않게
+  Seq.prototype.cover = function (p) {
+    var s = fxSize(), iw = this.set === 'd' ? 1920 : 1080, ih = this.set === 'd' ? 1080 : 1920, off = p === undefined ? 0 : this.offx(p);
+    var k = Math.max(s.w / iw, s.h / ih, (s.w + 2 * Math.abs(off)) / iw);
+    return { k: k, x: (s.w - iw * k) / 2 + off, y: (s.h - ih * k) / 2, iw: iw, ih: ih };
   };
-  Seq.prototype.toView = function (nx, ny) { var c = this.cover(); return { x: c.x + nx * c.iw * c.k, y: c.y + ny * c.ih * c.k }; };
+  // PC에서 장면 ②는 그림을 오른쪽으로 옮겨 왼쪽 제목과 좌우 균형을 맞추고, ③이 시작되며 제자리로 돌아온다
+  Seq.prototype.offx = function (p) {
+    if (innerWidth / innerHeight < 1 || innerWidth <= 760) return 0;
+    if (this.name === 'card') return 0.1 * ease(seg(p, 0.3, 0.62)) * innerWidth;
+    if (this.name === 'explode') return 0.1 * (1 - ease(seg(p, 0, 0.22))) * innerWidth;
+    return 0;
+  };
+  Seq.prototype.toView = function (nx, ny, p) { var c = this.cover(p || 0); return { x: c.x + nx * c.iw * c.k, y: c.y + ny * c.ih * c.k }; };
   Seq.prototype.blit = function (p, alpha) {
     var i = this.nearest(p); if (i < 0) return false;
-    var c = this.cover();
+    var c = this.cover(p);
     fctx.globalAlpha = alpha; fctx.drawImage(this.imgs[i], c.x, c.y, c.iw * c.k, c.ih * c.k); fctx.globalAlpha = 1;
     return this.name + i + '@' + alpha.toFixed(2);
   };
@@ -174,7 +183,7 @@
     });
     if (!jobs.length) return;
     fxSize();
-    var key = jobs.map(function (j) { return j[0].name + j[0].nearest(j[1]) + j[2].toFixed(2); }).join('|') + fx.width;
+    var key = jobs.map(function (j) { return j[0].name + j[0].nearest(j[1]) + j[2].toFixed(2) + Math.round(j[0].offx(j[1])); }).join('|') + fx.width;
     if (key === paintKey && !force) return;
     paintKey = key;
     fctx.setTransform(fxDpr, 0, 0, fxDpr, 0, 0);
@@ -205,7 +214,7 @@
     var seq = lblSec._seq, f = anchors[Math.round(p * (anchors.length - 1))] || [], off = innerWidth < 700 ? 30 : 64;
     f.forEach(function (a) {
       var e = lineEls[a.id]; if (!e) return;
-      var v = seq.toView(a.x, a.y), k = seg(a.o, 0.6, 1);
+      var v = seq.toView(a.x, a.y, p), k = seg(a.o, 0.6, 1);
       e.li.style.transform = 'translate(' + (v.x + off) + 'px,' + v.y + 'px)';
       e.li.style.opacity = k;
       e.l.setAttribute('x1', v.x); e.l.setAttribute('y1', v.y); e.l.setAttribute('x2', v.x + (off - 10) * k); e.l.setAttribute('y2', v.y);
@@ -418,15 +427,15 @@
 
   // ── C7 PC: 핀 스크롤리텔링(휴대폰 고정, 설명이 스크롤되며 가운데 온 설명으로 화면 전환) ──
   (function deskPin() {
-    var sec = $('#c7'), steps = $$('.hl-step', sec), vids = $$('.dv', sec), prog = $$('.hl-prog li', sec), act = -1, playing = false;
+    var sec = $('#c7'), pin = $('.hl-pin', sec), steps = $$('.hl-step', sec), vids = $$('.dv', sec), act = -1, playing = false;
     function upd() {
       if (!(innerWidth / innerHeight >= 1 && innerWidth > 760)) return;
-      var r = sec.getBoundingClientRect(), inView = r.top < innerHeight && r.bottom > 0, mid = innerHeight / 2, best = 0, bd = 1e9;
-      steps.forEach(function (st, i) { var b = st.getBoundingClientRect(), d = Math.abs(b.top + b.height / 2 - mid); if (d < bd) { bd = d; best = i; } });
+      var r = sec.getBoundingClientRect(), inView = r.top < innerHeight && r.bottom > 0, pr = pin.getBoundingClientRect();
+      // 고정 구간 안에서 스크롤한 만큼 0~5번 설명을 고른다
+      var p = clamp((innerHeight / 2 - pr.top) / pr.height, 0, 0.9999), best = Math.floor(p * steps.length);
       if (best !== act) {
         act = best;
-        steps.forEach(function (st, i) { st.classList.toggle('on', i === best); });
-        prog.forEach(function (li, i) { li.classList.toggle('on', i === best); });
+        steps.forEach(function (st, i) { st.classList.toggle('on', i === best); st.classList.toggle('past', i < best); });
         vids.forEach(function (v, i) { v.classList.toggle('on', i === best); if (i !== best) v.pause(); });
         playing = false;
       }
@@ -450,7 +459,7 @@
         var r = row.getBoundingClientRect();
         if (r.bottom > 0 && r.top < innerHeight && w) {
           var vel = lenis ? Math.abs(lenis.velocity || 0) : 0;
-          x += dir * (60 + vel * 18) * dt;
+          x += dir * (38 + Math.min(vel, 30) * 8) * dt;
           if (x <= -w) x += w; if (x > 0) x -= w;
           inner.style.transform = 'translate3d(' + x + 'px,0,0)';
         }
@@ -558,7 +567,7 @@
         .catch(function (err) {
           msg.textContent = err && err.name !== 'AbortError' && err.message && !/fetch|network|JSON|Unexpected/i.test(err.message) ? err.message : '잠시 문제가 생겼어요. 조금 뒤 다시 시도해 주세요.';
         })
-        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '무료로 시작하기'; });
+        .then(function () { clearTimeout(timer); btn.disabled = false; btn.textContent = '평생 무료로 신청하기'; });
     });
     function done(r) {
       $('#sentH').textContent = r.again ? '이미 신청하셨어요.' : '메일함을 확인해 주세요.';
