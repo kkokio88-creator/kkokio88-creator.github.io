@@ -6,7 +6,8 @@
  */
 (function () {
   var CFG = window.KIT_V2_OVERRIDE || window.KIT_V2 || {};
-  var SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/calendar.readonly', 'https://www.googleapis.com/auth/calendar.events', 'openid', 'email'].join(' ');
+  // 필요한 만큼만(구글 심사 기준 '가장 좁은 권한'): 앱이 만든 파일 · 캘린더 목록 보기 · 일정 보기 · 내 캘린더 일정 넣고 빼기
+  var SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/calendar.calendarlist.readonly', 'https://www.googleapis.com/auth/calendar.events.readonly', 'https://www.googleapis.com/auth/calendar.events.owned', 'openid', 'email'].join(' ');
   var tok = null, waiters = [], client = null, started = false;
   try { tok = JSON.parse(localStorage.getItem('kitTok') || 'null'); } catch (e) {}
   var valid = function () { return tok && tok.t && tok.exp > Date.now() + 60e3; };

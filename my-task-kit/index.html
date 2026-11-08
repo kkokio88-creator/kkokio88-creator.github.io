@@ -508,6 +508,7 @@
       setTimeout(function () { location.reload(); }, 50);
     });
   }
+  function calPermMsg() { return window.KIT_AUTH ? '캘린더 권한이 없어요. 더보기 ▸ 로그아웃 후 다시 시작하면서 권한 화면에서 모두 선택해 주세요' : '캘린더 권한이 필요해요. 시트 메뉴를 한 번 눌러 승인해 주세요'; }
   function call0(fn) {
     return callRaw.apply(null, arguments).catch(function (e) {
       if (!(e instanceof Error)) e = new Error(String(e && e.message || e));
@@ -797,7 +798,7 @@
       animNext = false; renderToday();
     }
     return call('placeTask', id, title, data.today, st, en).then(function (r) { setView(r.view); toast(st + '에 넣었어요 · 구글 캘린더에도 들어갔어요'); })
-      .catch(function (e) { toast(/권한|authoriz|permission/i.test(e.message) ? '캘린더 권한이 필요해요. 시트 메뉴를 한 번 눌러 승인해 주세요' : e.message); load(); });
+      .catch(function (e) { toast(/권한|authoriz|permission/i.test(e.message) ? calPermMsg() : e.message); load(); });
   }
   function unplaceTask(id) {
     if (data && data.events) { data.events.items = (data.events.items || []).filter(function (e) { return e.kit !== id; }); animNext = false; renderToday(); }
@@ -903,7 +904,7 @@
     if ((b = e.target.closest('[data-tl2cal]'))) {
       b.disabled = true; b.textContent = '캘린더에 넣는 중…';
       return call('timebox', tlBlocks).then(function (r) { toast('캘린더에 ' + r.added + '개 넣었어요'); setView(r.view); })
-        .catch(function (err) { b.disabled = false; toast(/권한|authoriz|permission/i.test(err.message) ? '캘린더 쓰기 권한이 필요해요. 시트 메뉴를 한 번 눌러 승인해 주세요' : err.message); });
+        .catch(function (err) { b.disabled = false; toast(/권한|authoriz|permission/i.test(err.message) ? calPermMsg() : err.message); });
     }
     if ((b = e.target.closest('[data-more]'))) { listMore = true; return renderToday(); }
     if ((b = e.target.closest('[data-shutdown]'))) return openShutdown();
@@ -1397,7 +1398,7 @@
       '<label class="row" style="cursor:pointer">' + tile('mail', 'purple') + '<div class="tx"><div class="t">주간 검토 메일</div><div class="m">금요일 오후 4시 · 한 주 요약</div></div><span class="sw"><input type="checkbox" data-nt="weekly"' + ((d.notify || {}).weekly ? ' checked' : '') + '><i></i></span></label>' +
       '</div><button class="txtlink" data-nt-test>아침 브리핑 지금 받아보기</button><div class="gap"></div>') +
       '<div class="card"><a class="row" href="' + esc(d.sheetUrl || '#') + '" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'green') + '<div class="tx"><div class="t">구글 시트 열기</div></div>' + CHEV + '</a></div>' +
-      (d.pageUrl ? '<div class="gap"></div><div class="card"><a class="row" href="' + esc(d.pageUrl) + 'help.html" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'gray') + '<div class="tx"><div class="t">도움말 · 개인정보 안내</div></div>' + CHEV + '</a></div>' : '') +
+      (d.pageUrl ? '<div class="gap"></div><div class="card"><a class="row" href="' + (window.KIT_ENGINE ? '../#c12' : esc(d.pageUrl) + 'help.html') + '" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'gray') + '<div class="tx"><div class="t">도움말 · 개인정보 안내</div></div>' + CHEV + '</a></div>' : '') +
       '<div class="gap"></div><div class="card"><a class="row" id="report" href="#" style="text-decoration:none;color:inherit">' + tile('bell', 'red') + '<div class="tx"><div class="t">문제 제보 · 처리 확인</div><div class="m">제보 게시판에서 처리 상태를 볼 수 있어요</div></div>' + CHEV + '</a></div>' +
       (window.KIT_AUTH ? '<div class="gap"></div><div class="card"><div class="row" tabindex="0" role="button" id="kitLogout">' + tile('user', 'gray') + '<div class="tx"><div class="t">로그아웃</div><div class="m">' + esc(window.KIT_AUTH.email() || '구글 계정') + ' · 시트는 내 드라이브에 그대로 있어요</div></div>' + CHEV + '</div></div>' : '') +
       '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') +
@@ -1558,7 +1559,7 @@
         return '<div class="card" style="padding:16px 18px;margin-bottom:10px"><div class="t" style="font-size:16.5px;font-weight:700;display:flex;align-items:center;gap:8px">' + svg('folder', 18, 'var(--purple)') + esc(p.name) + '</div>' +
           (p.outcome ? '<div class="m" style="margin:4px 0 0;color:var(--t2);font-size:14px">' + esc(p.outcome) + '</div>' : '') + '<input class="field" data-proj="' + esc(p.name) + '" placeholder="다음 행동 입력 후 엔터"></div>';
       }).join('') + (ops.length > st.length ? '<div class="card">' + ops.filter(function (p) { return !p.stalled; }).map(projRow).join('') + '</div>' : ''); }
-    if (key === 'next') { var c = uniq(w.next.concat(w.upcoming)).slice(0, 12); h = '<div class="h1" style="margin-bottom:18px">다음 주 꼭 할 일 3개</div>' + (c.length ? '<div class="card" id="wkPick">' + c.map(function (t) { return '<div class="row" data-pick="' + esc(t.id) + '"><span class="chk">' + svg('check', 15) + '</span><div class="tx"><div class="t">' + esc(t.title) + '</div></div></div>'; }).join('') + '</div>' : empty('sun', 'amber', '고를 일이 없어요')) + '<button class="txtlink" data-wks="mail">' + svg('mail', 15) + ' 이번 주 요약 메일로 받기</button>'; }
+    if (key === 'next') { var c = uniq(w.next.concat(w.upcoming)).slice(0, 12); h = '<div class="h1" style="margin-bottom:18px">다음 주 꼭 할 일 3개</div>' + (c.length ? '<div class="card" id="wkPick">' + c.map(function (t) { return '<div class="row" data-pick="' + esc(t.id) + '"><span class="chk">' + svg('check', 15) + '</span><div class="tx"><div class="t">' + esc(t.title) + '</div></div></div>'; }).join('') + '</div>' : empty('sun', 'amber', '고를 일이 없어요')) + (window.KIT_ENGINE ? '' : '<button class="txtlink" data-wks="mail">' + svg('mail', 15) + ' 이번 주 요약 메일로 받기</button>'); }
     $('moreBody').innerHTML = head + h + next;
     stagger($('moreBody'));
   }
@@ -1609,7 +1610,7 @@
     e.preventDefault();
     // 제보 게시판으로: 버전·화면·최근 오류를 미리 채워서 연다 (내 할 일 내용은 보내지 않음)
     var page = (data && data.pageUrl) || 'https://kkokio88-creator.github.io/my-task-kit/';
-    var info = ['시트 코드 v' + ((data && data.kitVersion) || '?'), (isPC() ? 'PC' : '휴대폰'), '보내지 않은 담기 ' + outbox.length + '개'].concat(errLog).join('\n');
+    var info = [(window.KIT_ENGINE ? '앱(v2) v' : '시트 코드 v') + ((data && data.kitVersion) || '?'), (isPC() ? 'PC' : '휴대폰'), '보내지 않은 담기 ' + outbox.length + '개'].concat(errLog).join('\n');
     window.open(page + 'board.html?from=app&v=' + encodeURIComponent(KIT.version) + '&err=' + encodeURIComponent(info), '_blank', 'noopener');
   });
   $('moreBody').addEventListener('change', function (e) {
@@ -1701,7 +1702,7 @@
     if (c && Date.now() - c.at < 864e5) return use(c.j);
     fetch(url + 'latest.json', { cache: 'no-store', credentials: 'omit' }).then(function (r) { return r.json(); }).then(function (j) { try { localStorage.setItem('kitLatest', JSON.stringify({ at: Date.now(), j: j })); } catch (e) {} use(j); }).catch(function () {});
   }
-  setTimeout(checkUpdate, 3000);
+  if (!window.KIT_ENGINE) setTimeout(checkUpdate, 3000); // v2 앱은 열 때마다 최신이라 업데이트 안내가 필요 없다
 
   if (!KEY || !window.KIT_API_URL) { document.body.innerHTML = '<div style="font-family:sans-serif;padding:48px 20px;text-align:center;color:#8a8a99"><h2 style="color:#5B5CF6">개인 링크로 열어 주세요</h2><p>시트 메뉴 [✅ 내 업무 ▸ 📱 휴대폰·웹 화면 링크]의 링크(끝에 #api=…&k=…)로 한 번 열면, 이 브라우저에 기억됩니다.</p></div>'; }
   else if (INITIAL) { data = INITIAL; saveView(INITIAL); renderToday(); }
