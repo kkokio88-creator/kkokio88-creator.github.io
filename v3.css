@@ -654,3 +654,17 @@ html:not(.js) .tray { width: 30vw; }
 .tn .acct { display: block; margin: -4px auto 10px; width: max-content; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(190, 190, 255, .7); font-style: normal; font-size: 12px; font-weight: 700; color: #D9D8FF; }
 @media (max-aspect-ratio: 1/1), (max-width: 760px) { .tn .acct { grid-column: 2; margin: 0 0 2px; } }
 .eyebrow3 { margin: 0 0 10px; font-size: 15px; font-weight: 800; color: var(--g); }
+
+/* ══ 이런 고민: 말풍선 대화 ══ */
+.worries { padding: 6vh 0 18vh; background: #fff; text-align: center; }
+.qas { list-style: none; margin: 56px auto 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; max-width: 1120px; text-align: left; }
+.qa { display: flex; flex-direction: column; gap: 14px; }
+.qa .who { display: block; font-size: 13px; font-weight: 700; color: var(--t3); margin: 0 6px 6px; }
+.qa p { margin: 0; padding: 18px 20px; font-size: 16px; line-height: 1.6; word-break: keep-all; border-radius: 22px; }
+.ask p { background: var(--fill); color: var(--t1); border-bottom-left-radius: 6px; }
+.ans { align-self: flex-end; width: 92%; text-align: right; }
+.ans p { background: var(--g); color: #fff; text-align: left; border-bottom-right-radius: 6px; box-shadow: 0 14px 34px rgba(91, 92, 246, .28); }
+.js [data-qa] .ask, .js [data-qa] .ans { opacity: 0; transform: translateY(14px) scale(.96); transform-origin: bottom left; transition: opacity .6s var(--expo), transform .7s var(--spring); }
+.js [data-qa] .ans { transform-origin: bottom right; transition-delay: .45s; }
+.js [data-qa].on .ask, .js [data-qa].on .ans { opacity: 1; transform: none; }
+@media (max-width: 900px) { .qas { grid-template-columns: 1fr; max-width: 520px; gap: 34px; } }

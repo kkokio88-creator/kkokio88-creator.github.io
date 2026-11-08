@@ -501,6 +501,11 @@
     tiles.forEach(function (t, i) { gsap.fromTo(t, { y: 30 + (i % 2) * 40 }, { y: -(10 + (i % 2) * 40), ease: 'none', scrollTrigger: { trigger: t.parentNode, start: 'top bottom', end: 'bottom top', scrub: true } }); });
   })();
 
+  // ── 이런 고민: 말풍선이 차례로 떠오르고 키트의 답이 이어진다 ──
+  $$('[data-qa]').forEach(function (el, i) {
+    ScrollTrigger.create({ trigger: el, start: 'top 78%', onEnter: function () { setTimeout(function () { el.classList.add('on'); }, i * 220); }, onLeaveBack: function () { el.classList.remove('on'); } });
+  });
+
   // ── C8 맡긴 일 며칠째 ──
   (function () { var els = [$('.dcount'), $('.dcount2')], n = 1; setInterval(function () { n = n % 3 + 1; els.forEach(function (el) { el.textContent = n; el.style.color = n === 3 ? '#C27C00' : ''; }); }, 1600); })();
 
