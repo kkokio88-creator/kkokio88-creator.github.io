@@ -36,8 +36,9 @@
       started = true; document.documentElement.classList.add('kit-signed');
       // 처음 시작(큰 화면)은 시트를 만드는 동안 진행 상황을 보여 준다. 다시 올 때는 저장본 화면을 바로 보인다
       var g = document.getElementById('kitGate'), first = g && !g.hidden && g.className === 'kg-full';
-      if (first) { busy(true); } else showGate(false);
-      window.KIT_ENGINE.start(email).then(function () { busy(false); showGate(false); })
+      if (first) { busy(true); } else if (valid()) showGate(false);
+      // 로그인이 만료됐어도 이 기기 저장본으로 먼저 열고(아래 '계속하기' 막대는 그대로), 저장은 로그인한 뒤 이어서 보낸다
+      window.KIT_ENGINE.start(email).then(function () { busy(false); if (valid()) showGate(false); })
         .catch(function (e) { busy(false); gateMsg('시작하지 못했어요: ' + e.message); showGate(true); started = false; });
     };
     if (tok.email) return go(tok.email);
@@ -53,8 +54,9 @@
   }
   function logout() {
     try { if (tok && google.accounts.oauth2.revoke) google.accounts.oauth2.revoke(tok.t, function () {}); } catch (e) {}
+    started = false; // 창을 닫을 때 저장본을 다시 쓰지 않게
     tok = null; ['kitTok', 'kitSheetId'].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
-    try { Object.keys(localStorage).filter(function (k) { return /^kitView/.test(k); }).forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
+    try { Object.keys(localStorage).filter(function (k) { return /^kitView|^kit(Book|Cal|Tabs):/.test(k); }).forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
     location.reload();
   }
 
@@ -88,11 +90,37 @@
   // 엔진 만들기 (App.html 의 call()이 KIT_ENGINE 을 쓴다)
   window.KIT_ENGINE = createKitEngine({
     token: token, storage: store, onProgress: progress,
-    onUnauthorized: function () { tok = null; store.set('kitTok', 'null'); return token(); }
+    // 만료돼도 이메일은 남겨 둔다: 다음에 열 때 처음 화면이 아니라 저장본 + '계속하기' 막대로
+    onUnauthorized: function () { tok = { email: tok && tok.email }; store.set('kitTok', JSON.stringify(tok)); return token(); },
+    onSaveError: function () { saveNote(true); }, onSaved: function () { saveNote(false); },
+    // 뒤에서 새로 받은 시트·캘린더가 화면과 다르면 화면(App.html)이 다시 그린다
+    onChange: function () { try { window.dispatchEvent(new Event('kit:changed')); } catch (e) {} }
   });
+  // 저장은 뒤에서 한다 → 실패하면 화면 위에 알리고 다시 시도 버튼을 준다
+  function saveNote(on) {
+    var n = document.getElementById('kitSave');
+    if (!on) { if (n) n.remove(); return; }
+    if (n) return;
+    n = document.createElement('div'); n.id = 'kitSave'; n.setAttribute('role', 'alert');
+    n.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));z-index:150;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:#FFF0F1;color:#C42B3A;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.12)';
+    n.innerHTML = '<span style="flex:1">구글 시트에 저장하지 못했어요. 인터넷 연결을 확인해 주세요.</span><button type="button" style="min-height:40px;padding:0 14px;border-radius:10px;border:0;background:#F04452;color:#fff;font:inherit;font-weight:700;cursor:pointer">다시 시도</button>';
+    n.querySelector('button').onclick = function () { n.querySelector('button').disabled = true; window.KIT_ENGINE.retrySave().then(function () { var b = n.querySelector('button'); if (b) b.disabled = false; }); };
+    document.body.appendChild(n);
+  }
+  // 앱으로 돌아오면 오래된 시트·캘린더를 미리 새로 받아 둔다 (다음 누름이 기다리지 않게)
+  // 다른 앱으로 가거나 창을 닫을 때는 이 기기 저장본을 바로 써 둔다(못 보낸 변경은 다음에 열 때 이어서 보냄)
+  document.addEventListener('visibilitychange', function () { if (!started) return; if (document.visibilityState === 'visible') window.KIT_ENGINE.warm(); else window.KIT_ENGINE.persist(); });
+  window.addEventListener('pagehide', function () { if (started) window.KIT_ENGINE.persist(); });
+  window.addEventListener('beforeunload', function (e) { if (started) window.KIT_ENGINE.persist(); if (started && window.KIT_ENGINE.saveFailed()) { e.preventDefault(); e.returnValue = ''; } });
   window.KIT_AUTH = { login: login, logout: logout, email: function () { return (tok && tok.email) || ''; } };
 
   // GIS 스크립트
   var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.defer = true; document.head.appendChild(s);
-  document.addEventListener('DOMContentLoaded', function () { if (valid()) afterLogin(); else showGate(true); });
+  document.addEventListener('DOMContentLoaded', function () {
+    if (valid()) return afterLogin();
+    showGate(true);
+    // 전에 이 기기에서 쓴 적이 있으면 로그인을 기다리지 않고 저장본으로 바로 연다
+    var sid = store.get('kitSheetId');
+    if (tok && tok.email && sid && store.get('kitBook:' + sid)) afterLogin();
+  });
 })();

@@ -46,7 +46,7 @@ function createKitEngine(opts) {
       var s = { name: name, id: id, data: rows || [], hidden: !!hidden, hiddenChanged: false, isNew: !!isNew, dirty: {}, full: false, prevRows: (rows || []).length, prevCols: 0, rules: [], formulas: {} };
       (rows || []).forEach(function (r) { s.prevCols = Math.max(s.prevCols, r.length); });
       var cell = function (r, c) { return s.data[r - 1] && s.data[r - 1][c - 1] !== undefined && s.data[r - 1][c - 1] !== null ? s.data[r - 1][c - 1] : ''; };
-      var setCell = function (r, c, v) { while (s.data.length < r) s.data.push([]); s.data[r - 1][c - 1] = v; s.dirty[r] = 1; };
+      var setCell = function (r, c, v) { while (s.data.length < r) s.data.push([]); s.data[r - 1][c - 1] = v; s.dirty[r] = 1; editSeq++; };
       var lastRow = function () { for (var i = s.data.length; i > 0; i--) if ((s.data[i - 1] || []).some(function (v) { return v !== '' && v !== undefined && v !== null; })) return i; return 0; };
       var lastCol = function () { var m = 0; s.data.forEach(function (r) { r.forEach(function (v, i) { if (v !== '' && v !== undefined && v !== null) m = Math.max(m, i + 1); }); }); return m; };
       var range = function (r, c, nr, nc) {
@@ -69,10 +69,10 @@ function createKitEngine(opts) {
         getName: function () { return s.name; }, getSheetId: function () { return s.id; }, getParent: function () { return bookApi; },
         getLastRow: lastRow, getLastColumn: lastCol, getMaxRows: function () { return Math.max(1000, s.data.length); }, getMaxColumns: function () { return Math.max(26, lastCol()); },
         getRange: range, getDataRange: function () { return range(1, 1, Math.max(lastRow(), 1), Math.max(lastCol(), 1)); },
-        hideSheet: function () { if (!s.hidden) { s.hidden = true; s.hiddenChanged = true; } return api; },
-        deleteRow: function (r) { s.data.splice(r - 1, 1); s.full = true; return api; },
+        hideSheet: function () { if (!s.hidden) { s.hidden = true; s.hiddenChanged = true; editSeq++; } return api; },
+        deleteRow: function (r) { s.data.splice(r - 1, 1); s.full = true; editSeq++; return api; },
         getConditionalFormatRules: function () { return s.rules.slice(); }, setConditionalFormatRules: function (x) { s.rules = x; },
-        clear: function () { s.data = []; s.formulas = {}; s.full = true; return api; }, clearConditionalFormatRules: function () { s.rules = []; },
+        clear: function () { s.data = []; s.formulas = {}; s.full = true; editSeq++; return api; }, clearConditionalFormatRules: function () { s.rules = []; },
         _s: s
       });
       s.api = api;
@@ -80,15 +80,15 @@ function createKitEngine(opts) {
     }
     var bookApi = chain({
       getId: function () { return book.id; }, getUrl: function () { return book.url; }, getName: function () { return SHEET_NAME; },
-      getSpreadsheetTimeZone: function () { return book.tz; }, setSpreadsheetTimeZone: function (tz) { if (tz !== book.tz) { book.tz = tz; book.tzChanged = true; } },
+      getSpreadsheetTimeZone: function () { return book.tz; }, setSpreadsheetTimeZone: function (tz) { if (tz !== book.tz) { book.tz = tz; book.tzChanged = true; editSeq++; } },
       getSheetByName: function (n) { var x = book.sheets.filter(function (sh) { return sh.getName() === n; })[0]; return x || null; },
       getSheets: function () { return book.sheets.slice(); },
-      insertSheet: function (n, idx) { var sh = makeSheet(n, Math.floor(Math.random() * 2e9) + 1, [], false, true); if (idx === 0) book.sheets.unshift(sh); else book.sheets.push(sh); return sh; },
-      deleteSheet: function (sh) { book.sheets = book.sheets.filter(function (x) { return x !== sh; }); if (!sh._s.isNew) book.removed.push(sh._s.id); },
+      insertSheet: function (n, idx) { editSeq++; var sh = makeSheet(n, Math.floor(Math.random() * 2e9) + 1, [], false, true); if (idx === 0) book.sheets.unshift(sh); else book.sheets.push(sh); return sh; },
+      deleteSheet: function (sh) { editSeq++; book.sheets = book.sheets.filter(function (x) { return x !== sh; }); if (!sh._s.isNew) book.removed.push(sh._s.id); },
       setActiveSheet: function () {}, toast: function () {}
     });
     book.api = bookApi;
-    (meta.sheets || []).forEach(function (m) { book.sheets.push(makeSheet(m.title, m.sheetId, m.rows, m.hidden, false)); });
+    (meta.sheets || []).forEach(function (m) { book.sheets.push(makeSheet(m.title, m.sheetId, m.rows, m.hidden, !!m.isNew)); });
     return book;
   }
 
@@ -101,19 +101,30 @@ function createKitEngine(opts) {
   function ymdLocal(d) { return utils.formatDate(d, book ? book.tz : 'Asia/Seoul', 'yyyy-MM-dd'); }
   function colName(n) { var s = ''; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
   function q(name) { return "'" + String(name).replace(/'/g, "''") + "'"; }
-  async function flush() {
+  // 지금 바뀐 내용을 한 번에 떠서(그 순간 바뀜 표시를 비움) 보낸다. 보내는 동안 화면 동작은 계속 메모리 시트를 바꿔도 된다
+  // (그 변경은 다음 저장에 실린다). 실패하면 떠 간 표시를 되돌려 다음 저장 때 다시 보낸다.
+  var sending = 0;
+  async function flush() { sending++; try { return await flush0(); } finally { sending--; } }
+  var inflight = []; // 보내는 중인 변경 (저장본에는 '아직 못 보냄'으로 남긴다)
+  async function flush0() {
     if (!book) return 0;
-    var reqs = [], data = [], n = 0;
-    if (book.tzChanged) { reqs.push({ updateSpreadsheetProperties: { properties: { timeZone: book.tz }, fields: 'timeZone' } }); book.tzChanged = false; }
-    book.sheets.forEach(function (sh, idx) {
+    if (!hasChanges()) return 0;
+    await getToken(); // 로그인을 기다리는 동안에는 바뀜 표시를 그대로 둔다
+    var bk = book, reqs = [], data = [], n = 0, marks = [];
+    var st = { tz: bk.tzChanged, removed: bk.removed.slice(), sheets: [] };
+    if (bk.tzChanged) reqs.push({ updateSpreadsheetProperties: { properties: { timeZone: bk.tz }, fields: 'timeZone' } });
+    bk.sheets.forEach(function (sh, idx) {
       var s = sh._s;
-      if (s.isNew) { reqs.push({ addSheet: { properties: { sheetId: s.id, title: s.name, index: idx, hidden: s.hidden } } }); s.isNew = false; s.hiddenChanged = false; }
-      if (s.hiddenChanged) { reqs.push({ updateSheetProperties: { properties: { sheetId: s.id, hidden: s.hidden }, fields: 'hidden' } }); s.hiddenChanged = false; }
+      if (s.isNew) reqs.push({ addSheet: { properties: { sheetId: s.id, title: s.name, index: idx, hidden: s.hidden } } });
+      else if (s.hiddenChanged) reqs.push({ updateSheetProperties: { properties: { sheetId: s.id, hidden: s.hidden }, fields: 'hidden' } });
+      if (s.isNew || s.hiddenChanged) st.sheets.push({ s: s, isNew: s.isNew, hid: s.hiddenChanged });
+      s.isNew = false; s.hiddenChanged = false;
     });
-    book.removed.forEach(function (id) { reqs.push({ deleteSheet: { sheetId: id } }); }); book.removed = [];
-    if (reqs.length) { await gapi('POST', API.sheets + '/' + book.id + ':batchUpdate', { requests: reqs }); n += reqs.length; }
-    book.sheets.forEach(function (sh) {
+    st.removed.forEach(function (id) { reqs.push({ deleteSheet: { sheetId: id } }); });
+    bk.tzChanged = false; bk.removed = [];
+    bk.sheets.forEach(function (sh) {
       var s = sh._s, width = 0;
+      if (!s.full && !Object.keys(s.dirty).length) return;
       s.data.forEach(function (r) { width = Math.max(width, r.length); });
       width = Math.max(width, s.prevCols, 1);
       var rowVals = function (i) { var r = s.data[i - 1] || [], out = []; for (var j = 0; j < width; j++) out.push(toCell(r[j])); return out; };
@@ -127,21 +138,91 @@ function createKitEngine(opts) {
         ks.forEach(function (r) { if (prev !== null && r === prev + 1) { block.push(rowVals(r)); prev = r; } else { push(); start = r; prev = r; block = [rowVals(r)]; } });
         push();
       }
+      marks.push({ s: s, full: s.full, dirty: s.dirty, prevRows: s.prevRows, prevCols: s.prevCols });
       s.full = false; s.dirty = {}; s.prevRows = s.data.length; s.prevCols = width;
     });
-    if (data.length) { await gapi('POST', API.sheets + '/' + book.id + '/values:batchUpdate', { valueInputOption: 'RAW', data: data }); n += data.length; }
+    inflight = marks;
+    try { return await send(); } finally { inflight = []; }
+    async function send() {
+    if (reqs.length) {
+      try { await gapi('POST', API.sheets + '/' + bk.id + ':batchUpdate', { requests: reqs }); n += reqs.length; }
+      catch (e) {
+        if (st.tz) bk.tzChanged = true;
+        bk.removed = st.removed.concat(bk.removed);
+        st.sheets.forEach(function (x) { if (x.isNew) x.s.isNew = true; if (x.hid) x.s.hiddenChanged = true; });
+        restore(marks); throw e;
+      }
+    }
+    if (data.length) {
+      try { await gapi('POST', API.sheets + '/' + bk.id + '/values:batchUpdate', { valueInputOption: 'RAW', data: data }); n += data.length; }
+      catch (e) { restore(marks); saveSnap(); throw e; }
+    }
+    if (n) saveSnap();
     return n;
+    }
+  }
+  function restore(marks) {
+    marks.forEach(function (m) {
+      var s = m.s; if (m.full) s.full = true;
+      Object.keys(m.dirty).forEach(function (r) { s.dirty[r] = 1; });
+      s.prevRows = Math.max(s.prevRows, m.prevRows); s.prevCols = Math.max(s.prevCols, m.prevCols);
+    });
+  }
+  function hasChanges() {
+    return !!book && (book.tzChanged || book.removed.length > 0 || book.sheets.some(function (sh) { var s = sh._s; return s.isNew || s.hiddenChanged || s.full || Object.keys(s.dirty).length > 0; }));
   }
 
   // ── 구글 시트 → 메모리 시트 ─────────────────────────────────
-  async function loadBook(id) {
-    var meta = await gapi('GET', API.sheets + '/' + id + '?fields=' + enc('properties(timeZone),sheets(properties(sheetId,title,hidden,index))'));
+  // 탭 이름을 이미 알면(이 기기에서 연 적이 있으면) 탭 목록과 값을 동시에 읽는다: 구글 왕복 2번 → 1번
+  async function fetchBook(id) {
+    var getVals = function (titles) {
+      if (!titles.length) return Promise.resolve({});
+      return gapi('GET', API.sheets + '/' + id + '/values:batchGet?' + titles.map(function (t) { return 'ranges=' + enc(q(t)); }).join('&') + '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING')
+        .then(function (v) { var m = {}; titles.forEach(function (t, i) { m[t] = ((v.valueRanges || [])[i] || {}).values || []; }); return m; });
+    };
+    var hint = null;
+    if (book && book.id === id) hint = book.sheets.map(function (sh) { return sh.getName(); });
+    else { try { hint = JSON.parse(store.get('kitTabs:' + id) || 'null'); } catch (e) { hint = null; } }
+    var metaP = gapi('GET', API.sheets + '/' + id + '?fields=' + enc('properties(timeZone),sheets(properties(sheetId,title,hidden,index))'));
+    var valsP = hint && hint.length ? getVals(hint) : null;
+    if (valsP) valsP.catch(function () {}); // 탭 이름이 바뀌었으면 아래에서 다시 읽는다
+    var meta = await metaP;
     var sheets = (meta.sheets || []).map(function (x) { return x.properties; }).sort(function (a, b) { return (a.index || 0) - (b.index || 0); });
-    var vals = sheets.length ? await gapi('GET', API.sheets + '/' + id + '/values:batchGet?' + sheets.map(function (s) { return 'ranges=' + enc(q(s.title)); }).join('&') + '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING') : { valueRanges: [] };
-    cache = {};
-    book = makeBook({ id: id, tz: meta.properties && meta.properties.timeZone, sheets: sheets.map(function (s, i) { return { title: s.title, sheetId: s.sheetId, hidden: s.hidden, rows: ((vals.valueRanges || [])[i] || {}).values || [] }; }) });
-    loadedAt = Date.now();
-    return book;
+    var titles = sheets.map(function (s) { return s.title; });
+    var vals = null;
+    if (valsP && titles.every(function (t) { return hint.indexOf(t) >= 0; })) { try { vals = await valsP; } catch (e) { vals = null; } }
+    if (!vals) vals = await getVals(titles);
+    store.set('kitTabs:' + id, JSON.stringify(titles));
+    return { id: id, tz: meta.properties && meta.properties.timeZone, sheets: sheets.map(function (s) { return { title: s.title, sheetId: s.sheetId, hidden: s.hidden, rows: vals[s.title] || [] }; }) };
+  }
+  function applyBook(meta, at) { cache = {}; book = makeBook(meta); loadedAt = at || Date.now(); saveSnap(); return book; }
+  async function loadBook(id) { var at = Date.now(); return applyBook(await fetchBook(id), at); }
+
+  // ── 이 기기 저장본 (다음에 열 때 구글을 기다리지 않고 바로 시작) ──
+  // 시트 내용과 '아직 못 보낸 변경' 표시를 함께 둔다 → 창을 닫았다 열어도 못 보낸 변경은 이어서 보낸다
+  var snapT = null;
+  function saveSnap() {
+    if (!book || snapT) return;
+    snapT = setTimeout(function () { snapT = null; writeSnap(); }, opts.snapMs === undefined ? 300 : opts.snapMs);
+  }
+  function writeSnap() {
+    if (snapT) { clearTimeout(snapT); snapT = null; }
+    if (!book) return;
+    try {
+      store.set('kitBook:' + book.id, JSON.stringify({ v: 1, at: loadedAt, tz: book.tz, tzc: book.tzChanged, rm: book.removed, sheets: book.sheets.map(function (sh) {
+        var x = sh._s, fl = inflight.filter(function (m) { return m.s === x; })[0], d = Object.keys(x.dirty);
+        if (fl) d = d.concat(Object.keys(fl.dirty).filter(function (r) { return d.indexOf(r) < 0; }));
+        return { t: x.name, id: x.id, h: x.hidden, hc: x.hiddenChanged, n: x.isNew, f: x.full || !!(fl && fl.full), d: d, pr: x.prevRows, pc: x.prevCols, r: x.data.map(function (row) { return (row || []).map(toCell); }) };
+      }) }));
+    } catch (e) {}
+  }
+  function readSnap(id) {
+    var o = null; try { o = JSON.parse(store.get('kitBook:' + id) || 'null'); } catch (e) { o = null; }
+    if (!o || o.v !== 1 || !o.sheets || !o.sheets.length) return null;
+    var b = makeBook({ id: id, tz: o.tz, sheets: o.sheets.map(function (x) { return { title: x.t, sheetId: x.id, hidden: x.h, rows: x.r, isNew: x.n }; }) });
+    b.tzChanged = !!o.tzc; b.removed = o.rm || [];
+    b.sheets.forEach(function (sh, i) { var x = o.sheets[i], st = sh._s; st.isNew = !!x.n; st.hiddenChanged = !!x.hc; st.full = !!x.f; (x.d || []).forEach(function (r) { st.dirty[r] = 1; }); st.prevRows = x.pr || 0; st.prevCols = x.pc || 0; });
+    return { book: b, at: o.at || 0 };
   }
 
   // ── 시트 찾기·만들기 (drive.file: 이 앱이 만든 파일만 보인다) ──
@@ -156,7 +237,7 @@ function createKitEngine(opts) {
     var f = await gapi('POST', API.drive + '/files?fields=id', { name: SHEET_NAME, mimeType: 'application/vnd.google-apps.spreadsheet', appProperties: { myTaskKit: '1' }, description: '내 업무관리 키트가 만든 시트예요. 지우면 앱의 데이터도 사라져요.' });
     store.set('kitSheetId', f.id);
     // 방금 만든 빈 시트는 다시 읽지 않는다: 기본 탭(sheetId 0) 하나뿐이다. 시간대는 setup 이 서울로 맞춘다
-    cache = {}; book = makeBook({ id: f.id, tz: 'Etc/UTC', sheets: [{ title: 'Sheet1', sheetId: 0, hidden: false, rows: [] }] }); loadedAt = Date.now();
+    applyBook({ id: f.id, tz: 'Etc/UTC', sheets: [{ title: 'Sheet1', sheetId: 0, hidden: false, rows: [] }] });
     return { id: f.id, created: true };
   }
   /** 다른 시트(예: v1에서 쓰던 시트)를 고르면 그 시트로 연결 (구글 파일 선택 창이 drive.file 권한을 열어 준다) */
@@ -164,7 +245,7 @@ function createKitEngine(opts) {
 
   // ── .gs 실행 환경 ────────────────────────────────────────────
   var startLog = '';
-  var book = null, loadedAt = 0, userEmail = '', cache = {}, props = {};
+  var book = null, loadedAt = 0, userEmail = '', cache = {}, props = {}, editSeq = 0;
   var calData = {}; // 'start|days|ids' → {ok, items}
   var utils = {
     getUuid: function () { return (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }); },
@@ -2347,18 +2428,34 @@ function installFromEditor() {
     var r = await gapi('GET', API.cal + '/calendars/' + enc(calId) + '/events?singleEvents=true&orderBy=startTime&maxResults=2500&timeMin=' + enc(s.toISOString()) + '&timeMax=' + enc(e.toISOString()) + '&fields=' + enc('items(id,summary,start,end,location,description,status)'));
     return (r.items || []).filter(function (ev) { return ev.status !== 'cancelled'; });
   }
+  // 5분 안: 그대로 · 그보다 오래됐으면 있는 것을 바로 쓰고 뒤에서 새로 받기(바뀌면 화면에 알림)
+  // · 아예 없으면 잠깐(calWaitMs)만 기다리고, 늦게 오면 받은 뒤 화면에 알림
+  var calFetching = {}, calNotify = {};
   async function preloadCal(startYmd, days) {
     if (!book) return;
-    var key = calKey(startYmd, days);
-    if (calData[key] && Date.now() - calData[key].at < 5 * 60e3) return;
-    var tz = book.tz;
+    var key = calKey(startYmd, days), c = calData[key], age = c ? Date.now() - c.at : Infinity;
+    if (age < 5 * 60e3) return;
+    if (c && c.ok && c.items) { fetchCal(startYmd, days, key, true); return; }
+    var p = fetchCal(startYmd, days, key, false), tm = null;
+    await Promise.race([p, new Promise(function (res) { tm = setTimeout(function () { if (calFetching[key]) calNotify[key] = 1; res(); }, opts.calWaitMs === undefined ? 3000 : opts.calWaitMs); })]);
+    clearTimeout(tm);
+  }
+  function fetchCal(startYmd, days, key, bg) {
+    if (!calFetching[key]) calFetching[key] = fetchCal0(startYmd, days, key, bg).then(function () { delete calFetching[key]; }, function () { delete calFetching[key]; });
+    return calFetching[key];
+  }
+  async function fetchCal0(startYmd, days, key, bg) {
+    var tz = book.tz, prev = calData[key];
     try {
-      var ids = K.selectedCalendarIds_(), list = await calendars().catch(function () { return []; });
+      var ids = K.selectedCalendarIds_();
       if (!ids.length) ids = ['primary'];
       var multi = ids.length > 1, items = [];
+      // 캘린더 목록과 각 캘린더 일정을 한꺼번에 받는다 (차례로 받으면 캘린더 수만큼 느려진다)
+      var got = await Promise.all([multi ? calendars().catch(function () { return []; }) : Promise.resolve([])].concat(ids.map(function (cid) { return readEvents(cid, startYmd, days, tz); })));
+      var list = got[0];
       for (var i = 0; i < ids.length; i++) {
         var meta = list.filter(function (c) { return c.id === ids[i] || (ids[i] === 'primary' && c.primary); })[0] || {};
-        var evs = await readEvents(ids[i], startYmd, days, tz);
+        var evs = got[i + 1];
         evs.forEach(function (ev) {
           var allDay = !ev.start.dateTime, s = allDay ? null : new Date(ev.start.dateTime), en = allDay ? null : new Date(ev.end.dateTime);
           var desc = String(ev.description || ''), kit = desc.indexOf(K.KIT_EVENT_TAG_) === 0 ? desc.slice(K.KIT_EVENT_TAG_.length).split(/\s/)[0] : '';
@@ -2369,11 +2466,25 @@ function installFromEditor() {
       items.sort(function (a, b) { return (a.date + (a.allDay ? '00' : a.start)) < (b.date + (b.allDay ? '00' : b.start)) ? -1 : 1; });
       calData[key] = { ok: true, items: items, at: Date.now() };
       cache = {};
+      if ((bg || calNotify[key]) && JSON.stringify((prev && prev.items) || []) !== JSON.stringify(items)) changed();
+      delete calNotify[key];
+      saveCal();
     } catch (e) {
+      delete calNotify[key];
+      if (bg) return; // 뒤에서 받다 실패하면 있던 일정을 그대로 둔다
       calData[key] = { ok: false, reason: e.status === 403 || e.status === 401 ? '캘린더 권한이 없어요. 다시 로그인해 주세요.' : '캘린더를 읽지 못했어요: ' + e.message, items: [], at: Date.now() };
     }
   }
-  function dropCal() { calData = {}; cache = {}; }
+  function dropCal() { calData = {}; cache = {}; saveCal(); }
+  function saveCal() {
+    if (!book) return;
+    var keep = {}; Object.keys(calData).filter(function (k) { return calData[k].ok; }).sort(function (a, b) { return calData[b].at - calData[a].at; }).slice(0, 6).forEach(function (k) { keep[k] = calData[k]; });
+    try { store.set('kitCal:' + book.id, JSON.stringify(keep)); } catch (e) {}
+  }
+  function readCal(id) { try { var o = JSON.parse(store.get('kitCal:' + id) || 'null'); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (Date.now() - o[k].at > 7 * 864e5) delete o[k]; }); return o; } } catch (e) {} return {}; }
+  // 뒤에서 받은 내용이 화면과 달라졌을 때 (여러 번이면 한 번으로)
+  var changeT = null;
+  function changed() { if (changeT) return; changeT = setTimeout(function () { changeT = null; if (opts.onChange) try { opts.onChange(); } catch (e) {} }, opts.changeMs === undefined ? 250 : opts.changeMs); }
   async function removePlaced(id, date) {
     var tz = book.tz, evs = await readEvents('primary', date, 1, tz), n = 0;
     for (var i = 0; i < evs.length; i++) {
@@ -2405,19 +2516,63 @@ function installFromEditor() {
       // 새 시트의 빈 기본 탭(Sheet1/시트1) 정리
       book.sheets.filter(function (sh) { return !sh._s.isNew && sh.getLastRow() === 0 && book.sheets.length > 1; }).forEach(function (sh) { ss.deleteSheet(sh); });
     }
-    await flush();
+    await flushOne();
     return r;
   }
-  async function refreshIfStale() {
-    if (book && Date.now() - loadedAt >= (opts.staleMs === undefined ? 60e3 : opts.staleMs)) { await loadBook(book.id); }
+  function isStale() { return book && Date.now() - loadedAt >= (opts.staleMs === undefined ? 60e3 : opts.staleMs); }
+  // 시트를 다시 읽는 일은 화면 동작을 막지 않는다. 받는 동안 고친 것이 있으면 이번 결과는 버리고 다음에 다시 받는다
+  // (못 보낸 변경을 덮지 않기 위해). 받은 내용이 화면과 다르면 opts.onChange 로 알린다.
+  var reloading = null;
+  function bgReload() {
+    if (!book) return Promise.resolve();
+    if (reloading) return reloading;
+    reloading = (async function () {
+      await saving;
+      if (hasChanges()) await flushOne();
+      var id = book.id, seq = editSeq, at = Date.now();
+      var fresh = await fetchBook(id);
+      await serial(async function () {
+        if (!book || book.id !== id || editSeq !== seq || hasChanges()) return;
+        var before = sig(book); applyBook(fresh, at);
+        if (sig(book) !== before) changed();
+      });
+    })().then(function () { reloading = null; }, function () { reloading = null; });
+    return reloading;
   }
+  function sig(b) { return JSON.stringify([b.tz, b.sheets.map(function (sh) { return [sh._s.name, sh._s.data.map(function (r) { return (r || []).map(toCell); })]; })]); }
+  function refreshIfStale() { if (isStale()) bgReload(); }
+
+  // ── 뒤에서 저장 ──
+  // 앱스크립트 시절에는 저장이 끝나야 화면이 바뀌었다. 지금은 메모리 시트가 바로 바뀌므로 결과를 먼저 돌려주고
+  // 구글 시트 저장은 따로 한 줄로(한 번에 하나씩) 한다. 저장 중에 누른 것은 다음 저장에 묶인다.
+  // 실패하면 한 번 더, 그래도 안 되면 알린다(opts.onSaveError). 다음 저장이 성공하면 opts.onSaved.
+  var saving = Promise.resolve(), saveQueued = false, saveFailed = null;
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function flushOne() { var p = saving.then(flush); saving = p.catch(function () {}); return p; }
+  function saveLater() {
+    if (saveQueued) return saving;
+    saveQueued = true;
+    var p = saving.then(async function () {
+      saveQueued = false;
+      try { await flush(); }
+      catch (e) {
+        await wait(opts.retryMs === undefined ? 1500 : opts.retryMs);
+        try { await flush(); } catch (e2) { saveFailed = e2; if (opts.onSaveError) try { opts.onSaveError(e2); } catch (x) {} return; }
+      }
+      if (saveFailed && !hasChanges()) { saveFailed = null; if (opts.onSaved) try { opts.onSaved(); } catch (x) {} }
+      writeSnap();
+    });
+    saving = p.catch(function () {});
+    return saving;
+  }
+  async function idle() { var q0, s0, r0; do { q0 = queue; s0 = saving; r0 = reloading; await q0; await s0; if (r0) await r0; await Promise.all(Object.keys(calFetching).map(function (k) { return calFetching[k]; })); } while (q0 !== queue || s0 !== saving || r0 !== reloading); if (snapT) writeSnap(); }
   function today() { return K.todayYmd_(book.tz); }
 
   async function call(fn, args) {
     await ready;
     return serial(async function () {
       K.freshExecution();
-      await refreshIfStale();
+      refreshIfStale();
       var t = today();
       // 화면에 필요한 캘린더를 먼저 읽어 둔다 (이번 주 + 요청 범위)
       await preloadCal(K.weekStartYmd_(t), 7);
@@ -2437,7 +2592,7 @@ function installFromEditor() {
       var name = WEB[fn]; if (!name) throw new Error('알 수 없는 요청입니다: ' + fn);
       var res = K.fn(name).apply(null, [''].concat(args || []));
       if (fn === 'setCalendars') { dropCal(); await preloadCal(K.weekStartYmd_(t), 7); res = { ok: true, view: clone(K.getAppData()) }; }
-      await flush();
+      saveLater(); saveSnap();
       return clone(res);
     });
   }
@@ -2449,11 +2604,25 @@ function installFromEditor() {
       var t0 = Date.now(), log = [];
       var mark = function (what) { log.push(what + ' ' + ((Date.now() - t0) / 1000).toFixed(1) + 's'); };
       var p = (async function () {
+        var saved = store.get('kitSheetId'), snap = saved && opts.localFirst !== false ? readSnap(saved) : null;
+        if (snap) {
+          cache = {}; book = snap.book; loadedAt = 0; calData = readCal(saved);
+          K.freshExecution(); K.ensureSchema_(book.api);
+          mark('이 기기 저장본으로 열기');
+          startLog = log.join(' · ');
+          // 뒤에서: 못 보낸 변경 보내기 → 시트 다시 받기 → 캘린더 새로 받기 (바뀌면 화면에 알림)
+          if (hasChanges()) saveLater();
+          bgReload().then(function () { mark('시트 새로 받음'); startLog = log.join(' · '); });
+          preloadCal(K.weekStartYmd_(today()), 7).catch(function () {});
+          return { id: saved, created: false, local: true };
+        }
         var f = await findOrCreateSheet(); mark(f.created ? '시트 만듦' : '시트 읽음');
         step(f.created ? '예시 할 일을 넣는 중이에요' : '거의 다 됐어요');
-        await setup(f.created); mark('구조 맞춤');
-        // 첫 화면에 쓸 캘린더도 미리 (실패해도 시작은 계속)
-        await preloadCal(K.weekStartYmd_(today()), 7).catch(function () {}); mark('캘린더');
+        // 구조 맞추기 저장과 첫 화면 캘린더 읽기를 동시에 (캘린더는 실패해도 시작은 계속)
+        await Promise.all([setup(f.created).then(function () { mark('구조 맞춤'); }), preloadCal(K.weekStartYmd_(today()), 7).catch(function () {}).then(function () { mark('캘린더'); })]);
+        // 다음에 열 때 탭 목록·값을 동시에 읽도록 탭 이름을 기억
+        store.set('kitTabs:' + f.id, JSON.stringify(book.sheets.map(function (sh) { return sh.getName(); })));
+        writeSnap(); saveCal();
         startLog = log.join(' · '); try { console.info('[내 업무관리 키트] 시작: ' + startLog); } catch (e) {}
         return f;
       })();
@@ -2464,7 +2633,17 @@ function installFromEditor() {
     useSheet: useSheet,
     sheetUrl: function () { return book ? book.url : ''; },
     startLog: function () { return startLog; },
-    reload: async function () { if (book) { await loadBook(book.id); dropCal(); } },
+    reload: async function () { if (book) { await idle(); if (hasChanges()) await flushOne(); await loadBook(book.id); dropCal(); } },
+    /** 앱으로 돌아왔을 때: 오래된 시트·캘린더를 미리 새로 받아 두어 다음 누름이 기다리지 않게 */
+    warm: function () { if (!book) return; refreshIfStale(); preloadCal(K.weekStartYmd_(today()), 7).catch(function () {}); },
+    /** 창을 닫거나 다른 앱으로 갈 때: 이 기기 저장본을 바로 쓴다 */
+    persist: function () { writeSnap(); },
+    saveFailed: function () { return !!saveFailed; },
+    /** 저장 실패 뒤 다시 시도 */
+    retrySave: function () { saveLater(); return idle(); },
+    /** 아직 구글 시트에 못 보낸 변경이 있는지 (창을 닫기 전 확인용) */
+    unsaved: function () { return saveQueued || sending > 0 || !!saveFailed || hasChanges(); },
+    idle: idle,
     _book: function () { return book; }, _K: K, _flush: flush
   };
 }
