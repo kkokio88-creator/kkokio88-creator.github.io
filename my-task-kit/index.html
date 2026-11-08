@@ -1400,7 +1400,8 @@
       (d.pageUrl ? '<div class="gap"></div><div class="card"><a class="row" href="' + esc(d.pageUrl) + 'help.html" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'gray') + '<div class="tx"><div class="t">도움말 · 개인정보 안내</div></div>' + CHEV + '</a></div>' : '') +
       '<div class="gap"></div><div class="card"><a class="row" id="report" href="#" style="text-decoration:none;color:inherit">' + tile('bell', 'red') + '<div class="tx"><div class="t">문제 제보 · 처리 확인</div><div class="m">제보 게시판에서 처리 상태를 볼 수 있어요</div></div>' + CHEV + '</a></div>' +
       (window.KIT_AUTH ? '<div class="gap"></div><div class="card"><div class="row" tabindex="0" role="button" id="kitLogout">' + tile('user', 'gray') + '<div class="tx"><div class="t">로그아웃</div><div class="m">' + esc(window.KIT_AUTH.email() || '구글 계정') + ' · 시트는 내 드라이브에 그대로 있어요</div></div>' + CHEV + '</div></div>' : '') +
-      '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') + '</div>';
+      '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') +
+      (window.KIT_ENGINE && window.KIT_ENGINE.startLog && window.KIT_ENGINE.startLog() ? '<br><span id="kitStartLog" style="font-size:11.5px">시작: ' + esc(window.KIT_ENGINE.startLog()) + '</span>' : '') + '</div>';
     var lo = $('kitLogout'); if (lo) lo.onclick = function () { if (confirm('로그아웃할까요? 할 일은 내 구글 시트에 그대로 남아 있어요.')) window.KIT_AUTH.logout(); };
     stagger($('moreBody'));
   }

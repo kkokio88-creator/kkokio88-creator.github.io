@@ -23,7 +23,7 @@
   function gotToken(r) {
     if (!r || r.error || !r.access_token) { gateMsg(r && r.error === 'access_denied' ? '권한을 허용해야 내 시트를 만들 수 있어요.' : '로그인하지 못했어요. 다시 눌러 주세요.'); return; }
     var granted = String(r.scope || SCOPES);
-    if (granted.indexOf('drive.file') < 0) { gateMsg('"이 앱이 만든 파일 보기" 권한을 체크해 주세요. 내 시트를 만들 때 필요해요.'); return; }
+    if (granted.indexOf('drive.file') < 0) { gateMsg('권한 화면에서 위쪽 "모두 선택"을 눌러 주세요. 내 시트를 만들고 캘린더를 보려면 필요해요. 버튼을 다시 눌러 주세요.'); return; }
     tok = { t: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000, cal: granted.indexOf('calendar') >= 0, email: tok && tok.email };
     store.set('kitTok', JSON.stringify(tok));
     var w = waiters; waiters = []; w.forEach(function (f) { f(tok.t); });
