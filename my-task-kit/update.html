@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#5B5CF6">
+<title>내 업무관리 키트 · 업데이트 도우미</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root { --bg: #F4F5F8; --card: #fff; --t1: #191F28; --t2: #4E5968; --t3: #8B95A1; --g: #5B5CF6; --gt: #EEEEFF; --line: #EEF0F3; --amber: #B7791F; --ambert: #FFF4DB; --ok: #12A16B; --okt: #E5F7EF; --btn: #5B5CF6; --btnt: #fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #101113; --card: #1B1D20; --t1: #F2F4F6; --t2: #C3C9D0; --t3: #8B95A1; --g: #A2A3FF; --gt: #23234A; --line: #2A2E33; --amber: #F2C063; --ambert: #2E2614; --ok: #4FD69C; --okt: #15291F; --btn: #6D6BFF; --btnt: #fff; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--t1); font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.65; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 16px 80px; }
+  h1 { font-size: 30px; letter-spacing: -0.03em; margin: 0 0 6px; }
+  .lead { color: var(--t2); margin: 0 0 22px; font-size: 16.5px; }
+  section { background: var(--card); border-radius: 22px; padding: 24px 22px; margin: 0 0 14px; }
+  h2 { font-size: 21px; letter-spacing: -0.02em; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
+  .num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--g); color: var(--card); font-size: 15px; display: inline-flex; align-items: center; justify-content: center; }
+  p, li { color: var(--t2); font-size: 15.5px; }
+  p { margin: 6px 0; }
+  ol, ul { padding-left: 20px; margin: 6px 0; } li { margin: 4px 0; }
+  b { color: var(--t1); }
+  a { color: var(--g); }
+  .note { background: var(--ambert); color: var(--amber); border-radius: 14px; padding: 12px 14px; font-size: 14.5px; margin: 12px 0 0; }
+  .ok { background: var(--gt); color: var(--g); border-radius: 14px; padding: 12px 14px; font-size: 14.5px; margin: 12px 0 0; }
+  .note b, .ok b { color: inherit; }
+  kbd { background: var(--bg); border-radius: 6px; padding: 1px 6px; font-family: inherit; font-size: 14px; color: var(--t1); }
+
+  .progress { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 10px 0 12px; margin: 0 0 4px; }
+  .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #6D6BFF, #B259E8, #FF7AC6); transition: width .25s; }
+  .ptext { display: flex; justify-content: space-between; align-items: baseline; font-size: 14.5px; color: var(--t2); margin: 0 0 6px; }
+  .ptext b { font-size: 16px; }
+  .reset { background: none; border: 0; color: var(--t3); font: inherit; font-size: 13.5px; cursor: pointer; padding: 0; text-decoration: underline; }
+
+  .files { display: grid; gap: 10px; margin: 14px 0 0; }
+  .file { display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: 16px; padding: 14px 14px 14px 16px; border: 2px solid transparent; transition: border-color .2s, background .2s; }
+  .file.done { background: var(--okt); border-color: var(--ok); }
+  .info { flex: 1; min-width: 0; }
+  .fname { font-weight: 700; font-size: 16.5px; color: var(--t1); overflow-wrap: anywhere; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 99px; background: var(--gt); color: var(--g); }
+  .tag.json { background: var(--ambert); color: var(--amber); }
+  .fdesc { font-size: 14px; color: var(--t3); margin-top: 2px; }
+  .copy { flex: none; min-width: 84px; height: 48px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--btn); color: var(--btnt); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .copy:active { transform: scale(.97); }
+  .file.done .copy { background: var(--ok); }
+  .loading { color: var(--t3); font-size: 15px; }
+  .ver { color: var(--t3); font-size: 13.5px; text-align: center; margin-top: 26px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; background: #191F28; color: #fff; padding: 12px 18px; border-radius: 14px; font-size: 15px; transition: .2s; pointer-events: none; max-width: calc(100% - 32px); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>업데이트 도우미</h1>
+  <p class="lead">새 버전 코드를 내 시트에 옮기는 걸 도와드려요. <b>내 시트의 데이터는 그대로예요.</b> 10분이면 충분해요. PC에서 하는 걸 추천해요.</p>
+
+  <section>
+    <h2><span class="num">1</span>Apps Script 열기</h2>
+    <p>쓰고 있는 내 시트에서 <b>확장 프로그램 ▸ Apps Script</b>를 눌러 주세요. 왼쪽에 파일 목록이 보여요.</p>
+  </section>
+
+  <section id="filesSection">
+    <h2><span class="num">2</span>파일마다 복사해서 붙여 넣기</h2>
+    <ol>
+      <li>아래에서 <b>복사</b>를 눌러요.</li>
+      <li>편집기 왼쪽에서 <b>이름이 같은 파일</b>을 열어요.</li>
+      <li>안쪽을 눌러 <kbd>Ctrl</kbd>+<kbd>A</kbd>로 전체 선택하고 <kbd>Ctrl</kbd>+<kbd>V</kbd>로 붙여 넣은 뒤 <kbd>Ctrl</kbd>+<kbd>S</kbd>로 저장해요. (맥은 <kbd>⌘</kbd>)</li>
+    </ol>
+    <div class="note"><b>새 파일이면</b> 편집기 왼쪽 <b>+ 버튼 ▸ 스크립트</b>(또는 <b>HTML</b>)로 추가하고 이름을 똑같이 적어 주세요. 끝의 .gs·.html은 빼고 적으면 돼요.</div>
+    <div class="note"><b>appsscript.json이 안 보이면</b> 편집기 왼쪽 <b>⚙️ 프로젝트 설정 ▸ "편집기에서 'appsscript.json' 매니페스트 파일 표시"</b>를 켜 주세요.</div>
+
+    <div class="progress" id="progress" hidden>
+      <div class="ptext"><span><b id="pDone">0</b> / <span id="pAll">0</span> 복사함</span><button class="reset" id="reset" type="button">처음부터 다시</button></div>
+      <div class="bar"><i id="pBar"></i></div>
+    </div>
+    <div class="files" id="files"><p class="loading">파일 목록을 불러오는 중…</p></div>
+  </section>
+
+  <section>
+    <h2><span class="num">3</span>새 버전으로 배포</h2>
+    <p>편집기 오른쪽 위 <b>배포 ▸ 배포 관리 ▸ ✏️ ▸ 버전: 새 버전 ▸ 배포</b>를 눌러요. 휴대폰 링크는 그대로예요.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">4</span>시트 새로고침</h2>
+    <p><b>시트를 새로고침하면 끝이에요.</b> 필요한 새 열이 맨 오른쪽에 추가되고 "기존 데이터는 그대로입니다" 알림이 떠요.</p>
+    <div class="note">새 버전이 권한을 더 쓰면(예: 구글 캘린더에 일정 넣기) 시트 메뉴 <b>✅ 내 업무</b>를 한 번 눌러 다시 승인해 주세요. 승인 전에는 웹 화면에 "권한" 안내가 떠요.</div>
+    <div class="ok">막히면 <a href="help.html#update">도움말</a>을 보거나, 복사를 처음부터 다시 해도 괜찮아요. 붙여 넣기는 몇 번을 해도 데이터에 영향이 없어요.</div>
+  </section>
+
+  <p class="ver" id="ver"></p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function () {
+  var TYPE = { server: '스크립트', html: 'HTML', json: '설정' };
+  var data = null, done = {}, storeKey = '';
+  function $(id) { return document.getElementById(id); }
+  function load() { try { done = JSON.parse(localStorage.getItem(storeKey) || '{}') || {}; } catch (e) { done = {}; } }
+  function save() { try { localStorage.setItem(storeKey, JSON.stringify(done)); } catch (e) {} }
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('show'); }, 1800); }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta); return ok;
+  }
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).catch(function () { if (!fallbackCopy(text)) throw new Error('copy'); });
+    return fallbackCopy(text) ? Promise.resolve() : Promise.reject(new Error('copy'));
+  }
+
+  function progress() {
+    var all = data.files.length, n = data.files.filter(function (f) { return done[f.name]; }).length;
+    $('pDone').textContent = n; $('pAll').textContent = all;
+    $('pBar').style.width = (all ? n / all * 100 : 0) + '%';
+    return n === all;
+  }
+
+  function render() {
+    var box = $('files'); box.innerHTML = '';
+    data.files.forEach(function (f) {
+      var card = document.createElement('div'); card.className = 'file' + (done[f.name] ? ' done' : '');
+      var info = document.createElement('div'); info.className = 'info';
+      var name = document.createElement('div'); name.className = 'fname';
+      name.appendChild(document.createTextNode(f.name));
+      var tag = document.createElement('span'); tag.className = 'tag ' + f.type; tag.textContent = TYPE[f.type] || f.type; name.appendChild(tag);
+      var desc = document.createElement('div'); desc.className = 'fdesc';
+      desc.textContent = (f.desc ? f.desc + ' · ' : '') + Math.max(1, Math.round(f.size / 1024)) + 'KB';
+      info.appendChild(name); info.appendChild(desc);
+      var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'copy';
+      btn.textContent = done[f.name] ? '✓ 복사함' : '복사';
+      btn.setAttribute('aria-label', f.name + ' 복사');
+      btn.onclick = function () {
+        copyText(f.content).then(function () {
+          done[f.name] = true; save(); card.classList.add('done'); btn.textContent = '✓ 복사함';
+          toast(progress() ? '모두 복사했어요. 이제 배포만 하면 돼요' : f.name + ' 복사했어요. 편집기에 붙여 넣어 주세요');
+        }, function () { toast('복사하지 못했어요. 다시 눌러 주세요'); });
+      };
+      card.appendChild(info); card.appendChild(btn); box.appendChild(card);
+    });
+    $('progress').hidden = false; progress();
+  }
+
+  $('reset').onclick = function () { done = {}; save(); render(); };
+
+  fetch('update/files.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
+    data = j; storeKey = 'myTaskKitUpdateCopied:' + j.version; load();
+    $('ver').textContent = 'v' + j.version + ' 코드 · 파일 ' + j.files.length + '개';
+    render();
+  }).catch(function () {
+    $('files').innerHTML = '<p class="loading">파일 목록을 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.</p>';
+  });
+})();
+</script>
+</body>
+</html>

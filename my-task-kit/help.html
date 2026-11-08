@@ -31,6 +31,9 @@
   code { background: var(--bg); padding: 2px 6px; border-radius: 6px; font-size: 14px; }
   .ver { color: var(--t3); font-size: 13.5px; text-align: center; margin-top: 26px; }
   a { color: var(--g); }
+  .cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 16px; padding: 16px 18px; border-radius: 18px; background: linear-gradient(120deg, #6D6BFF, #B259E8 60%, #FF7AC6); color: #fff; text-decoration: none; font-weight: 700; font-size: 16.5px; }
+  .cta small { display: block; font-weight: 500; font-size: 14px; opacity: .9; }
+  .cta span:last-child { font-size: 22px; }
 </style>
 </head>
 <body>
@@ -70,7 +73,7 @@
       <li>링크가 퍼졌다면 시트 메뉴 <b>🔑 휴대폰 링크 새로 만들기</b>를 누르세요. 예전 링크는 바로 막혀요.</li>
       <li>그만 쓰려면 시트를 지우면 끝이에요. 승인한 권한은 <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">구글 계정 ▸ 보안 ▸ 서드파티 앱</a>에서 해제할 수 있어요.</li>
     </ul>
-    <h3>사용 신청 때 받는 정보</h3>
+      <h3>사용 신청 때 받는 정보</h3>
     <ul>
       <li><b>받는 항목:</b> 이메일, 이름, 하는 일, 쓰고 싶은 곳, 마케팅 수신 동의 여부, 신청 경로.</li>
       <li><b>쓰는 곳:</b> 설치 안내 메일 보내기, 새 버전 소식 전하기(마케팅 수신에 동의한 경우).</li>
@@ -82,9 +85,10 @@
   <section id="update">
     <h2>새 버전으로 업데이트</h2>
     <p>앱 아래쪽에 <b>새 버전</b> 표시가 보이면 업데이트할 수 있어요. <b>내 시트의 데이터는 그대로예요.</b></p>
+    <a class="cta" href="update.html"><span>업데이트 도우미 열기<small>파일마다 복사 버튼 하나로 옮겨요</small></span><span>→</span></a>
     <ol>
       <li>내 시트에서 <b>확장 프로그램 ▸ Apps Script</b>를 여세요.</li>
-      <li>새 버전 코드 파일을 같은 이름 파일에 붙여 넣고 저장하세요. (새 파일이 있으면 추가)</li>
+      <li><a href="update.html">업데이트 도우미</a>에서 파일마다 <b>복사</b>를 누르고, 같은 이름 파일에 붙여 넣고 저장하세요. (새 파일이 있으면 추가)</li>
       <li><b>배포 ▸ 배포 관리 ▸ ✏️ ▸ 버전: 새 버전 ▸ 배포</b>를 누르세요. 링크는 그대로예요.</li>
       <li>시트를 새로고침하면 새 열이 맨 오른쪽에 추가되고 "기존 데이터는 그대로입니다" 알림이 떠요.</li>
     </ol>
