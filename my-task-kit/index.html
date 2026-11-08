@@ -1478,7 +1478,7 @@
   }
   setTimeout(checkUpdate, 3000);
 
-  if (!KEY || !window.KIT_API_URL) { document.body.innerHTML = '<div style="font-family:sans-serif;padding:48px 20px;text-align:center;color:#555"><h2 style="color:#5B5CF6">개인 링크로 열어 주세요</h2><p>시트 메뉴 [✅ 내 업무 ▸ 📱 휴대폰·웹 화면 링크]의 링크(끝에 #api=…&k=…)로 한 번 열면, 이 브라우저에 기억됩니다.</p></div>'; }
+  if (!KEY || !window.KIT_API_URL) { document.body.innerHTML = '<div style="font-family:sans-serif;padding:48px 20px;text-align:center;color:#8a8a99"><h2 style="color:#5B5CF6">개인 링크로 열어 주세요</h2><p>시트 메뉴 [✅ 내 업무 ▸ 📱 휴대폰·웹 화면 링크]의 링크(끝에 #api=…&k=…)로 한 번 열면, 이 브라우저에 기억됩니다.</p></div>'; }
   else if (INITIAL) { data = INITIAL; saveView(INITIAL); renderToday(); }
   else { var cv0 = cachedView(); if (cv0) { data = cv0; renderToday(); } load(); }
   renderOutbox(); setTimeout(flushOutbox, 1500);
