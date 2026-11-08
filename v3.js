@@ -393,7 +393,8 @@
     return function (p) {
       var x = pos(p), a = Math.round(x), r = sec.getBoundingClientRect();
       var desk = innerWidth / innerHeight >= 1 && innerWidth > 760;
-      if (desk) {
+      if (desk) return; // PC는 deskPin()이 맡는다
+      if (false) {
         // PC: 고정된 자리에서 앞 장은 흐려지며 위로, 다음 장은 아래에서 올라오며 겹쳐 바뀐다
         var base = Math.floor(x), k = x - base;
         panels.forEach(function (pn, i) {
@@ -413,6 +414,73 @@
       }
     };
   }
+
+  // ── C7 PC: 핀 스크롤리텔링(휴대폰 고정, 설명이 스크롤되며 가운데 온 설명으로 화면 전환) ──
+  (function deskPin() {
+    var sec = $('#c7'), steps = $$('.hl-step', sec), vids = $$('.dv', sec), prog = $$('.hl-prog li', sec), act = -1, playing = false;
+    function upd() {
+      if (!(innerWidth / innerHeight >= 1 && innerWidth > 760)) return;
+      var r = sec.getBoundingClientRect(), inView = r.top < innerHeight && r.bottom > 0, mid = innerHeight / 2, best = 0, bd = 1e9;
+      steps.forEach(function (st, i) { var b = st.getBoundingClientRect(), d = Math.abs(b.top + b.height / 2 - mid); if (d < bd) { bd = d; best = i; } });
+      if (best !== act) {
+        act = best;
+        steps.forEach(function (st, i) { st.classList.toggle('on', i === best); });
+        prog.forEach(function (li, i) { li.classList.toggle('on', i === best); });
+        vids.forEach(function (v, i) { v.classList.toggle('on', i === best); if (i !== best) v.pause(); });
+        playing = false;
+      }
+      var v = vids[act];
+      if (inView && !playing) { v.preload = 'auto'; v.currentTime = 0; var pr = v.play(); if (pr) pr.catch(function () {}); playing = true; }
+      if (!inView && playing) { v.pause(); playing = false; }
+    }
+    if (lenis) lenis.on('scroll', upd); addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); upd();
+  })();
+
+  // ── 마키: 끝없이 흐르는 글자 띠. 스크롤이 빠를수록 빨라진다 ──
+  (function () {
+    $$('.mq-row').forEach(function (row, n) {
+      var inner = $('.mq-in', row), unit = inner.textContent, x = 0, dir = row.classList.contains('rev') ? 1 : -1;
+      inner.textContent = unit.repeat(6);
+      var w = 0, last = performance.now();
+      function measure() { var tmp = document.createElement('span'); tmp.textContent = unit; tmp.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap'; inner.appendChild(tmp); w = tmp.offsetWidth; tmp.remove(); }
+      measure(); addEventListener('resize', measure);
+      (function loop(now) {
+        var dt = Math.min(0.05, (now - last) / 1000); last = now;
+        var r = row.getBoundingClientRect();
+        if (r.bottom > 0 && r.top < innerHeight && w) {
+          var vel = lenis ? Math.abs(lenis.velocity || 0) : 0;
+          x += dir * (60 + vel * 18) * dt;
+          if (x <= -w) x += w; if (x > 0) x -= w;
+          inner.style.transform = 'translate3d(' + x + 'px,0,0)';
+        }
+        requestAnimationFrame(loop);
+      })(last);
+    });
+  })();
+
+  // ── 스크롤에 따라 단어가 하나씩 칠해지는 문장 ──
+  $$('[data-hilite]').forEach(function (el) {
+    var words = el.textContent.trim().split(/\s+/); el.setAttribute('aria-label', el.textContent.trim()); el.textContent = '';
+    words.forEach(function (w, i) { var sp = document.createElement('span'); sp.className = 'wd'; sp.textContent = w; sp.setAttribute('aria-hidden', 'true'); el.appendChild(sp); if (i < words.length - 1) el.appendChild(document.createTextNode(' ')); });
+    var spans = $$('.wd', el);
+    ScrollTrigger.create({ trigger: el, start: 'top 85%', end: 'top 40%', onUpdate: function (self) { var n = Math.round(self.progress * spans.length); spans.forEach(function (sp, i) { sp.classList.toggle('on', i < n); }); } });
+  });
+
+  // ── 마그네틱 버튼: 커서가 가까이 오면 살짝 끌려온다(마우스가 있는 화면만) ──
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) $$('[data-magnet]').forEach(function (el) {
+    el.addEventListener('pointermove', function (e) { var r = el.getBoundingClientRect(); gsap.to(el, { x: (e.clientX - r.left - r.width / 2) * 0.28, y: (e.clientY - r.top - r.height / 2) * 0.35, duration: 0.4, ease: 'power3.out' }); });
+    el.addEventListener('pointerleave', function () { gsap.to(el, { x: 0, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.4)' }); });
+  });
+
+  // ── 스크롤 진행 막대 ──
+  (function () { var bar = $('.scroll-prog'); function u() { var m = document.documentElement.scrollHeight - innerHeight; bar.style.setProperty('--sp', m > 0 ? scrollY / m : 0); } if (lenis) lenis.on('scroll', u); addEventListener('scroll', u, { passive: true }); u(); })();
+
+  // ── 기능 카드: 잘린 틀이 펼쳐지며 차례로 등장(클립패스 + 스태거) + 서로 다른 속도로 움직임(패럴랙스) ──
+  (function () {
+    var tiles = $$('[data-tile]'); if (!tiles.length) return;
+    gsap.to(tiles, { clipPath: 'inset(0% 0% 0% 0% round 28px)', opacity: 1, duration: 1.1, ease: 'expo.out', stagger: 0.12, scrollTrigger: { trigger: tiles[0], start: 'top 82%' } });
+    tiles.forEach(function (t, i) { gsap.fromTo(t, { y: 30 + (i % 2) * 40 }, { y: -(10 + (i % 2) * 40), ease: 'none', scrollTrigger: { trigger: t.parentNode, start: 'top bottom', end: 'bottom top', scrub: true } }); });
+  })();
 
   // ── C8 맡긴 일 며칠째 ──
   (function () { var els = [$('.dcount'), $('.dcount2')], n = 1; setInterval(function () { n = n % 3 + 1; els.forEach(function (el) { el.textContent = n; el.style.color = n === 3 ? '#C27C00' : ''; }); }, 1600); })();

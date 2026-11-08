@@ -560,3 +560,45 @@ html:not(.js) .tray { width: 30vw; }
   .hp-panel { position: absolute; inset: 0; width: auto; will-change: opacity; }
   .hp-panel .ph, .hp-txt { will-change: transform, opacity; }
 }
+
+/* ══ C7 PC: 핀 스크롤리텔링 ══ */
+.hl-desk { display: none; }
+@media (min-aspect-ratio: 1/1) and (min-width: 761px) {
+  .ch.hl { height: auto !important; }
+  .hl .stage { display: none; }
+  .hl-desk { display: block; padding: 16vh 0 6vh; }
+}
+.hl-desk-head { text-align: center; margin-bottom: 4vh; }
+.hl-pin { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(40px, 7vw, 120px); max-width: 1120px; margin: 0 auto; padding: 0 var(--pad); }
+.hl-sticky { position: sticky; top: calc(50vh - min(34vh, 320px)); height: min(68vh, 640px); display: flex; align-items: center; justify-content: flex-end; gap: 28px; }
+.hl-sticky .ph { position: relative; height: 100%; aspect-ratio: 1 / 2; border-radius: 42px; background: #111; box-shadow: 0 40px 90px rgba(17, 24, 39, .22); flex: none; }
+.dv { position: absolute; left: 9px; top: 9px; width: calc(100% - 18px); height: calc(100% - 18px); object-fit: cover; border-radius: 33px; background: var(--fill); opacity: 0; transform: scale(1.05); transition: opacity .55s var(--expo), transform .9s var(--expo); }
+.dv.on { opacity: 1; transform: none; }
+.hl-prog { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; order: -1; }
+.hl-prog li { position: relative; padding-right: 16px; font-size: 13px; font-weight: 700; color: var(--t4); text-align: right; transition: color .4s; white-space: nowrap; }
+.hl-prog li::after { content: ''; position: absolute; right: 0; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 2px; background: var(--t4); transition: height .4s var(--expo), margin .4s var(--expo), background .4s; }
+.hl-prog li.on { color: var(--g); } .hl-prog li.on::after { height: 22px; margin-top: -11px; background: var(--g); }
+.hl-step { min-height: 78vh; display: flex; flex-direction: column; justify-content: center; opacity: .18; transform: translateY(24px); transition: opacity .6s var(--expo), transform .8s var(--expo); }
+.hl-step.on { opacity: 1; transform: none; }
+.hl-step h3 { margin: 10px 0 0; font-size: clamp(40px, 4.6vw, 72px); font-weight: 800; letter-spacing: -0.045em; line-height: 1.08; word-break: keep-all; }
+.hl-step p:last-child { margin: 16px 0 0; font-size: clamp(17px, 1.4vw, 21px); color: var(--t3); line-height: 1.6; word-break: keep-all; max-width: 420px; }
+.hl-steps { padding: 6vh 0 22vh; }
+
+/* ══ 마키: 끝없이 흐르는 글자 띠 ══ */
+.marquee { position: relative; overflow: hidden; background: var(--ink); padding: 34px 0; }
+.mq-row { white-space: nowrap; overflow: hidden; }
+.mq-in { display: inline-block; font-size: clamp(36px, 6vw, 92px); font-weight: 800; letter-spacing: -0.04em; line-height: 1.15; color: #fff; will-change: transform; }
+.mq-row.rev .mq-in { color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, .55); }
+.mq-row + .mq-row { margin-top: 4px; }
+
+/* ══ 스크롤에 따라 단어가 칠해지는 문장 ══ */
+.hilite .wd { color: #C9CED6; transition: color .25s; }
+.hilite .wd.on { color: var(--t1); }
+.free .sub.hilite { font-size: clamp(20px, 2vw, 28px); font-weight: 700; max-width: 760px; margin: 22px auto 0; line-height: 1.5; letter-spacing: -0.03em; }
+
+/* ══ 스크롤 진행 막대 ══ */
+.scroll-prog { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; transform-origin: left; transform: scaleX(var(--sp, 0)); background: linear-gradient(90deg, var(--l1), var(--l2), var(--l3)); pointer-events: none; }
+
+/* ══ 카드 펼쳐 보이기(클립패스) ══ */
+.js [data-tile] { clip-path: inset(10% 8% 10% 8% round 28px); opacity: 0; }
+[data-magnet] { will-change: transform; }

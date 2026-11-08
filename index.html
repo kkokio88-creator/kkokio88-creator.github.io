@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preload" as="image" href="seq/hero/d/0001.webp" media="(min-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="seq/hero/m/0001.webp" media="(max-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="v3.css?v=d3866576">
+<link rel="stylesheet" href="v3.css?v=6b15a496">
 <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
@@ -34,6 +34,7 @@
 
 <!-- C0 로컬 내비 -->
 <header class="lnav" id="lnav">
+  <i class="scroll-prog" aria-hidden="true"></i>
   <div class="lnav-in">
     <a class="brand" href="#top" data-go>내 업무관리 키트</a>
     <nav class="links" aria-label="챕터">
@@ -41,7 +42,7 @@
       <a href="#c7" data-go>기능</a>
       <a href="#c10" data-go>내 데이터</a>
     </nav>
-    <a class="cta" href="#c11" data-go>무료로 시작</a>
+    <a class="cta" href="#c11" data-go data-magnet>무료로 시작</a>
   </div>
 </header>
 
@@ -173,7 +174,7 @@
     </div>
   </section>
 
-  <!-- C7 직접 보세요: 휴대폰 하나씩, 가로로 -->
+  <!-- C7 직접 보세요: 휴대폰은 가로로 넘김, PC는 핀 스크롤리텔링 -->
   <section class="ch light hl" id="c7" data-bg="#FFFFFF" data-theme="light" style="--len: 620">
     <div class="stage">
       <div class="hl-head"><h2 class="mid">직접 보세요.</h2><p>실제 앱 화면 그대로예요.</p></div>
@@ -205,6 +206,31 @@
       </div>
       <div class="hl-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
+    <!-- PC: 핀 스크롤리텔링. 왼쪽 휴대폰은 고정(pin)되고, 오른쪽 설명이 스크롤되며 가운데 온 설명에 맞춰 화면이 바뀐다 -->
+    <div class="hl-desk">
+      <div class="hl-desk-head"><h2 class="big" data-split data-reveal>직접 보세요.</h2><p class="sub" data-reveal>실제 앱 화면 그대로예요.</p></div>
+      <div class="hl-pin">
+        <div class="hl-sticky">
+          <div class="ph">
+            <video class="dv on" muted loop playsinline preload="none" poster="clips/capture.webp" aria-label="담기 실제 앱 화면 녹화"><source src="clips/capture.webm" type="video/webm"><source src="clips/capture.mp4" type="video/mp4"></video>
+            <video class="dv" muted loop playsinline preload="none" poster="clips/inbox.webp" aria-label="두 번 누르면 정리 실제 앱 화면 녹화"><source src="clips/inbox.webm" type="video/webm"><source src="clips/inbox.mp4" type="video/mp4"></video>
+            <video class="dv" muted loop playsinline preload="none" poster="clips/swipe.webp" aria-label="밀면 끝 실제 앱 화면 녹화"><source src="clips/swipe.webm" type="video/webm"><source src="clips/swipe.mp4" type="video/mp4"></video>
+            <video class="dv" muted loop playsinline preload="none" poster="clips/timeline.webp" aria-label="시간표 → 캘린더 실제 앱 화면 녹화"><source src="clips/timeline.webm" type="video/webm"><source src="clips/timeline.mp4" type="video/mp4"></video>
+            <video class="dv" muted loop playsinline preload="none" poster="clips/remind.webp" aria-label="맡긴 일 리마인드 실제 앱 화면 녹화"><source src="clips/remind.webm" type="video/webm"><source src="clips/remind.mp4" type="video/mp4"></video>
+            <video class="dv" muted loop playsinline preload="none" poster="clips/weekly.webp" aria-label="주간 검토 실제 앱 화면 녹화"><source src="clips/weekly.webm" type="video/webm"><source src="clips/weekly.mp4" type="video/mp4"></video>
+          </div>
+          <ol class="hl-prog" aria-hidden="true"><li class="on">담기</li><li>두 번 누르면 정리</li><li>밀면 끝</li><li>시간표 → 캘린더</li><li>맡긴 일 리마인드</li><li>주간 검토</li></ol>
+        </div>
+        <div class="hl-steps">
+          <article class="hl-step on" data-i="0"><p class="hp-no">1 / 6</p><h3>담기</h3><p>떠오르면 입력칸에 한 줄, 엔터. 판단은 나중에 해요.</p></article>
+          <article class="hl-step" data-i="1"><p class="hp-no">2 / 6</p><h3>두 번 누르면 정리</h3><p>수집함에서 "네" → "내가 할 일". 두 번이면 끝.</p></article>
+          <article class="hl-step" data-i="2"><p class="hp-no">3 / 6</p><h3>밀면 끝</h3><p>다 한 일은 오른쪽으로 한 번 밀면 완료.</p></article>
+          <article class="hl-step" data-i="3"><p class="hp-no">4 / 6</p><h3>시간표 → 캘린더</h3><p>빈 시간에 알아서 배치하고, 그대로 구글 캘린더에.</p></article>
+          <article class="hl-step" data-i="4"><p class="hp-no">5 / 6</p><h3>맡긴 일 리마인드</h3><p>며칠째인지 보이고, 확인 문구는 복사해서 카톡에.</p></article>
+          <article class="hl-step" data-i="5"><p class="hp-no">6 / 6</p><h3>주간 검토</h3><p>금요일 10분, 질문에 답하며 머리를 비워요.</p></article>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- C8 알아서 챙겨 주는 네 가지 -->
@@ -214,7 +240,7 @@
       <p class="sub" data-reveal>캘린더, 반복 업무, 맡긴 일, 한 주 돌아보기까지.</p>
     </div>
     <div class="bento four">
-      <div class="b b-cal" data-reveal>
+      <div class="b b-cal" data-tile>
         <h3>캘린더 사이에 쏙</h3>
         <div class="wkmini" aria-hidden="true">
           <i class="e e1">팀 회의</i><i class="e e2">고객사 미팅</i>
@@ -222,12 +248,12 @@
         </div>
         <p>여러 캘린더를 함께 보고, 빈 시간에 할 일을 배치해요.</p>
       </div>
-      <div class="b b-rt" data-reveal>
+      <div class="b b-rt" data-tile>
         <h3>루틴은 알아서 다음 회차</h3>
         <div class="rtmini" aria-hidden="true"><div class="r r1"><i></i>받은 메일함 정리<span>평일</span></div><div class="r r2"><i></i>받은 메일함 정리<span>내일</span></div></div>
         <p>매일 · 평일 · 매주 월 · 매월 말일. 끝내면 다음 회차가 생겨요.</p>
       </div>
-      <div class="b b-wait" data-reveal>
+      <div class="b b-wait" data-tile>
         <h3>맡긴 일 · <span class="dcount">1</span>일째</h3>
         <div class="wtmini" aria-hidden="true">
           <div class="wr"><i class="av">김</i><div><b>신규 입사자 계정 발급 요청</b><span>김대리 · <em class="dcount2">1</em>일째</span></div></div>
@@ -235,7 +261,7 @@
         </div>
         <p>누구에게, 며칠째인지. 리마인드 문구는 복사해서 보내요.</p>
       </div>
-      <div class="b b-mail" data-reveal>
+      <div class="b b-mail" data-tile>
         <h3>금요일엔 한 주 돌아보기</h3>
         <div class="env" aria-hidden="true"><i class="flap"></i><i class="paper">주간 검토</i></div>
         <p>금요일 주간 검토 메일과 평일 아침 브리핑이 나에게만 와요.</p>
@@ -243,17 +269,23 @@
     </div>
   </section>
 
+  <!-- 마키: 끝없이 흐르는 글자 띠(스크롤 속도에 반응) -->
+  <div class="marquee" aria-hidden="true" data-bg-skip>
+    <div class="mq-row"><div class="mq-in">담기 · 거르기 · 정하기 · 오늘 할 일 · 집중 25분 · 시간표 · 맡긴 일 · 주간 검토 · </div></div>
+    <div class="mq-row rev"><div class="mq-in">무료 · 가입 없음 · 내 구글 시트 · 운영자 서버 없음 · PC와 휴대폰 · 다크 모드 · </div></div>
+  </div>
+
   <!-- C9 누구나 무료 -->
   <section class="ch light free" id="c9" data-bg="#FFFFFF" data-theme="light">
     <div class="wrap">
       <h2 class="big" data-split data-reveal>신청하면, 누구나 무료.</h2>
-      <p class="sub" data-reveal>결제 정보도, 회원가입도 없어요. 신청하면 <b>내 시트 만들기 링크</b>를 메일로 보내 드려요.</p>
+      <p class="sub hilite" data-hilite>결제 정보도, 회원가입도 없어요. 신청하면 내 시트 만들기 링크를 메일로 보내 드려요.</p>
       <ul class="freelist">
         <li data-reveal><b>0원</b><span>개인은 무료로 써요</span></li>
         <li data-reveal><b>구글 계정 하나</b><span>따로 가입할 필요 없어요</span></li>
         <li data-reveal><b>5분</b><span>내 시트 사본 만들고 바로 시작</span></li>
       </ul>
-      <a class="bigcta" href="#c11" data-go data-reveal>무료로 신청하기</a>
+      <a class="bigcta" href="#c11" data-go data-reveal data-magnet>무료로 신청하기</a>
     </div>
   </section>
 
@@ -313,7 +345,7 @@
               <div class="hp" aria-hidden="true"><label>웹사이트<input name="website" tabindex="-1" autocomplete="off"></label></div>
               <label class="agree"><input type="checkbox" name="agree" required><span><b>(필수)</b> 개인정보 수집·이용에 동의해요. 이메일·이름·하는 일을 사용 안내를 보내는 데만 써요. <a href="privacy.html">개인정보 처리방침 보기</a></span></label>
               <label class="agree"><input type="checkbox" name="marketing"><span>(선택) 새 버전·활용 팁 소식을 받을게요.</span></label>
-              <button class="submit" type="submit">무료로 시작하기</button>
+              <button class="submit" type="submit" data-magnet>무료로 시작하기</button>
               <p class="msg" id="fMsg" role="status" aria-live="polite"></p>
             </div>
           </div>
@@ -349,6 +381,6 @@
 <script src="vendor/gsap.min.js" defer></script>
 <script src="vendor/ScrollTrigger.min.js" defer></script>
 <script src="vendor/lenis.min.js" defer></script>
-<script src="v3.js?v=027ae913" defer></script>
+<script src="v3.js?v=153552bd" defer></script>
 </body>
 </html>
