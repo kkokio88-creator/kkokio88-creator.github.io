@@ -302,7 +302,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: '내 업무관리 키트',
-  VERSION: '1.7.0',       // 코드 버전 (화면 표시용)
+  VERSION: '1.7.1',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 5,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -2565,7 +2565,7 @@ function installFromEditor() {
   function clone(x) { return x === undefined ? null : JSON.parse(JSON.stringify(x)); }
   var readyResolve, ready = new Promise(function (res) { readyResolve = res; }); // 로그인 뒤 start()가 열어 준다
 
-  async function setup(created) {
+  async function setup(created, background) {
     var ss = book.api;
     var r = K.ensureSchema_(ss);
     if (created) {
@@ -2573,7 +2573,8 @@ function installFromEditor() {
       // 새 시트의 빈 기본 탭(Sheet1/시트1) 정리
       book.sheets.filter(function (sh) { return !sh._s.isNew && sh.getLastRow() === 0 && book.sheets.length > 1; }).forEach(function (sh) { ss.deleteSheet(sh); });
     }
-    await flushOne();
+    // 구글에 쓰는 것은 기다리지 않는다: 메모리·이 기기 저장본에 먼저 있고, 뒤에서 보낸다(실패하면 다시 시도·알림)
+    if (background) { saveLater(); writeSnap(); } else await flushOne();
     return r;
   }
   function isStale() { return book && Date.now() - loadedAt >= (opts.staleMs === undefined ? 60e3 : opts.staleMs); }
@@ -2676,7 +2677,9 @@ function installFromEditor() {
         var f = await findOrCreateSheet(); mark(f.created ? '시트 만듦' : '시트 읽음');
         step(f.created ? '예시 할 일을 넣는 중이에요' : '거의 다 됐어요');
         // 구조 맞추기 저장과 첫 화면 캘린더 읽기를 동시에 (캘린더는 실패해도 시작은 계속)
-        await Promise.all([setup(f.created).then(function () { mark('구조 맞춤'); }), preloadCal(K.weekStartYmd_(today()), 7).catch(function () {}).then(function () { mark('캘린더'); })]);
+        await setup(f.created, opts.localFirst !== false); mark('구조 맞춤');
+        // 첫 화면 캘린더는 기다리지 않고 받기 시작만 (오면 화면에 알림). 첫 화면 요청이 남은 만큼만 기다린다
+        var wk = K.weekStartYmd_(today()), ck = calKey(wk, 7); if (!calData[ck]) { calNotify[ck] = 1; fetchCal(wk, 7, ck, false).then(function () { mark('캘린더'); startLog = log.join(' · '); }); }
         // 다음에 열 때 탭 목록·값을 동시에 읽도록 탭 이름을 기억
         store.set('kitTabs:' + f.id, JSON.stringify(book.sheets.map(function (sh) { return sh.getName(); })));
         writeSnap(); saveCal();

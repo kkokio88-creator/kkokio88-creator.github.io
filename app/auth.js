@@ -42,9 +42,10 @@
         .catch(function (e) { busy(false); gateMsg('시작하지 못했어요: ' + e.message); showGate(true); started = false; });
     };
     if (tok.email) return go(tok.email);
+    // 이메일(로그아웃 표시·다음 로그인 힌트용)은 시작과 동시에 받는다 — 시작을 기다리게 하지 않는다
+    go('');
     fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + tok.t } }).then(function (r) { return r.json(); })
-      .then(function (u) { tok.email = u.email || ''; store.set('kitTok', JSON.stringify(tok)); go(tok.email); })
-      .catch(function () { go(''); });
+      .then(function (u) { tok.email = u.email || ''; store.set('kitTok', JSON.stringify(tok)); }).catch(function () {});
   }
   function login() {
     if (!window.google || !google.accounts || !google.accounts.oauth2) { gateMsg('구글 로그인을 불러오는 중이에요. 잠시 뒤 다시 눌러 주세요.'); return; }

@@ -15,10 +15,12 @@
     apply();
     // PC 사이드바 접기(아이콘만): 이 기기에 기억
     try { if (localStorage.getItem('kitSide') === 'min') document.documentElement.classList.add('side-min'); } catch (e) {}
+    // 글자 크기(작게·보통·크게) · 움직임·진동 줄이기
+    try { var fz = localStorage.getItem('kitFont'); if (fz === 'sm' || fz === 'lg') document.documentElement.setAttribute('data-font', fz); if (localStorage.getItem('kitCalm') === '1') document.documentElement.classList.add('calm'); } catch (e) {}
   })();
 </script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'"><!-- 글꼴 CSS가 첫 그림을 막지 않게: 받는 동안은 기기 글꼴 -->
 <script>
   // 프리텐다드: 첫 공급처(jsDelivr)가 막히면 cdnjs에서 다시 받는다 (설치 불필요)
   setTimeout(function () {
@@ -205,6 +207,18 @@
   .done-all p { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
 
   /* 캘린더 */
+  /* 글자 크기: 화면 전체를 비율로 (사이드바 높이는 그만큼 보정) */
+  html[data-font="sm"] body { zoom: .92; } html[data-font="lg"] body { zoom: 1.12; }
+  @media (min-width: 1024px) { html[data-font="sm"] .side { height: calc(100vh / .92); } html[data-font="lg"] .side { height: calc(100vh / 1.12); } }
+  /* 움직임 줄이기 */
+  html.calm *, html.calm *::before, html.calm *::after { animation-duration: .001s !important; animation-delay: 0s !important; transition-duration: .001s !important; }
+  /* 당겨서 새로고침 (휴대폰) — 브라우저 기본 당겨서 새로고침(페이지 전체 다시 열기)은 끈다 */
+  body { overscroll-behavior-y: contain; }
+  .ptr { position: fixed; top: calc(-46px + env(safe-area-inset-top)); left: 50%; transform: translate(-50%, 0); width: 40px; height: 40px; border-radius: 50%; background: var(--card); box-shadow: 0 4px 14px rgba(0,0,0,.16); z-index: 95; display: flex; align-items: center; justify-content: center; transition: transform .2s var(--ease); pointer-events: none; }
+  .ptr i { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--line); border-top-color: var(--g); transition: border-color .15s; }
+  .ptr.ready i { border-color: var(--g); }
+  .ptr.spin i { border-color: var(--line); border-top-color: var(--g); animation: ptrspin .8s linear infinite; }
+  @keyframes ptrspin { to { transform: rotate(360deg); } }
   kbd.kb { font: 600 12px/1 var(--font); color: var(--t3); background: var(--fill); border-radius: 6px; padding: 4px 7px; }
   .keys { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; font-size: 15px; color: var(--t2); margin: 6px 0 4px; }
   .keys kbd.kb { justify-self: start; font-size: 13px; padding: 5px 8px; color: var(--t1); }
@@ -215,6 +229,7 @@
   .selbar button { min-height: 40px; padding: 0 12px; border-radius: 11px; font-weight: 700; color: var(--t2); }
   .selbar button:hover { background: var(--fill); color: var(--t1); }
   .selbar button.pri { background: var(--g); color: #fff; }
+  .row.pref { flex-wrap: wrap; row-gap: 10px; } .row.pref .tx { flex: 1 0 auto; min-width: 5em; } .row.pref .thm { margin-left: auto; }
   .thm { display: inline-flex; gap: 6px; flex: none; } .thm .chip { min-height: 36px; padding: 0 12px; }
   .seg { position: relative; display: inline-flex; background: #E7EAED; border-radius: 13px; padding: 3px; }
   .seg .ind { position: absolute; top: 3px; bottom: 3px; border-radius: 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.08); transition: left .4s var(--spring), width .4s var(--spring); }
@@ -488,7 +503,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "내 업무관리 키트", version: "1.7.0" };
+  var KIT = { name: "내 업무관리 키트", version: "1.7.1" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -599,7 +614,9 @@
   }
   function stagger(root) { if (!root) return; root.classList.add('anim'); [].forEach.call(root.querySelectorAll('.row, .wd, .mc, .act, .chip, .big, .qa, .apill'), function (el, i) { el.style.setProperty('--i', Math.min(i, 12)); }); setTimeout(function () { root.classList.remove('anim'); }, 1300); }
   function bump(el) { if (!el) return; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+  function calm() { return document.documentElement.classList.contains('calm') || !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
   function confetti(power) {
+    if (calm()) return;
     var cv = $('confetti'), ctx = cv.getContext('2d'), dpr = devicePixelRatio || 1, W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr;
     var colors = ['#5B5CF6', '#8B7CFF', '#FF7AC6', '#5FD3F3', '#F2A20C', '#3182F6', '#FFD43B', '#F0508C'], ps = [], n = power || 150;
     for (var i = 0; i < n; i++) {
@@ -777,6 +794,8 @@
     $('sInbox').textContent = ibn; $('sInbox').style.display = ibn ? '' : 'none';
     $('tInbox').textContent = ibn; $('tInbox').style.display = ibn ? 'inline-flex' : 'none';
     $('sheetLink').href = d.sheetUrl || '#';
+    // 홈 화면 앱 아이콘에 오늘 남은 할 일 수 (지원하는 기기만)
+    try { if (navigator.setAppBadge) (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(function () {}); } catch (e) {}
   }
 
   function dayItems(w, day) { return { evs: w.events.items.filter(function (e) { return e.date === day; }), tks: w.tasks.filter(function (t) { return t.date === day; }) }; }
@@ -885,7 +904,7 @@
     function start() {
       dg.on = true; dg.el.classList.add('dragging');
       var gh = dg.el.cloneNode(true); gh.className = 'dchip dghost'; gh.removeAttribute('style'); gh.style.left = dg.x + 'px'; gh.style.top = dg.y + 'px';
-      document.body.appendChild(gh); dg.ghost = gh; if (navigator.vibrate) try { navigator.vibrate(10); } catch (e) {}
+      document.body.appendChild(gh); dg.ghost = gh; if (navigator.vibrate && !calm()) try { navigator.vibrate(10); } catch (e) {}
     }
     function end(e) {
       if (!dg) return; var d = dg; dg = null; clearTimeout(d.timer);
@@ -1435,6 +1454,10 @@
   });
 
   // ════════ 더보기 ════════
+  function prefRow(icon, cls, title, key, opts, cur) {
+    return '<div class="row pref" style="cursor:default">' + tile(icon, cls) + '<div class="tx"><div class="t">' + title + '</div></div><span class="thm" role="group" aria-label="' + title + '">' +
+      opts.map(function (x) { var on = cur === x[0]; return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-pref="' + key + '" data-v="' + x[0] + '"' + (key === 'theme' ? ' data-theme-set="' + x[0] + '"' : '') + ' aria-pressed="' + on + '">' + x[1] + '</button>'; }).join('') + '</span></div>';
+  }
   function backBtn() { return '<button class="eyebrow" data-m="back" style="display:inline-flex;align-items:center;gap:2px;padding:10px 12px 8px 0;min-height:44px">' + svg('chevL', 18) + '더보기</button>'; }
   function showMore() { document.querySelectorAll('[data-go]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-go') === 'more'); }); document.querySelectorAll('.page').forEach(function (p) { p.classList.toggle('on', p.id === 'p-more'); }); $('main').classList.add('narrow'); closeSheet(); window.scrollTo(0, 0); }
   function renderMore() {
@@ -1444,9 +1467,10 @@
       '<div class="card">' + row('search', 'gray', '검색', 'search') + row('keyboard', 'gray', isPC() ? '단축키 · 빠르게 담는 법' : '빠르게 담는 법', 'keys') + '</div><div class="gap"></div>' +
       '<div class="card">' + row('user', 'blue', '맡긴 일', 'waiting', (d.delegated || []).length) + row('folder', 'purple', '프로젝트', 'projects', (d.projects || []).filter(function (p) { return !p.finished; }).length) + row('repeat', 'green', '루틴 만들기', 'routine') + row('calcheck', 'purple', '주간 검토', 'weekly') + '</div><div class="gap"></div>' +
       '<div class="card">' + row('list', 'gray', '모든 할 일', 'all') + row('archive', 'gray', '나중에 할 일', 'someday', d.someday || '') + row('calendar', 'blue', '보이는 캘린더', 'cals') + '</div><div class="gap"></div>' +
-      '<div class="card"><div class="row" style="cursor:default">' + tile('sun', 'amber') + '<div class="tx"><div class="t">화면 모드</div></div><span class="thm" role="group" aria-label="화면 모드">' +
-      [['auto', '자동'], ['light', '라이트'], ['dark', '다크']].map(function (x) { var on = (window.kitTheme ? window.kitTheme() : 'auto') === x[0]; return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-theme-set="' + x[0] + '" aria-pressed="' + on + '">' + x[1] + '</button>'; }).join('') +
-      '</span></div></div><div class="gap"></div>' +
+      '<div class="card">' + prefRow('sun', 'amber', '화면 모드', 'theme', [['auto', '자동'], ['light', '라이트'], ['dark', '다크']], window.kitTheme ? window.kitTheme() : 'auto') +
+      prefRow('file', 'blue', '글자 크기', 'font', [['sm', '작게'], ['', '보통'], ['lg', '크게']], document.documentElement.getAttribute('data-font') || '') +
+      '<label class="row" style="cursor:pointer">' + tile('moon', 'purple') + '<div class="tx"><div class="t">움직임·진동 줄이기</div><div class="m">축하 효과·흔들림 없이 조용하게</div></div><span class="sw"><input type="checkbox" id="calmSw"' + (document.documentElement.classList.contains('calm') ? ' checked' : '') + '><i></i></span></label>' +
+      '</div><div class="gap"></div>' +
       (window.KIT_ENGINE ? '' : '<div class="h2" style="margin-top:22px">알림</div><div class="card">' +
       '<label class="row" style="cursor:pointer">' + tile('sun', 'amber') + '<div class="tx"><div class="t">아침 브리핑 메일</div><div class="m">평일 아침 8시 · 오늘 할 일과 일정</div></div><span class="sw"><input type="checkbox" data-nt="daily"' + ((d.notify || {}).daily ? ' checked' : '') + '><i></i></span></label>' +
       '<label class="row" style="cursor:pointer">' + tile('mail', 'purple') + '<div class="tx"><div class="t">주간 검토 메일</div><div class="m">금요일 오후 4시 · 한 주 요약</div></div><span class="sw"><input type="checkbox" data-nt="weekly"' + ((d.notify || {}).weekly ? ' checked' : '') + '><i></i></span></label>' +
@@ -1457,7 +1481,13 @@
       (window.KIT_AUTH ? '<div class="gap"></div><div class="card"><div class="row" tabindex="0" role="button" id="kitLogout">' + tile('user', 'gray') + '<div class="tx"><div class="t">로그아웃</div><div class="m">' + esc(window.KIT_AUTH.email() || '구글 계정') + ' · 시트는 내 드라이브에 그대로 있어요</div></div>' + CHEV + '</div></div>' : '') +
       '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') +
       (window.KIT_ENGINE && window.KIT_ENGINE.startLog && window.KIT_ENGINE.startLog() ? '<br><span id="kitStartLog" style="font-size:11.5px">시작: ' + esc(window.KIT_ENGINE.startLog()) + '</span>' : '') + '</div>';
-    [].forEach.call(document.querySelectorAll('[data-theme-set]'), function (b) { b.onclick = function () { if (window.kitSetTheme) window.kitSetTheme(b.getAttribute('data-theme-set')); [].forEach.call(document.querySelectorAll('[data-theme-set]'), function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); }; });
+    [].forEach.call(document.querySelectorAll('[data-pref]'), function (b) { b.onclick = function () {
+      var k = b.getAttribute('data-pref'), v = b.getAttribute('data-v');
+      if (k === 'theme' && window.kitSetTheme) window.kitSetTheme(v);
+      if (k === 'font') { if (v) document.documentElement.setAttribute('data-font', v); else document.documentElement.removeAttribute('data-font'); try { localStorage.setItem('kitFont', v); } catch (e) {} }
+      [].forEach.call(document.querySelectorAll('[data-pref="' + k + '"]'), function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+    }; });
+    if ($('calmSw')) $('calmSw').onchange = function () { document.documentElement.classList.toggle('calm', this.checked); try { localStorage.setItem('kitCalm', this.checked ? '1' : ''); } catch (e) {} };
     var lo = $('kitLogout'); if (lo) lo.onclick = function () { if (confirm('로그아웃할까요? 할 일은 내 구글 시트에 그대로 남아 있어요.')) window.KIT_AUTH.logout(); };
     stagger($('moreBody'));
   }
@@ -1855,6 +1885,41 @@
   }
   var renderToday0 = renderToday;
   renderToday = function () { renderToday0(); if (Object.keys(sel).length) applySel(); };
+
+  // ── 당겨서 새로고침 (휴대폰, 맨 위에서 아래로 당기기) ──
+  function refreshAll() {
+    var eng = window.KIT_ENGINE && window.KIT_ENGINE.reload ? window.KIT_ENGINE.reload() : Promise.resolve();
+    var limit = new Promise(function (res) { setTimeout(res, 15000); }); // 로그인 만료 등으로 늦으면 화면만이라도 다시
+    return Promise.race([eng, limit]).then(function () {
+      calCache = {}; lastAll = null;
+      if ($('p-calendar').classList.contains('on')) loadCal(); else if ($('p-inbox').classList.contains('on')) loadInbox(); else if ($('p-more').classList.contains('on')) renderMore();
+      return load();
+    }).then(function () { toast('새로 받았어요'); });
+  }
+  (function () {
+    var y0 = null, dy = 0, el = null, busy = false;
+    var ind = function () { if (!el) { el = document.createElement('div'); el.id = 'ptr'; el.className = 'ptr'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = '<i></i>'; document.body.appendChild(el); } return el; };
+    document.addEventListener('touchstart', function (e) {
+      y0 = null;
+      if (busy || isPC() || window.scrollY > 0 || e.touches.length !== 1 || $('sheet').classList.contains('on')) return;
+      if (e.target.closest && e.target.closest('.dchip, .gridwrap, #gridWrap, input, textarea, [contenteditable]')) return;
+      y0 = e.touches[0].clientY; dy = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (y0 === null) return;
+      dy = e.touches[0].clientY - y0;
+      var p = dy > 0 && window.scrollY <= 0 ? Math.min(dy * .5, 90) : 0;
+      ind().style.transform = 'translate(-50%, ' + p + 'px)'; ind().classList.toggle('ready', p >= 60);
+    }, { passive: true });
+    document.addEventListener('touchend', function () {
+      if (y0 === null) return; y0 = null;
+      var p = Math.min(dy * .5, 90), r = ind(); dy = 0;
+      if (p < 60 || window.scrollY > 0) { r.style.transform = ''; r.classList.remove('ready'); return; }
+      busy = true; r.classList.remove('ready'); r.classList.add('spin'); r.style.transform = 'translate(-50%, 64px)';
+      var done = function () { busy = false; r.classList.remove('spin'); r.style.transform = ''; };
+      refreshAll().then(done, function () { done(); toast('새로 받지 못했어요'); });
+    });
+  })();
 
   // PC 사이드바 접기·펴기 (버튼 또는 [ 키)
   function sideMin() { return document.documentElement.classList.contains('side-min'); }
