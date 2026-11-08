@@ -302,7 +302,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: '내 업무관리 키트',
-  VERSION: '1.6.1',       // 코드 버전 (화면 표시용)
+  VERSION: '1.7.0',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 5,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -933,9 +933,66 @@ function addTasks(text) {
   return withLock_(function () {
     var ctx = taskContext_();
     var today = todayYmd_(ctx.tz);
-    appendTasks_(ctx, lines.map(function (title) { return { title: title, status: STATUS.INBOX, created: today }; }));
-    return { added: lines.length };
+    var parsed = lines.map(function (line) { return parseCapture_(line, today); });
+    appendTasks_(ctx, parsed.map(function (p) {
+      var t = { title: p.title, status: STATUS.INBOX, created: today };
+      ['due', 'context', 'project', 'priority', 'est'].forEach(function (k) { if (p[k]) t[k] = p[k]; });
+      return t;
+    }));
+    return { added: lines.length, parsed: parsed };
   });
+}
+
+/**
+ * 담을 때 한 줄에서 날짜·상황·프로젝트·중요도·예상 시간을 알아듣는다. 알아들은 말은 제목에서 뺀다.
+ *   날짜: 오늘 · 내일 · 모레 · 글피 · (이번주/다음주) 금요일 · 주말 · 다음주 · 3일 뒤 · 11/20 · 11월 20일 · 20일  (뒤에 '까지'도 됨)
+ *   @전화 → 상황 · #워크숍 → 프로젝트 · ! → 중요 · 30분 / 1시간 / 1시간 30분 → 예상 시간
+ * 아무것도 못 알아들으면 제목만 그대로. 다 빼고 제목이 비면 원래 글을 제목으로 둔다.
+ */
+function parseCapture_(text, today) {
+  var src = String(text || '').trim(), t = ' ' + src + ' ', out = {};
+  var take = function (re, fn) {
+    var m = t.match(re); if (!m) return false;
+    var v = fn(m); if (v === false || v === null || v === undefined) return false;
+    t = t.slice(0, m.index) + ' ' + t.slice(m.index + m[0].length); return true;
+  };
+  var E = '(?:까지)?(?=\\s)';
+  var dow = function (ymd) { return new Date(ymd + 'T00:00:00Z').getUTCDay(); };
+  var valid = function (y, m, d) { var x = new Date(Date.UTC(y, m - 1, d)); return x.getUTCMonth() === m - 1 && x.getUTCDate() === d ? x.toISOString().slice(0, 10) : null; };
+  var DOW = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+  take(/\s@([^\s@.,]+)(?=\s)/, function (m) { out.context = '@' + m[1]; return 1; });
+  take(/\s#([^\s#\d][^\s#]*)(?=\s)/, function (m) { out.project = m[1]; return 1; });
+  take(/\s!{1,3}(?=\s)/, function () { out.priority = '높음'; return 1; });
+  take(/\s(\d+(?:\.\d+)?)\s?(시간|분)(?:\s?(\d+)\s?분)?(?=\s)/, function (m) {
+    var n = m[2] === '시간' ? Number(m[1]) * 60 + Number(m[3] || 0) : Number(m[1]);
+    if (!(n > 0 && n <= 24 * 60)) return false; out.est = Math.round(n); return 1;
+  });
+  var dueRules = [
+    [new RegExp('\\s(오늘|내일|모레|글피)' + E), function (m) { return addDaysYmd_(today, { '오늘': 0, '내일': 1, '모레': 2, '글피': 3 }[m[1]]); }],
+    [new RegExp('\\s(?:(이번\\s?주|다음\\s?주|담주)\\s?)?([월화수목금토일])요일' + E), function (m) {
+      var w = DOW[m[2]], d0 = dow(today);
+      if (!m[1]) return addDaysYmd_(today, (w - d0 + 7) % 7);
+      var mon = addDaysYmd_(today, -((d0 + 6) % 7)), d = addDaysYmd_(mon, (w + 6) % 7);
+      if (!/이번/.test(m[1])) d = addDaysYmd_(d, 7);
+      return d < today ? addDaysYmd_(d, 7) : d; // 지난 요일이면 다음 주
+    }],
+    [new RegExp('\\s(?:이번\\s?)?주말' + E), function () { var d0 = dow(today); return d0 === 0 ? today : addDaysYmd_(today, 6 - d0); }],
+    [new RegExp('\\s(?:다음\\s?주|담주)' + E), function () { var d0 = dow(today); return addDaysYmd_(today, 7 - ((d0 + 6) % 7)); }],
+    [new RegExp('\\s(\\d{1,3})\\s?일\\s?(?:뒤|후)' + E), function (m) { return addDaysYmd_(today, Number(m[1])); }],
+    [new RegExp('\\s(\\d{1,2})(?:/|월\\s?)(\\d{1,2})일?' + E), function (m) {
+      var y = Number(today.slice(0, 4)), d = valid(y, Number(m[1]), Number(m[2]));
+      if (d && d < today) d = valid(y + 1, Number(m[1]), Number(m[2]));
+      return d;
+    }],
+    [new RegExp('\\s(\\d{1,2})일' + E), function (m) {
+      var y = Number(today.slice(0, 4)), mo = Number(today.slice(5, 7)), d = valid(y, mo, Number(m[1]));
+      if (d && d < today) d = mo === 12 ? valid(y + 1, 1, Number(m[1])) : valid(y, mo + 1, Number(m[1]));
+      return d;
+    }]
+  ];
+  for (var i = 0; i < dueRules.length; i++) { if (take(dueRules[i][0], function (m) { var d = dueRules[i][1](m); if (d) out.due = d; return d; })) break; }
+  out.title = t.replace(/\s+/g, ' ').trim() || src;
+  return out;
 }
 
 /** 업무 객체 여러 개를 마지막 데이터 줄 아래에 한 번에 쓴다 (ID 자동) */
