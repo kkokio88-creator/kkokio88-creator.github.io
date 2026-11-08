@@ -27,13 +27,33 @@
 <div class="w">
   <a class="back" href="./">← 내 업무관리 키트</a>
   <h1>개인정보 처리방침</h1>
-  <p class="date">시행일 2026년 11월 · 홈페이지 사용 신청 기준</p>
+  <p class="date">시행일 2026년 11월 8일 · 웹 앱(구글로 시작하기)과 홈페이지 사용 신청 · <a href="#en">English</a></p>
 
   <div class="box">
-    <p><b>내 할 일 데이터는 이 방침의 대상이 아니에요.</b> 키트를 설치하면 할 일은 <b>내 구글 드라이브의 내 시트에만</b> 저장되고, 코드는 내 구글 계정 안에서 실행돼요. 운영자 서버가 없어서 운영자는 내 할 일을 볼 수 없어요. 이 방침은 홈페이지에서 <b>사용 신청</b>을 할 때 받는 정보만 다뤄요.</p>
+    <p><b>운영자는 내 할 일을 볼 수 없어요.</b> 앱은 내 브라우저에서 내 구글 계정으로 바로 일하고, 할 일은 <b>내 구글 드라이브의 내 시트에만</b> 저장돼요. 운영자 서버가 없어서 내 할 일·일정이 운영자에게 오지 않아요.</p>
   </div>
 
-  <h2>1. 받는 정보와 쓰는 곳</h2>
+  <h2>A. 웹 앱이 쓰는 구글 데이터 ('구글로 시작하기')</h2>
+  <p>앱(<a href="app/">kkokio88-creator.github.io/app/</a>)은 구글 로그인 때 아래 권한만 요청해요. 데이터는 <b>내 브라우저와 구글 사이에서만</b> 오가고, 운영자나 다른 서버로 보내지 않아요.</p>
+  <table>
+    <tr><th>권한</th><th>읽거나 쓰는 것</th><th>쓰는 곳</th></tr>
+    <tr><td>이 앱이 만든 파일 (drive.file)</td><td>앱이 내 드라이브에 만든 '내 업무관리 키트' 시트 하나</td><td>할 일 저장·불러오기. 내 다른 파일은 보지 못해요</td></tr>
+    <tr><td>캘린더 목록 보기 (calendar.calendarlist.readonly)</td><td>내 캘린더 이름·색</td><td>'보이는 캘린더'에서 시간표에 함께 볼 캘린더 고르기</td></tr>
+    <tr><td>일정 보기 (calendar.events.readonly)</td><td>고른 캘린더의 이번 주 일정 제목·시간·장소</td><td>오늘 화면과 캘린더 탭에 일정과 할 일을 함께 보여 주기</td></tr>
+    <tr><td>내 캘린더 일정 만들기·지우기 (calendar.events.owned)</td><td>내가 시간표에 끌어다 놓은 할 일 일정</td><td>내가 할 일을 시간표에 놓으면 내 캘린더에 일정을 만들고, 빼면 그 일정만 지워요. 앱이 만들지 않은 일정은 바꾸지 않아요</td></tr>
+    <tr><td>이메일 주소 (email, openid)</td><td>로그인한 구글 계정 주소</td><td>더보기 화면에 어느 계정인지 보여 주기</td></tr>
+  </table>
+  <ul>
+    <li><b>저장:</b> 할 일은 내 시트에, 일정은 내 구글 캘린더에 있어요. 브라우저에는 로그인 토큰(1시간 뒤 만료)·내 시트 주소·마지막 화면만 잠시 저장해요.</li>
+    <li><b>공유·판매 없음:</b> 구글 데이터를 운영자를 포함해 누구에게도 보내거나 팔지 않고, 광고·AI 학습에 쓰지 않아요. 사람이 읽지 않아요.</li>
+    <li><b>지우기:</b> 더보기 ▸ 로그아웃하면 브라우저에 남은 정보가 지워져요. 권한은 <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">구글 계정 ▸ 타사 앱 액세스</a>에서 언제든 끊을 수 있고, 내 시트를 지우면 할 일도 사라져요.</li>
+    <li>이 앱이 구글 API에서 받은 정보를 쓰고 다른 앱으로 옮기는 방식은 <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API 서비스 사용자 데이터 정책</a>(제한적 사용 요건 포함)을 따릅니다.</li>
+  </ul>
+
+  <h2>B. 홈페이지 사용 신청 정보</h2>
+  <p>아래 1~4는 홈페이지 신청서(회사 계정용 시트 사본 링크 받기)에 적은 정보에 관한 내용이에요.</p>
+
+  <h2 style="font-size:17px">1. 받는 정보와 쓰는 곳</h2>
   <table>
     <tr><th>항목</th><th>필수 여부</th><th>쓰는 곳</th></tr>
     <tr><td>이메일 주소</td><td>필수</td><td>내 시트 만들기 링크와 사용 안내 메일 보내기, 같은 신청 합치기</td></tr>
@@ -43,17 +63,17 @@
   </table>
   <p>신청서에 없는 정보(전화번호, 주소, 할 일 내용 등)는 받지 않아요.</p>
 
-  <h2>2. 보관 장소와 기간</h2>
+  <h2 style="font-size:17px">2. 보관 장소와 기간</h2>
   <ul>
     <li>신청 정보는 운영자의 구글 시트(구글 드라이브)에 저장돼요. 구글 클라우드 서비스를 쓰므로 데이터는 Google의 서버에 보관돼요.</li>
     <li>보관 기간: 신청일로부터 <b>2년</b>, 또는 삭제를 요청하실 때까지. 기간이 지나면 지체 없이 지워요.</li>
     <li>안내 메일은 구글 메일(Gmail)로 보내요.</li>
   </ul>
 
-  <h2>3. 제3자 제공</h2>
+  <h2 style="font-size:17px">3. 제3자 제공</h2>
   <p>신청 정보를 다른 회사나 사람에게 팔거나 넘기지 않아요. 법령에 따라 요청이 있는 경우만 예외예요.</p>
 
-  <h2>4. 내 권리</h2>
+  <h2 style="font-size:17px">4. 내 권리</h2>
   <ul>
     <li>내 신청 정보를 보거나, 고치거나, 지워 달라고 언제든 요청할 수 있어요. 아래 연락처로 메일을 보내 주세요.</li>
     <li>마케팅 소식은 받은 메일에서 바로 그만 받기를 요청할 수 있어요.</li>
@@ -65,6 +85,19 @@
 
   <h2>6. 바뀌면</h2>
   <p>이 방침이 바뀌면 이 페이지에 시행일과 함께 먼저 알려요.</p>
+
+  <h2 id="en">English summary</h2>
+  <p><b>My Task Kit</b> (web app at https://kkokio88-creator.github.io/app/) runs entirely in the user's browser. There is no operator server: Google user data travels only between the user's browser and Google APIs and is never sent to the developer or any third party.</p>
+  <ul>
+    <li><b>drive.file</b> — creates and reads/writes the single "내 업무관리 키트" spreadsheet the app created in the user's Drive, to store the user's tasks. The app cannot see any other file.</li>
+    <li><b>calendar.calendarlist.readonly</b> — lists the user's calendars (name, color) so the user can choose which calendars appear in the day plan.</li>
+    <li><b>calendar.events.readonly</b> — reads this week's events (title, time, location) from the chosen calendars to show them next to the user's tasks.</li>
+    <li><b>calendar.events.owned</b> — when the user drags a task onto the day plan, creates an event on the user's own calendar; when the user removes it, deletes only that event. Events not created by the app are never modified.</li>
+    <li><b>openid, email</b> — shows which Google account is signed in.</li>
+  </ul>
+  <p>Data storage: tasks live in the user's own spreadsheet and events in the user's own Google Calendar. The browser keeps only a short-lived access token (expires in 1 hour), the spreadsheet ID and a cached view. Signing out clears them; access can be revoked at any time at https://myaccount.google.com/permissions.</p>
+  <p>Google user data is not sold, shared, transferred, used for advertising, used to train AI/ML models, or read by humans. <b>My Task Kit's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</b></p>
+  <p>Contact: kkokio88@gmail.com</p>
 </div>
 </body>
 </html>
