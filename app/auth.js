@@ -67,6 +67,7 @@
     g.innerHTML = first
       ? '<div class="kg-in"><div class="kg-logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
         '<h1>내 업무관리 키트</h1><p class="kg-sub">떠오르면 담고, 하루 한 번 정리하고,<br>오늘 할 일만 봐요.</p>' + gbtn +
+        '<ol class="kg-how"><li>구글 계정을 고르세요</li><li><b>"확인하지 않은 앱"</b>이 뜨면 <b>고급 ▸ 이동</b> <small>(심사 중이라 나오는 안내예요)</small></li><li>권한 화면에서 <b>모두 선택</b> ▸ 계속</li></ol>' +
         '<ul class="kg-pts"><li>내 구글 드라이브에 <b>내 시트를 하나 만들어</b> 거기에만 저장해요</li><li>운영자를 포함해 <b>누구도 내 할 일을 볼 수 없어요</b></li><li>구글 캘린더 일정과 함께 보고, 할 일을 끌어다 넣어요</li></ul>' +
         '<p class="kg-prog" id="kgProg" hidden><i></i><span id="kgProgT" role="status"></span><br><small>처음 한 번만 걸려요</small></p><p class="kg-msg" id="kgMsg" role="alert"></p><p class="kg-fine">시작하면 <a href="../privacy.html" target="_blank">개인정보 처리방침</a>에 동의하는 것으로 봐요. 이 앱은 자기가 만든 파일만 볼 수 있어요.</p></div>'
       : '<span>로그인이 만료됐어요</span>' + gbtn + '<span class="kg-msg" id="kgMsg" role="alert"></span>';
