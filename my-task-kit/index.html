@@ -244,6 +244,15 @@
   .toast { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translate(-50%, 14px) scale(.96); opacity: 0; z-index: 70; background: rgba(25,31,40,.95); color: #fff; padding: 14px 18px; border-radius: 16px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 16px; transition: transform .4s var(--spring), opacity .2s; pointer-events: none; white-space: nowrap; max-width: 92vw; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
   .toast.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
   .toast.act { pointer-events: auto; }
+  /* 개인 링크가 바뀌었을 때(시트에서 새로 만듦) — 사라지지 않는 안내 */
+  .linknote { position: fixed; left: 12px; right: 12px; top: calc(12px + env(safe-area-inset-top)); z-index: 96; max-width: 560px; margin: 0 auto; background: #FFFFFF; color: #191F28; border: 2px solid #F04452; border-radius: 18px; padding: 16px 18px; box-shadow: 0 12px 36px rgba(0,0,0,.22); font-size: 15px; line-height: 1.55; }
+  .linknote b { display: block; color: #D22030; font-size: 16px; margin-bottom: 4px; }
+  .linknote .path { display: inline-block; margin: 4px 0; padding: 2px 8px; border-radius: 8px; background: #F2F4F6; font-weight: 700; }
+  .linknote .small { color: #4E5968; font-size: 14px; margin-top: 6px; }
+  .linknote .small .em { display: inline; color: inherit; font-size: inherit; margin: 0; }
+  .linknote .lnform { display: flex; gap: 8px; margin-top: 10px; }
+  .linknote .lnform input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid #E9ECEF; border-radius: 12px; background: #F2F4F6; color: #191F28; font-size: 15px; }
+  .linknote .lnform button { padding: 10px 16px; border-radius: 12px; background: #5B5CF6; color: #fff; font-weight: 700; }
   .toast .undo { color: #B9B9FF; font-weight: 700; font-size: 15px; }
   .syncing::after { content: ' · 맞추는 중'; color: var(--t4); }
 
@@ -443,10 +452,49 @@
   function logErr(where, msg) { errLog.push(new Date().toTimeString().slice(0, 8) + ' ' + where + ': ' + String(msg).slice(0, 160)); if (errLog.length > 10) errLog.shift(); }
   window.addEventListener('error', function (e) { logErr('page', e.message); });
   function call(fn) { var p = call0.apply(null, arguments); p.catch(function (e) { logErr(fn, e && e.message); }); return p; }
+  // 실패 종류: 'link' = 개인 링크가 바뀜(시트에서 새로 만듦), 'offline' = 인터넷 연결 문제, 'server' = 그 밖의 오류
+  function errKind(e) {
+    if (e && e.kind) return e.kind;
+    var m = String(e && e.message || e || '');
+    if (/링크가 올바르지 않습니다/.test(m)) return 'link';
+    if ((typeof navigator !== 'undefined' && navigator.onLine === false) || /NetworkError|HTTP 0|Failed to fetch|Load failed|network/i.test(m)) return 'offline';
+    return 'server';
+  }
+  var linkBroken = false;
+  function showLinkNotice() {
+    linkBroken = true; renderOutbox();
+    if ($('linkNote')) return;
+    var home = false; try { home = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) {}
+    var el = document.createElement('div'); el.id = 'linkNote'; el.className = 'linknote'; el.setAttribute('role', 'alert');
+    el.innerHTML = '<b>링크가 바뀌었어요</b>시트에서 휴대폰 링크를 새로 만들어서 이 링크는 더 이상 쓸 수 없어요. 구글 시트 메뉴<br><span class="path">✅ 내 업무 ▸ 📱 휴대폰·웹 화면 링크</span><br>에서 새 링크를 열어 주세요.' +
+      '<div class="small">' + (home ? '<b class="em">홈 화면 앱으로 쓰고 있다면</b> 새 링크를 연 뒤 홈 화면에 다시 추가해 주세요.' : '홈 화면 앱으로 쓰고 있다면 새 링크를 연 뒤 홈 화면에 다시 추가해 주세요.') +
+      (window.KIT_API_URL ? ' 또는 새 링크를 복사해 아래 칸에 붙여 넣으면 이 화면에서 바로 이어 쓸 수 있어요.' : '') +
+      (outbox.length ? ' 보내지 못한 ' + outbox.length + '개는 이 기기에 그대로 보관했다가 새 링크로 열면 보내져요.' : '') + '</div>' +
+      (window.KIT_API_URL ? '<form class="lnform"><input type="url" placeholder="새 링크 붙여 넣기" aria-label="새 링크" autocomplete="off"><button type="submit">열기</button></form>' : '');
+    document.body.appendChild(el);
+    var f = el.querySelector('form');
+    if (f) f.addEventListener('submit', function (ev) {
+      ev.preventDefault(); var u = f.querySelector('input').value.trim(), i = u.indexOf('#'), h = {};
+      (i >= 0 ? u.slice(i + 1) : '').split('&').forEach(function (p) { var j = p.indexOf('='); if (j > 0) try { h[p.slice(0, j)] = decodeURIComponent(p.slice(j + 1)); } catch (e) {} });
+      if (!h.k || !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(h.api || '')) { toast('시트 메뉴에서 복사한 휴대폰 링크 전체를 붙여 넣어 주세요'); return; }
+      // 화면 시작 코드가 #api=…&k=… 를 이 기기에 저장한다 (보내지 못한 담기는 그대로 남아 있다가 열리면 보내짐)
+      location.replace(location.pathname + location.search + '#api=' + encodeURIComponent(h.api) + '&k=' + encodeURIComponent(h.k));
+      setTimeout(function () { location.reload(); }, 50);
+    });
+  }
   function call0(fn) {
+    return callRaw.apply(null, arguments).catch(function (e) {
+      if (!(e instanceof Error)) e = new Error(String(e && e.message || e));
+      e.kind = errKind(e);
+      if (e.kind === 'link') showLinkNotice();
+      throw e;
+    });
+  }
+  function callRaw(fn) {
     var args = [].slice.call(arguments, 1);
     if (window.KIT_API_URL) {
       return fetch(window.KIT_API_URL, { method: 'POST', credentials: 'omit', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, k: KEY, args: args }) })
+        .catch(function (e) { e = e instanceof Error ? e : new Error(String(e)); e.kind = 'offline'; throw e; })
         .then(function (r) { if (!r.ok) throw new Error('서버 응답 오류 (' + r.status + ')'); return r.json(); })
         .then(function (j) { if (!j.ok) throw new Error(j.error === '알 수 없는 요청입니다.' ? '이 기능은 새 버전에서 쓸 수 있어요. 시트의 코드를 업데이트해 주세요' : j.error || '알 수 없는 오류'); return j.result; });
     }
@@ -508,12 +556,13 @@
 
   var toastT;
   function toast(msg, undo, retry) {
+    if (linkBroken && /링크가 올바르지 않습니다/.test(String(msg))) return; // 위에 고정 안내가 이미 떠 있다
     var t = $('toast'); t.innerHTML = '<span>' + esc(msg) + '</span>';
     t.classList.toggle('act', !!(undo || retry));
     if (retry) { var rb = document.createElement('button'); rb.className = 'undo'; rb.textContent = '다시 시도'; rb.onclick = function () { t.classList.remove('on'); retry(); }; t.appendChild(rb); }
     if (undo) {
       var b = document.createElement('button'); b.className = 'undo'; b.textContent = '되돌리기';
-      b.onclick = function () { t.classList.remove('on'); call('undoTask', undo).then(function (r) { toast('되돌렸어요'); setView(r.view); }).catch(function (e) { toast(e.message); }); };
+      b.onclick = function () { t.classList.remove('on'); call('undoTask', undo).then(function (r) { toast('되돌렸어요'); setView(r.view); if (!undoShown(undo)) load(); }).catch(function (e) { toast(e.message); }); };
       t.appendChild(b);
     }
     t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('on'); }, undo || retry ? 6500 : 1800);
@@ -523,10 +572,19 @@
   var VIEW_KEY = 'kitView:' + String(window.KIT_API_URL || 'gas').slice(-24);
   function saveView(v) { try { localStorage.setItem(VIEW_KEY, JSON.stringify({ at: Date.now(), v: v })); } catch (e) {} }
   function cachedView() { try { var o = JSON.parse(localStorage.getItem(VIEW_KEY) || 'null'); return o && Date.now() - o.at < 7 * 864e5 ? o.v : null; } catch (e) { return null; } }
-  function setView(v) { if (!v) return; data = v; saveView(v); renderToday(); }
+  // viewGen: 화면을 바꾼 횟수. 새로고침(load)이 도는 동안 다른 동작이 더 새 화면을 그렸으면, 늦게 온 새로고침 결과로 덮지 않는다.
+  var viewGen = 0;
+  function setView(v) { if (!v) return; data = v; viewGen++; saveView(v); renderToday(); }
+  // 되돌린 할 일이 오늘 목록에 있어야 하는데 없으면(서버가 옛 화면을 돌려준 경우) 한 번 더 새로 받는다.
+  function undoShown(u) {
+    if (!data || !u || !u.id) return true;
+    var due = u.status === STATUS.NEXT || (u.focus && u.focus <= data.today);
+    return !due || todayList(data).some(function (t) { return t.id === u.id; });
+  }
   function load() {
     $('date').classList.add('syncing');
-    return call('getAppData').then(function (d) { $('date').classList.remove('syncing'); setView(d); })
+    var gen = viewGen;
+    return call('getAppData').then(function (d) { $('date').classList.remove('syncing'); if (viewGen === gen || !data) setView(d); if (outbox.length) flushOutbox(); })
       .catch(function (e) { $('date').classList.remove('syncing'); if (data) toast('새로고침 실패'); else $('todayA').innerHTML = '<div class="card" style="margin-top:14px"><div class="empty">' + tile('bell', 'red') + '<br>' + esc(e.message) + '</div></div>'; });
   }
 
@@ -745,7 +803,14 @@
     var target = isPC() ? document.querySelector('.side [data-go=inbox]') : document.querySelector('.tabbar [data-go=inbox]');
     flyTo(cb, target, function () { if (data && data.counts) { data.counts.inbox++; setBadges(); bump($('sInbox')); bump($('tInbox')); } });
     call('addTasks', v).then(function (r) { setView(r.view); flushOutbox(); })
-      .catch(function () { outbox.push(v); saveOutbox(); renderOutbox(); toast('인터넷이 돌아오면 바로 보낼게요'); });
+      .catch(function (e) {
+        // 어떤 실패든 적은 내용은 이 기기에 보관한다. 안내는 실패 종류에 맞게.
+        outbox.push(v); saveOutbox(); renderOutbox();
+        var k = errKind(e);
+        if (k === 'link') showLinkNotice();
+        else if (k === 'offline') toast('인터넷이 돌아오면 바로 보낼게요');
+        else toast('보내지 못했어요 (' + (e && e.message || '오류') + ') · 보관해 두었어요');
+      });
   });
 
   // 보내지 못한 담기 (오프라인·오류) — 휴대폰에 보관했다가 연결되면 한 번에 보낸다
@@ -756,10 +821,11 @@
     if (!$('capForm')) return;
     var el = $('outbox'); if (!el) { el = document.createElement('button'); el.id = 'outbox'; el.className = 'outbox'; el.type = 'button'; $('capForm').parentNode.insertAdjacentElement('afterend', el); el.onclick = flushOutbox; }
     el.style.display = outbox.length ? '' : 'none';
-    el.innerHTML = svg('clock', 14) + ' 보내지 않은 ' + outbox.length + '개 · 다시 보내기';
+    el.innerHTML = svg('clock', 14) + ' 보내지 않은 ' + outbox.length + '개 · ' + (linkBroken ? '새 링크로 열면 보내져요' : '다시 보내기');
   }
   var flushing = false;
   function flushOutbox() {
+    if (linkBroken) return showLinkNotice(); // 옛 링크로는 보내지지 않는다 — 보관만 하고 새 링크를 기다림
     if (flushing || !outbox.length) return renderOutbox();
     flushing = true; var batch = outbox.slice();
     call('addTasks', batch.join('\n')).then(function (r) {
