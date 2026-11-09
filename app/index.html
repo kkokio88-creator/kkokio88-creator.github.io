@@ -25,7 +25,7 @@
   #kitGate.kg-bar .kg-btn { width: auto; min-height: 44px; padding: 0 14px; font-size: 15px; margin-left: auto; }
   #kitGate.kg-bar .kg-msg { width: 100%; min-height: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=68c0afa2c1"></script><script src="auth.js?v=68c0afa2c1"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=c1d4205dab"></script><script src="auth.js?v=c1d4205dab"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -590,6 +590,7 @@
     <button class="nv" data-go="more" title="더보기"><svg class="i" data-i="grid" width="20" height="20"></svg><span class="lb">더보기</span></button>
     <button class="nv" id="sideSearch" type="button" title="검색 ( / )"><svg class="i" data-i="search" width="20" height="20"></svg><span class="lb">검색</span><span class="sp"></span><kbd class="kb lb">/</kbd></button>
     <div class="grow"></div>
+    <a class="sheetlink" id="sideAi" href="#" title="AI 연결 · 안내문 복사"><svg class="i" data-i="sparkle" width="18" height="18"></svg><span class="lb">AI 연결</span></a>
     <a class="sheetlink" id="sideCommunity" href="https://open.kakao.com/o/gmiCVeWi" target="_blank" rel="noopener" title="사용자 커뮤니티 카톡방"><svg class="i" data-i="chat" width="18" height="18"></svg><span class="lb">커뮤니티 카톡방</span></a>
     <a class="sheetlink" id="sideReport" href="#" title="버그 제보 · 처리 확인"><svg class="i" data-i="bug" width="18" height="18"></svg><span class="lb">버그 제보</span></a>
     <a class="sheetlink" id="sheetLink" href="#" target="_blank" title="구글 시트 열기"><svg class="i" data-i="file" width="18" height="18"></svg><span class="lb">구글 시트 열기</span></a>
@@ -2320,6 +2321,7 @@
       '<div class="card">' + row('search', 'gray', '검색', 'search') + row('keyboard', 'gray', isPC() ? '단축키 · 빠르게 담는 법' : '빠르게 담는 법', 'keys') + '</div><div class="gap"></div>' +
       '<div class="card">' + row('user', 'blue', '맡긴 일', 'waiting', (d.delegated || []).length) + row('folder', 'purple', '프로젝트', 'projects', (d.projects || []).filter(function (p) { return !p.finished; }).length) + row('calcheck', 'purple', '주간 검토', 'weekly') + '</div><div class="gap"></div>' +
       '<div class="card">' + row('list', 'gray', '모든 할 일', 'all') + row('archive', 'gray', '나중에 할 일', 'someday', d.someday || '') + row('calendar', 'blue', '캘린더 설정', 'cals') + '</div><div class="gap"></div>' +
+      '<div class="card"><div class="row" tabindex="0" role="button" data-m="ai">' + tile('sparkle', 'purple') + '<div class="tx"><div class="t">AI 연결</div><div class="m">Claude·ChatGPT에게 말로 할 일 담고 고치기</div></div>' + CHEV + '</div></div><div class="gap"></div>' +
       '<div class="card">' + prefRow('sun', 'amber', '화면 모드', 'theme', [['auto', '자동'], ['light', '라이트'], ['dark', '다크']], window.kitTheme ? window.kitTheme() : 'auto') +
       prefRow('file', 'blue', '글자 크기', 'font', [['sm', '작게'], ['', '보통'], ['lg', '크게']], document.documentElement.getAttribute('data-font') || '') +
       '<label class="row" style="cursor:pointer">' + tile('moon', 'purple') + '<div class="tx"><div class="t">움직임·진동 줄이기</div><div class="m">축하 효과·흔들림 없이 조용하게</div></div><span class="sw"><input type="checkbox" id="calmSw"' + (document.documentElement.classList.contains('calm') ? ' checked' : '') + '><i></i></span></label>' +
@@ -2529,6 +2531,7 @@
       if (m === 'all' || m === 'someday') return openAll(m);
       if (m === 'search') return openSearch();
       if (m === 'keys') return openKeys();
+      if (m === 'ai') return openAi();
       return;
     }
     if ((b = e.target.closest('[data-pjid]'))) return openProjectSheet(b.getAttribute('data-pjid'));
@@ -2564,6 +2567,7 @@
     e.preventDefault(); openReport();
   });
   $('sideReport').addEventListener('click', function (e) { e.preventDefault(); openReport(); });
+  $('sideAi').addEventListener('click', function (e) { e.preventDefault(); openAi(); });
   function openReport() {
     // 제보 게시판으로: 버전·화면·최근 오류를 미리 채워서 연다 (내 할 일 내용은 보내지 않음)
     var page = (data && data.pageUrl) || 'https://kkokio88-creator.github.io/my-task-kit/';
@@ -2697,6 +2701,82 @@
   if ($('sideSearch')) $('sideSearch').onclick = openSearch;
 
   // ── 단축키 · 빠르게 담는 법 ( ? ) ──
+  // ════════ AI 연결: 내 시트 ID와 사용법을 안내문 하나로 묶어 복사 → AI에 붙여넣기 (AI는 구글 시트 MCP로 내 시트를 직접 읽고 씀) ════════
+  function sheetIdOf(u) { var m = String(u || '').match(/\/d\/([A-Za-z0-9_-]+)/); return m ? m[1] : ''; }
+  function aiPrompt() {
+    var d = data || {}, url = d.sheetUrl || '', id = sheetIdOf(url), today = d.today || '';
+    var pj = (d.projects || []).filter(function (p) { return !p.finished; }).map(function (p) { return p.name; }).slice(0, 30);
+    var L = [];
+    L.push('너는 내 할 일 관리 앱 "GTD 워크"의 비서야. 내 할 일은 아래 구글 시트에 있고, 너는 구글 시트 MCP(도구)로 이 시트를 직접 읽고 쓴다.');
+    L.push('구글 시트 도구가 없으면 아무것도 지어내지 말고 "구글 시트 MCP를 먼저 연결해 주세요"라고만 답해.');
+    L.push('');
+    L.push('## 내 시트');
+    L.push('- 시트 ID: ' + id);
+    L.push('- 주소: ' + url);
+    L.push('- 시간대: Asia/Seoul (이 안내를 만든 날: ' + today + '. 오늘 날짜는 대화하는 날 기준으로 다시 계산해)');
+    if (pj.length) L.push('- 지금 진행 중인 프로젝트: ' + pj.join(', '));
+    L.push('');
+    L.push('## 탭');
+    L.push('- [업무]: 할 일 목록. 1행이 머리글, 2행부터 할 일 1개 = 1줄. 할 일은 여기만 고친다.');
+    L.push('- [프로젝트]: 프로젝트 · 완료 모습 · 만든 날. 프로젝트의 목표(완료 모습)를 적을 때만 고친다.');
+    L.push('- [오늘], [_설정]: 앱이 쓰는 탭. 읽지도 고치지도 마.');
+    L.push('');
+    L.push('## [업무] 열 — 열 위치는 반드시 1행 머리글 이름으로 찾아 (순서가 바뀌어 있을 수 있음)');
+    L.push('- 할일: 제목');
+    L.push('- 상태: 다음 행동 / 일정 / 위임 / 언젠가 / 완료 / 버림 / 참고 / 수집함 중 하나 (글자 그대로)');
+    L.push('- 마감일 · 확인일 · 등록일 · 완료일 · 오늘 할 날 · 맡긴 날: 날짜, yyyy-MM-dd 글자로');
+    L.push('- 오늘 할 날: 이 날짜에 할 일 (오늘 날짜면 오늘 할 일로 보임)');
+    L.push('- 우선순위: 높음(★ 중요) / 보통 / 낮음 · 긴급: 급함(↑ 급한 일) 또는 빈칸');
+    L.push('- 상황: @전화·@컴퓨터 같은 장소·도구 · 위임 대상: 맡은 사람 · 프로젝트: 프로젝트 이름 · 메모');
+    L.push('- 예상(분) · 쓴 시간(분) · 미룬 횟수: 숫자');
+    L.push('- 반복: 반복 규칙(매일·매주 월 등) — 고치지 마');
+    L.push('- ID: 할 일 고유 번호');
+    L.push('');
+    L.push('## 꼭 지킬 것');
+    L.push('- 줄을 지우지 마. 지울 때는 상태를 "버림"으로 바꾼다.');
+    L.push('- 있는 줄의 ID·머리글·반복·쓴 시간(분)은 바꾸지 마. 시트에 없는 열을 만들지 마.');
+    L.push('- 새 줄은 마지막 할 일 바로 아래에, 빈 줄 없이 추가하고 ID를 꼭 채운다: AI-yyyyMMddHHmmss-순번 (예: AI-20261109153000-1).');
+    L.push('- 고칠 할 일은 제목으로 찾되, 비슷한 게 여러 개면 고르기 전에 나에게 물어봐.');
+    L.push('- 쓰기 전에 그 줄을 다시 읽어 확인하고, 끝나면 무엇을 바꿨는지 짧게 알려 줘.');
+    L.push('');
+    L.push('## 이렇게 처리해');
+    L.push('- 담기: 새 줄 · 할일=제목 · 상태=다음 행동 · 오늘 할 날=오늘 · 등록일=오늘. 날짜가 미래인 일이면 상태=일정 · 마감일=그날 · 오늘 할 날은 비움. 중요하면 우선순위=높음, 급하면 긴급=급함. 프로젝트·상황·예상(분)·메모는 알면 채움.');
+    L.push('- 오늘 할 일 보기: 상태가 완료·버림·참고·언젠가가 아니면서 (오늘 할 날 ≤ 오늘) 또는 (마감일 ≤ 오늘)인 줄. 오늘 할 날이 지난 것은 "어제 못 끝낸 일". 위임은 확인일 ≤ 오늘이면 "확인할 맡긴 일".');
+    L.push('- 완료: 상태=완료 · 완료일=오늘. 단, 반복이 있는 할 일은 완료하지 말고 "반복 일은 앱에서 완료해 주세요(다음 회차가 생겨요)"라고 알려.');
+    L.push('- 다른 날로 옮기기: 상태=일정 · 마감일=그날 · 오늘 할 날 비움 · 미룬 횟수 +1. 오늘로 당기기: 상태=다음 행동 · 오늘 할 날=오늘.');
+    L.push('- 맡기기: 상태=위임 · 위임 대상=사람 · 확인일=말한 날(없으면 3일 뒤) · 맡긴 날=오늘 · 오늘 할 날 비움.');
+    L.push('- 나중에: 상태=언젠가 · 오늘 할 날 비움.');
+    L.push('- 지우기: 상태=버림.');
+    L.push('- ★ 중요 / ↑ 급함 표시: 우선순위=높음(풀 때는 빈칸) / 긴급=급함(풀 때는 빈칸).');
+    L.push('- 시간표(몇 시에 할지)·캘린더 배치는 시트로 할 수 없어. 앱의 오늘 시간표에서 하라고 안내해.');
+    L.push('');
+    L.push('이 안내를 받으면 먼저 [업무] 탭 1행을 읽어 열을 확인하고, "GTD 워크에 연결됐어요"와 함께 오늘 할 일을 짧게 보여 줘.');
+    return L.join('\n');
+  }
+  function copyText(t, ok, bad) {
+    var fb = function () { try { var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); var r = document.execCommand('copy'); ta.remove(); (r ? ok : bad)(); } catch (e) { bad(); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, fb); else fb();
+  }
+  function openAi() {
+    var t = aiPrompt(), id = sheetIdOf((data || {}).sheetUrl);
+    var key = isPC() ? (/Mac/.test(navigator.platform) ? '⌘V' : 'Ctrl+V') : '길게 눌러 붙여넣기';
+    var st = function (n, h, m) { return '<div class="row" style="cursor:default"><span class="tile purple" style="font-weight:800">' + n + '</span><div class="tx"><div class="t">' + h + '</div>' + (m ? '<div class="m">' + m + '</div>' : '') + '</div></div>'; };
+    var draw = function (copied) {
+      openSheet('<div class="st">' + (copied ? '복사했어요' : '복사하지 못했어요') + '</div>' +
+        '<div class="ss">' + (copied ? 'AI 채팅창에 붙여넣고 보내면 끝이에요.' : '아래 글을 길게 눌러 복사한 뒤 AI 채팅창에 붙여넣으세요.') + '</div>' +
+        (copied ? '<div class="card" style="margin-top:14px">' +
+          st(1, 'AI에 구글 시트 연결', '처음 한 번만 · AI 앱의 커넥터(MCP) 설정') +
+          st(2, '새 대화에 붙여넣기', key) + '</div>'
+          : '<textarea id="aiText" readonly rows="8" style="width:100%;margin-top:12px;font-size:12.5px;line-height:1.5;border-radius:12px;border:1px solid var(--line);background:var(--fill);color:var(--t1);padding:10px;resize:vertical">' + esc(t) + '</textarea>') +
+        '<button class="cta" id="aiOk" type="button">확인</button>' +
+        (copied ? '<button class="txtlink" id="aiCopy" type="button" style="display:block;margin:10px auto 0">다시 복사</button>' : ''));
+      $('aiOk').onclick = closeSheet;
+      if ($('aiCopy')) $('aiCopy').onclick = function () { copyText(aiPrompt(), function () { toast('다시 복사했어요'); }, function () { draw(false); }); };
+      if (!copied && $('aiText')) { $('aiText').focus(); $('aiText').select(); }
+    };
+    if (!id) { toast('시트를 여는 중이에요. 잠시 뒤 다시 눌러 주세요'); return; }
+    copyText(t, function () { draw(true); }, function () { draw(false); });
+  }
   function openKeys() {
     var k = function (key, what) { return '<kbd class="kb">' + key + '</kbd><span>' + what + '</span>'; };
     openSheet('<div class="st">' + (isPC() ? '단축키 · 빠르게 담는 법' : '빠르게 담는 법') + '</div>' +
