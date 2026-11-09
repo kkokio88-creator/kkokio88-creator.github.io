@@ -240,6 +240,13 @@
   .selbar button.pri { background: var(--g); color: #fff; }
   .row.pref { flex-wrap: wrap; row-gap: 10px; } .row.pref .tx { flex: 1 0 auto; min-width: 5em; } .row.pref .thm { margin-left: auto; }
   .thm { display: inline-flex; gap: 6px; flex: none; } .thm .chip { min-height: 36px; padding: 0 12px; }
+  .vtgrow { align-items: center; flex-wrap: nowrap; } .vtgrow .vtg, .vtgrow .capb, .vtgrow .trashb { flex: none; white-space: nowrap; }
+  .vtg { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
+  .vtg button { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border-radius: 999px; font: inherit; font-size: 15px; font-weight: 700; color: var(--t3); transition: background .2s, color .2s, box-shadow .2s; }
+  .vtg button em { font-style: normal; font-size: 12.5px; font-weight: 800; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--line); color: var(--t2); display: inline-grid; place-items: center; }
+  .vtg button.on { background: var(--card); color: var(--g); box-shadow: 0 1px 3px rgba(17,24,39,.12), 0 0 0 1px rgba(91,92,246,.15); }
+  .vtg button.on em { background: var(--gt); color: var(--g); }
+  html[data-theme="dark"] .vtg button.on { background: #2C2F45; box-shadow: none; }
   .seg { position: relative; display: inline-flex; background: #E7EAED; border-radius: 13px; padding: 3px; }
   .seg .ind { position: absolute; top: 3px; bottom: 3px; border-radius: 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.08); transition: left .4s var(--spring), width .4s var(--spring); }
   .seg button { position: relative; z-index: 1; padding: 11px 18px; border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--t3); transition: color .2s; }
@@ -925,7 +932,7 @@
   }
 
   // ════════ 오늘 ════════
-  var listMore = false, timeView = false, wkOffset = 0, wkData = null, animNext = true, ctxFilter = '', QUICK = '__15';
+  var listMore = false, timeView = (function () { try { return localStorage.getItem('kitTodayView') !== 'list'; } catch (e) { return true; } })(), wkOffset = 0, wkData = null, animNext = true, ctxFilter = '', QUICK = '__15';
   function todayList(d) {
     var seen = {}, out = [];
     (d.focus || []).concat(d.routines || [], d.now || []).forEach(function (t) { if (!seen[t.id]) { seen[t.id] = 1; out.push(t); } });
@@ -989,7 +996,10 @@
     if (al) a += '<div class="alerts">' + al + '</div>';
     a += carryHtml(d);
     var showTime = timeView && !isPC();
-    a += '<div class="h2">' + (showTime ? '시간표' : '할 일') + '<span class="sp"></span>' + (showTime ? '<button class="capb" data-cap>' + svg('camera', 15) + '캡처</button><span class="trashb" id="trashDrop" role="img" aria-label="휴지통">' + svg('trash', 17) + '</span>' : '') + '<button class="lnk mOnly' + (showTime ? ' on' : '') + '" data-timeview>' + (showTime ? '목록' : '시간표') + '</button></div>';
+    // 휴대폰: 할 일 | 시간표 알약 토글(처음엔 시간표, 마지막으로 본 쪽을 기억). PC는 시간표가 오른쪽에 따로 있다
+    if (isPC()) a += '<div class="h2">할 일</div>';
+    else a += '<div class="h2 vtgrow"><span class="vtg" role="tablist" aria-label="오늘 보기"><button role="tab" data-listview aria-selected="' + !showTime + '"' + (showTime ? '' : ' class="on"') + '>' + svg('list', 16) + '할 일' + (list.length ? ' <em>' + list.length + '</em>' : '') + '</button><button role="tab" data-timeview aria-selected="' + showTime + '"' + (showTime ? ' class="on"' : '') + '>' + svg('calendar', 16) + '시간표</button></span><span class="sp"></span>' +
+      (showTime ? '<button class="capb" data-cap>' + svg('camera', 15) + '캡처</button><span class="trashb" id="trashDrop" role="img" aria-label="휴지통">' + svg('trash', 17) + '</span>' : '') + '</div>';
     if (showTime) a += dayPlanHtml(d, list);
     else if (!list.length) a += '<div class="card"><div class="empty" style="padding-top:28px">' + drawOk() + '오늘 할 일을 모두 끝냈어요</div></div>';
     else {
@@ -1710,7 +1720,11 @@
     if (swipedAt && Date.now() - swipedAt < 400) return;
     if ((b = e.target.closest('[data-done]'))) { e.stopPropagation(); return completeRow(b.closest('[data-id]')); }
     if ((b = e.target.closest('[data-goto]'))) { var g = b.getAttribute('data-goto'); return g === 'waiting' ? openWaiting() : g === 'weekly' ? openWeekly() : go(g); }
-    if ((b = e.target.closest('[data-timeview]'))) { timeView = !timeView; return renderToday(); }
+    if ((b = e.target.closest('[data-timeview]')) || (b = e.target.closest('[data-listview]'))) {
+      var tv = b.hasAttribute('data-timeview'); if (tv === timeView) return;
+      timeView = tv; try { localStorage.setItem('kitTodayView', tv ? 'time' : 'list'); } catch (x) {}
+      var gw = $('gridWrap'); if (gw) delete gw.dataset.scrolled; animNext = false; renderToday(); if (tv) { var g2 = $('gridWrap'); if (g2) { delete g2.dataset.scrolled; scrollGridToNow(); } } return;
+    }
     if ((b = e.target.closest('[data-ctx]'))) { ctxFilter = b.getAttribute('data-ctx'); return renderToday(); }
     if ((b = e.target.closest('[data-wk]'))) { wkOffset += +b.getAttribute('data-wk'); return loadWeek(); }
     if ((b = e.target.closest('[data-day]'))) return openDay(wkOffset === 0 ? data.week : wkData, b.getAttribute('data-day'));
@@ -2383,7 +2397,7 @@
     return '<svg class="dnt" viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="4분면별 쓴 시간"><circle cx="70" cy="70" r="' + r + '" fill="none" stroke="var(--fill)" stroke-width="18"/>' + out + '</svg>';
   }
   // 숫자가 0부터 올라간다 (움직임 줄이기면 바로)
-  function countUp(root) {
+  function insCountUp(root) {
     var els = root.querySelectorAll('[data-cu]'); if (!els.length) return;
     var fmt = function (el, v) { var f = el.getAttribute('data-fmt'); el.textContent = f === 'h' ? hrs(Math.round(v)) : f === 'p' ? Math.round(v) + '%' : Math.round(v).toLocaleString(); };
     if (calm()) { [].forEach.call(els, function (el) { fmt(el, +el.getAttribute('data-cu')); }); return; }
@@ -2496,7 +2510,7 @@
         waiting.slice(0, 3).map(function (t) { var dd2 = t.delegatedOn ? -diff(t.delegatedOn) : 0; return '<div class="row" tabindex="0" role="button" data-aid2="' + esc(t.id) + '">' + tile('user', 'blue', 16) + '<div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">' + esc(t.delegatee || '') + (dd2 > 0 ? ' · ' + dd2 + '일째 기다리는 중' : '') + '</div></div>' + CHEV + '</div>'; }).join('') + '</div>';
     }
     var el = $('insBody'); el.innerHTML = h; el.classList.remove('insin'); void el.offsetWidth; if (!calm()) el.classList.add('insin');
-    countUp(el);
+    insCountUp(el);
     // 새 기록은 한 번만 축하
     if (isRec) { var rk = P.from + ':' + done.length, seen = ''; try { seen = localStorage.getItem('kitInsRec') || ''; } catch (e) {} if (seen !== rk) { try { localStorage.setItem('kitInsRec', rk); } catch (e) {} setTimeout(function () { confetti(1); }, 500); } }
     insLast = { P: P, S: S, done: done, imp: imp, pct: pct, tot: tot, badges: bd, pl: pl, back: back.length };
@@ -2564,13 +2578,12 @@
         ti('archive', 'gray', '나중에 할 일', m('someday'), d.someday || ''), ti('list', 'gray', '모든 할 일', m('all'))]) +
       grp('도구', [ti('search', 'gray', '검색', m('search')), ti('calcheck', 'purple', '주간 검토', m('weekly')),
         ti('sparkle', 'purple', 'AI 연결', m('ai')), lnk('file', 'green', '구글 시트', esc(d.sheetUrl || '#'))]) +
-      grp('설정', [ti('calendar', 'blue', '캘린더', m('cals')), ti('sun', 'amber', '화면', m('display'))].concat(window.KIT_ENGINE ? [] : [ti('mail', 'purple', '알림 메일', m('notify'))])) +
+      grp('설정', [ti('calendar', 'blue', '캘린더', m('cals')), ti('sun', 'amber', '화면', m('display'))].concat(window.KIT_AUTH ? [ti('user', 'gray', '계정 · 로그아웃', m('account'))] : []).concat(window.KIT_ENGINE ? [] : [ti('mail', 'purple', '알림 메일', m('notify'))])) +
       grp('도움', [ti('keyboard', 'gray', '담는 법', m('keys')), lnk('file', 'gray', '도움말', d.pageUrl ? (window.KIT_ENGINE ? '../#c12' : esc(d.pageUrl) + 'help.html') : '#'),
         lnk('chat', 'amber', '카톡방', 'https://open.kakao.com/o/gmiCVeWi'), lnk('bug', 'red', '버그 제보', '#', 'report')]) +
       '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') +
-      (window.KIT_AUTH ? ' · <button type="button" id="kitLogout" class="mlo">로그아웃</button>' : '') +
+
       (window.KIT_ENGINE && window.KIT_ENGINE.startLog && window.KIT_ENGINE.startLog() ? '<br><span id="kitStartLog" style="font-size:11.5px">시작: ' + esc(window.KIT_ENGINE.startLog()) + '</span>' : '') + '</div>';
-    var lo = $('kitLogout'); if (lo) lo.onclick = function () { if (confirm('로그아웃할까요? ' + (window.KIT_AUTH.email() ? window.KIT_AUTH.email() + ' · ' : '') + '할 일은 내 구글 시트에 그대로 남아 있어요.')) window.KIT_AUTH.logout(); };
     stagger($('moreBody'));
   }
   // 화면: 화면 모드 · 글자 크기 · 움직임 줄이기 · 시간표 캡처에 넣을 이름
@@ -2581,6 +2594,14 @@
       '<label class="row" style="cursor:pointer">' + tile('moon', 'purple') + '<div class="tx"><div class="t">움직임·진동 줄이기</div></div><span class="sw"><input type="checkbox" id="calmSw"' + (document.documentElement.classList.contains('calm') ? ' checked' : '') + '><i></i></span></label>' +
       '<div class="row" tabindex="0" role="button" id="capNameRow">' + tile('camera', 'purple') + '<div class="tx"><div class="t">캡처에 넣을 이름</div><div class="m">' + esc(capName() || '아직 정하지 않았어요') + '</div></div>' + CHEV + '</div></div>');
     bindPrefs();
+  }
+  // 계정: 지금 로그인한 구글 계정 · 로그아웃(다른 계정으로 바꿀 때)
+  function openAccount() {
+    var em = (window.KIT_AUTH && window.KIT_AUTH.email && window.KIT_AUTH.email()) || '구글 계정';
+    openSheet('<div class="st">계정</div><div class="card" style="margin-top:12px"><div class="row" style="cursor:default">' + tile('user', 'blue') + '<div class="tx"><div class="t">' + esc(em) + '</div><div class="m">지금 로그인한 구글 계정</div></div></div></div>' +
+      '<div class="ss" style="margin-top:12px">로그아웃해도 할 일은 내 구글 시트에 그대로 남아 있어요. 다른 계정으로 쓰려면 로그아웃한 뒤 그 계정으로 다시 시작하세요.</div>' +
+      '<button class="cta" id="kitLogout" type="button">로그아웃</button>');
+    $('kitLogout').onclick = function () { if (confirm('로그아웃할까요? 할 일은 내 구글 시트에 그대로 남아 있어요.')) window.KIT_AUTH.logout(); };
   }
   // 알림 메일 (예전 앱스크립트 버전만)
   function openNotify() {
@@ -2784,6 +2805,7 @@
       if (m === 'keys') return openKeys();
       if (m === 'ai') return openAi();
       if (m === 'display') return openDisplay();
+      if (m === 'account') return openAccount();
       if (m === 'notify') return openNotify();
       return;
     }
