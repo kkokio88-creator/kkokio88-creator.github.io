@@ -4,592 +4,160 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>사용법 — GTD 워크</title>
-<meta name="description" content="GTD 워크 사용법: 담기, 보내기, 하루 쓰기, 돌아보기를 실제 앱 화면 위에서 직접 움직이며 보여 드려요.">
-<link rel="icon" href="../favicon.ico">
+<meta name="description" content="GTD 워크 사용법: 담기, 보내기, 하루 쓰기, 집중, 돌아보기. 실제 앱 화면에서 꺼낸 컴포넌트가 스크롤에 맞춰 움직이며 보여 줘요.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235B5CF6'/%3E%3Cpath d='M19 33l9 9 17-19' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<style>
-/* 앱과 같은 토큰: Pretendard · 인디고 바이올렛 · 토스풍. 휴대폰 안은 실제 앱 화면(guide/s/*.html, 앱 CSS 그대로) */
-:root { --g: #5B5CF6; --gt: #EEEEFF; --t1: #191F28; --t2: #4E5968; --t3: #6B7684; --t4: #A3ACB6; --bg: #F4F5F7;
-  --b1: #6D6BFF; --b2: #FF7AC6; --b3: #5FD3F3;
-  --expo: cubic-bezier(.16, 1, .3, 1); --spring: cubic-bezier(.34, 1.56, .64, 1); --soft: cubic-bezier(.65, 0, .35, 1); }
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
-body { font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--t1); letter-spacing: -0.02em; -webkit-font-smoothing: antialiased; overflow: hidden; }
-a { color: inherit; }
-button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
-:focus-visible { outline: 3px solid #8B8CFF; outline-offset: 3px; border-radius: 8px; }
-.app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; }
-#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
-
-/* 위: 브랜드 · 챕터 */
-.top { display: flex; align-items: center; gap: 20px; padding: 18px clamp(16px, 4vw, 48px); position: relative; z-index: 2; }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; text-decoration: none; white-space: nowrap; }
-.brand i { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #7B6BFF, #E06BD8); display: grid; place-items: center; }
-.brand i::after { content: ''; width: 10px; height: 5px; border-left: 2.5px solid #fff; border-bottom: 2.5px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
-.brand small { color: var(--t3); font-weight: 600; font-size: 14px; }
-.chaps { display: flex; gap: 6px; margin: 0 0 0 auto; list-style: none; padding: 0; }
-.chaps button { display: flex; flex-direction: column; gap: 7px; min-width: 76px; padding: 4px 2px; font-size: 13px; font-weight: 700; color: var(--t4); text-align: left; width: 100%; transition: color .3s; }
-.chaps i { height: 4px; border-radius: 2px; background: #E3E6EB; overflow: hidden; }
-.chaps i b { display: block; height: 100%; width: 0; background: var(--g); border-radius: 2px; transition: width .7s var(--expo); }
-.chaps .on { color: var(--g); } .chaps .done { color: var(--t2); }
-
-/* 가운데: 휴대폰(실제 앱) + 큰 한마디 */
-.main { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); align-items: center; gap: clamp(24px, 5vw, 88px); padding: 0 clamp(16px, 5vw, 80px); min-height: 0; max-width: 1280px; margin: 0 auto; width: 100%; }
-.stagebox { position: relative; display: flex; justify-content: center; align-items: center; height: 100%; min-height: 0; padding: 10px 0; }
-/* 모핑: 휴대폰 뒤 빛 덩어리가 모양·색을 바꾼다(챕터마다 색) */
-.blob { position: absolute; width: 74%; aspect-ratio: 1; background: radial-gradient(circle at 30% 30%, var(--b1), transparent 60%), radial-gradient(circle at 70% 40%, var(--b2), transparent 58%), radial-gradient(circle at 50% 75%, var(--b3), transparent 60%);
-  filter: blur(54px); opacity: .42; border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; animation: morph 9s var(--soft) infinite alternate; transition: --b1 1.2s, --b2 1.2s, --b3 1.2s; }
-@property --b1 { syntax: '<color>'; inherits: true; initial-value: #6D6BFF; }
-@property --b2 { syntax: '<color>'; inherits: true; initial-value: #FF7AC6; }
-@property --b3 { syntax: '<color>'; inherits: true; initial-value: #5FD3F3; }
-@keyframes morph {
-  0% { border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; transform: rotate(0) scale(1); }
-  33% { border-radius: 63% 37% 45% 55% / 55% 62% 38% 45%; transform: rotate(40deg) scale(1.06); }
-  66% { border-radius: 38% 62% 33% 67% / 62% 35% 65% 38%; transform: rotate(-20deg) scale(.96); }
-  100% { border-radius: 55% 45% 58% 42% / 38% 58% 42% 62%; transform: rotate(15deg) scale(1.03); } }
-.phone { position: relative; height: min(78vh, 760px); aspect-ratio: 390 / 844; padding: 5px; border-radius: 44px; background: #0f1015; box-shadow: 0 50px 100px rgba(17, 24, 39, .28), inset 0 0 0 1px #2a2b33; transition: transform .9s var(--spring); }
-.phone.enter { animation: enter 1.1s var(--spring) both; }
-@keyframes enter { from { transform: translateY(40px) scale(.9) rotate(-2deg); opacity: 0; } to { transform: none; opacity: 1; } }
-.scr { position: relative; width: 100%; height: 100%; border-radius: 39px; overflow: hidden; background: #F2F4F6; isolation: isolate; }
-/* 카메라: 볼 곳으로 확대(scale) */
-.cam { position: absolute; inset: 0; transform-origin: 50% 50%; transition: transform 1s var(--expo); will-change: transform; }
-.cam iframe { position: absolute; left: 0; top: 0; width: 390px; height: 844px; border: 0; transform-origin: 0 0; opacity: 0; transition: opacity .35s ease; pointer-events: none; background: #F2F4F6; }
-.cam iframe.on { opacity: 1; }
-.ink { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 4; }
-.ink path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.ink .trail { stroke: rgba(91, 92, 246, .55); stroke-width: 3; stroke-dasharray: 2 7; }
-.ink .tick { stroke: #fff; stroke-width: 5; }
-.ink .tickbg { fill: var(--g); }
-.flylayer { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
-.flyc { position: absolute; display: flex; align-items: center; padding: 0 14px; border-radius: 14px; background: #fff; color: var(--t1); font-weight: 700; white-space: nowrap; overflow: hidden; box-shadow: 0 18px 40px rgba(40, 42, 120, .28), 0 0 0 2px rgba(91, 92, 246, .55); }
-/* 손가락: 곡선(motion path)으로 움직여 누른다 */
-.finger { position: absolute; left: -60px; top: -60px; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgba(255, 255, 255, .55); box-shadow: 0 8px 22px rgba(17, 18, 40, .28), inset 0 0 0 2.5px rgba(91, 92, 246, .9); backdrop-filter: blur(2px); z-index: 5; opacity: 0; pointer-events: none; transition: opacity .3s, transform .14s; }
-.finger.on { opacity: 1; }
-.finger.down { transform: scale(.76); }
-.finger::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 3px solid rgba(91, 92, 246, .8); opacity: 0; }
-.finger.ping::after { animation: ping .7s ease-out; }
-@keyframes ping { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.1); opacity: 0; } }
-
-.side { position: relative; min-width: 0; }
-.eb { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; color: var(--g); }
-.eb b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--gt); font-size: 13px; font-variant-numeric: tabular-nums; }
-.kw { position: relative; margin: 18px 0 0; font-size: clamp(46px, 6.2vw, 96px); font-weight: 800; letter-spacing: -0.055em; line-height: 1.06; word-break: keep-all; }
-.kw .w { display: inline-block; white-space: nowrap; }
-.kw .c { display: inline-block; transform: translateY(.55em) scale(.7) rotate(6deg); opacity: 0; filter: blur(8px); transition: transform .9s var(--spring), opacity .45s, filter .6s; transition-delay: calc(var(--i) * 32ms); }
-.kw.on .c { transform: none; opacity: 1; filter: none; }
-.kw.leave .c { transform: translateY(-.4em) scale(1.15); opacity: 0; filter: blur(10px); transition: transform .35s ease-in, opacity .3s, filter .3s; transition-delay: calc(var(--i) * 12ms); }
-.kw .c.e { background: linear-gradient(100deg, #5B5CF6, #A35BF6 70%, #E06BD8); -webkit-background-clip: text; background-clip: text; color: transparent; }
-/* 강조 단어 밑줄을 손으로 긋듯(line drawing) */
-.kw svg.ul { position: absolute; pointer-events: none; overflow: visible; }
-.kw svg.ul path { fill: none; stroke: url(#ulg); stroke-width: 7; stroke-linecap: round; stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw .9s var(--expo) forwards; animation-delay: .65s; }
-@keyframes draw { to { stroke-dashoffset: 0; } }
-.sub { margin: 22px 0 0; max-width: 30em; font-size: clamp(17px, 1.45vw, 21px); color: var(--t2); line-height: 1.55; word-break: keep-all; opacity: 0; transform: translateY(14px); transition: opacity .6s var(--expo) .4s, transform .8s var(--expo) .4s; }
-.sub b { color: var(--t1); font-variant-numeric: tabular-nums; }
-.side.on .sub { opacity: 1; transform: none; }
-.side.leave .sub, .side.leave .flow, .side.leave .links, .side.leave .eb { opacity: 0; transform: translateY(-8px); transition: opacity .25s, transform .3s; }
-.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 26px 0 0; padding: 0; list-style: none; }
-.flow li { display: inline-flex; align-items: center; gap: 10px; font-size: clamp(16px, 1.4vw, 20px); font-weight: 800; color: var(--t3); opacity: 0; transform: translateY(12px) scale(.9); transition: opacity .5s, transform .7s var(--spring), color .3s; transition-delay: calc(.5s + var(--i) * .12s); }
-.flow li span { padding: 10px 16px; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .05), 0 4px 14px rgba(17, 24, 39, .06); transition: background .35s, color .35s, box-shadow .35s, transform .45s var(--spring); }
-.flow li + li::before { content: '→'; color: var(--t4); font-weight: 700; }
-.flow li.now span { background: var(--g); color: #fff; box-shadow: 0 10px 26px rgba(91, 92, 246, .35); transform: scale(1.08); }
-.side.on .flow li { opacity: 1; transform: none; }
-.links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; opacity: 0; transform: translateY(10px); transition: opacity .6s .55s, transform .7s var(--spring) .55s; }
-.side.on .links { opacity: 1; transform: none; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; padding: 0 24px; border-radius: 16px; font-weight: 800; font-size: 16.5px; text-decoration: none; transition: transform .25s var(--spring), box-shadow .2s; }
-.btn:hover { transform: translateY(-2px) scale(1.03); }
-.btn:active { transform: scale(.96); }
-.btn.pri { background: var(--g); color: #fff; box-shadow: 0 14px 32px rgba(91, 92, 246, .35); }
-.btn.talk { background: #FEE500; color: #191919; }
-.btn.sub2 { background: #fff; color: var(--t1); box-shadow: 0 1px 2px rgba(17, 24, 39, .06), 0 2px 10px rgba(17, 24, 39, .06); }
-
-/* 아래: 이동 */
-.bottom { display: flex; align-items: center; gap: 12px; padding: 14px clamp(16px, 4vw, 48px) 20px; position: relative; z-index: 2; }
-.nav { min-height: 50px; padding: 0 22px; border-radius: 15px; font-weight: 800; font-size: 15.5px; transition: transform .25s var(--spring); }
-.nav:active { transform: scale(.94); }
-.prev { background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .06); color: var(--t2); }
-.next { background: var(--t1); color: #fff; }
-.nav:disabled { opacity: .3; cursor: default; }
-.replay { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 12px; font-size: 14px; font-weight: 700; color: var(--t3); }
-.replay:hover { background: #fff; }
-.count { font-size: 14px; font-weight: 700; color: var(--t4); font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
-
-@media (max-width: 860px), (max-aspect-ratio: 1/1) {
-  body { overflow: auto; }
-  .app { position: static; min-height: 100svh; }
-  .top { flex-wrap: wrap; gap: 10px; padding: 14px 16px 4px; }
-  .chaps { margin: 0; width: 100%; } .chaps li { flex: 1; min-width: 0; } .chaps button { min-width: 0; font-size: 12px; }
-  .main { grid-template-columns: 1fr; gap: 6px; padding: 0 16px 96px; }
-  .stagebox { padding: 6px 0 0; }
-  .phone { height: min(48svh, 460px); border-radius: 32px; padding: 4px; } .scr { border-radius: 28px; }
-  .side { text-align: center; padding: 6px 0 0; }
-  .kw { font-size: clamp(36px, 10.5vw, 52px); margin-top: 8px; }
-  .sub { margin: 12px auto 0; font-size: 16px; }
-  .flow { justify-content: center; margin-top: 16px; gap: 6px; }
-  .flow li { font-size: 14.5px; gap: 6px; } .flow li span { padding: 8px 11px; }
-  .links { justify-content: center; }
-  .bottom { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(rgba(244, 245, 247, 0), var(--bg) 35%); }
-  .replay span { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .blob { animation: none; }
-  .kw .c, .sub, .flow li, .phone.enter { transition: none; animation: none; }
-}
-</style>
+<link rel="stylesheet" href="guide.css?v=3">
+<script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="ulg" x1="0" x2="1"><stop offset="0" stop-color="#5B5CF6"/><stop offset=".7" stop-color="#A35BF6"/><stop offset="1" stop-color="#E06BD8"/></linearGradient></defs></svg>
+<div id="bg"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
-<div class="app">
-  <header class="top">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#5B5CF6"/><stop offset=".7" stop-color="#A35BF6"/><stop offset="1" stop-color="#E06BD8"/></linearGradient>
+</defs></svg>
+
+<nav class="gnav" id="gnav">
+  <div class="gnav-in">
     <a class="brand" href="../"><i aria-hidden="true"></i>GTD 워크 <small>사용법</small></a>
-    <ol class="chaps" id="chaps" aria-label="챕터"></ol>
-  </header>
+    <ol class="chips" id="chips" aria-label="챕터">
+      <li><a href="#c1" data-go>담기</a></li><li><a href="#c2" data-go>보내기</a></li><li><a href="#c3" data-go>하루</a></li><li><a href="#c4" data-go>시간표</a></li><li><a href="#c5" data-go>집중</a></li><li><a href="#c6" data-go>돌아보기</a></li>
+    </ol>
+    <a class="cta" href="../app/">시작하기</a>
+  </div>
+  <i class="bar" id="bar"></i>
+</nav>
 
-  <main class="main">
-    <div class="stagebox" aria-hidden="true">
-      <div class="blob" id="blob"></div>
-      <div class="phone enter" id="phone"><div class="scr" id="scr"><div class="cam" id="cam">
-        <iframe id="fa" title="앱 화면" tabindex="-1"></iframe><iframe id="fb" title="앱 화면" tabindex="-1"></iframe>
-        <svg class="ink" id="ink"></svg><div class="flylayer" id="fly"></div><i class="finger" id="finger"></i>
-      </div></div></div>
+<main>
+  <!-- C0: 휴대폰에서 네 가지가 튀어나온다 -->
+  <section class="ch dark" id="c0" data-bg="#05050A" style="--len: 230" data-scenes="home,send,swipe-done,focus">
+    <div class="stage">
+      <div class="copy hero">
+        <p class="eb" data-at="0">GTD 워크 사용법</p>
+        <h1 class="mega" data-split data-at="0" data-until="0.55">3분이면, | 다 써요.</h1>
+        <h2 class="mega" data-split data-at="0.6">이 네 개면 | 충분해요.</h2>
+        <p class="sub" data-at="0.65">실제 앱 화면에서 꺼내 보여 드릴게요. 스크롤하세요.</p>
+      </div>
+      <div class="phone"><div class="scr"></div></div>
+      <div class="lift"></div>
+      <p class="scrollcue" data-at="0" data-until="0.2">아래로 스크롤</p>
     </div>
-    <section class="side" id="side" aria-live="polite"></section>
-  </main>
+  </section>
 
-  <footer class="bottom">
-    <button class="nav prev" id="prev" type="button">← 이전</button>
-    <button class="nav next" id="next" type="button">다음 →</button>
-    <button class="replay" id="replay" type="button" aria-label="이 장면 다시 보기">↻ <span>다시 보기</span></button>
-    <span class="count" id="count"></span>
-  </footer>
-</div>
+  <!-- C1 담기 -->
+  <section class="ch light" id="c1" data-bg="#FFFFFF" style="--len: 330" data-scenes="home,capture-added">
+    <div class="stage">
+      <div class="copy">
+        <p class="eb2" data-at="0"><b>1</b>담기</p>
+        <h2 class="big" data-split data-at="0.04" data-until="0.5">떠오르면, | <em>한 줄.</em></h2>
+        <h2 class="big" data-split data-at="0.5" data-until="0.92">엔터 한 번이면 | <em>오늘 할 일.</em></h2>
+        <p class="sub" data-at="0.12" data-until="0.5">판단은 나중에. 맨 위 입력칸에 적기만 해요.</p>
+        <p class="sub" data-at="0.55" data-until="0.92">정리 단계 없이 바로 오늘 목록에 들어가요.</p>
+      </div>
+      <div class="phone"><div class="scr"></div></div>
+      <div class="lift"></div>
+    </div>
+  </section>
 
-<script>
-(function () {
-  'use strict';
-  var APP = '../app/', TALK = 'https://open.kakao.com/o/gmiCVeWi';
-  var CH = ['시작', '담기', '보내기', '하루 쓰기', '돌아보기'];
-  // 챕터마다 빛 덩어리 색(모핑)
-  var HUE = [['#6D6BFF', '#FF7AC6', '#5FD3F3'], ['#5B8CFF', '#5FD3F3', '#9C8CFF'], ['#FF7AC6', '#A35BF6', '#FFB86B'], ['#FFB020', '#FF7AC6', '#6D6BFF'], ['#3CC6A0', '#5FD3F3', '#6D6BFF'], ['#A35BF6', '#FF7AC6', '#FFB020']];
-  var NEXT = '세무사님께 부가세 자료 일정 전화로 확인', NEXT2 = '분기 보고서 초안 목차 쓰기';
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  <!-- C2 보내기 -->
+  <section class="ch dark" id="c2" data-bg="#0B1030" style="--len: 460" data-scenes="home,send,send-day,send-who">
+    <div class="stage">
+      <div class="copy">
+        <p class="eb2" data-at="0"><b>2</b>보내기</p>
+        <h2 class="big" data-split data-at="0.04" data-until="0.42">누르면, | <em>어디로?</em></h2>
+        <h2 class="big" data-split data-at="0.44" data-until="0.64">날짜는 | <em>한 번에.</em></h2>
+        <h2 class="big" data-split data-at="0.66" data-until="0.88">맡기고, | <em>잊기.</em></h2>
+        <p class="sub" data-at="0.14" data-until="0.42">할 일을 누르면 보낼 곳이 한 번에 펼쳐져요.</p>
+        <p class="sub" data-at="0.48" data-until="0.64">오늘·내일·이번 주가 버튼으로 나와요.</p>
+        <p class="sub" data-at="0.7" data-until="0.88">확인할 날이 되면 다시 올라와요.</p>
+      </div>
+      <div class="phone"><div class="scr"></div></div>
+      <div class="lift"></div>
+    </div>
+  </section>
 
-  // 장면: 휴대폰 안은 실제 앱 화면(guide/s/*.html — GTD 레포 tools/guide-scenes.js로 생성). play = 그 위에서 재생할 동작.
-  // kw = 크게 보일 한마디([ ]는 강조), sub = 한 줄 설명(<b data-count="N">는 숫자가 올라감), flow = 순서가 있으면 큰 단어 칩
-  var S = [
-    { ch: -1, scene: 'home', eb: '사용법', kw: '머릿속은 [비우고], 오늘은 가볍게.', sub: '실제 앱 화면 위에서 하나씩 보여 드릴게요. <b data-count="3">3</b>분이면 다 봐요.',
-      play: function (a) { return a.countHero(0, 7).then(function () { return a.zoom('#capInput', 1.25); }).then(function () { return a.type('#capInput', '내일 회의 자료 뽑기'); }).then(function () { return a.wait(900); }).then(function () { a.clear('#capInput'); return a.unzoom(); }); } },
-    { ch: 0, scene: 'home', eb: '시작', kw: '링크 하나로 [시작].', sub: '메일의 <b>시작하기</b>를 누르고 구글 계정을 고르면 끝. 내 드라이브에 내 시트가 생겨요.',
-      flow: ['구글 계정 고르기', '고급 ▸ 이동', '모두 선택 ▸ 계속'],
-      play: function (a) { return a.flowStep(0, 1100).then(function () { return a.flowStep(1, 1100); }).then(function () { return a.flowStep(2, 1100); }).then(function () { a.flowStep(-1, 0); return a.countHero(0, 7); }).then(function () { return a.ring(0, 0.0); }); } },
-    { ch: 1, scene: 'home', eb: '담기', kw: '떠오르면, [한 줄].', sub: '맨 위 입력칸에 적고 <b>엔터</b>. 오늘 할 일에 바로 들어가요.',
-      play: function (a) {
-        var from;
-        return a.zoom('#capInput', 1.3).then(function () { return a.tap('#capInput'); }).then(function () { return a.type('#capInput', '은행 서류 떼기'); })
-          .then(function () { return a.tap('#capBtn'); }).then(function () { from = a.rect('#capInput'); a.clear('#capInput'); return a.unzoom(); })
-          .then(function () { return a.show('capture-added'); })
-          .then(function () { return a.flyTo(from, a.row('은행 서류 떼기'), '은행 서류 떼기'); })
-          .then(function () { a.burst(a.row('은행 서류 떼기'), 40); return a.countHero(7, 8); });
-      } },
-    { ch: 2, scene: 'home', eb: '보내기', kw: '누르면, [어디로?]', sub: '할 일을 누르면 보낼 곳이 한 번에 나와요. 날짜, 맡기기, 나중에.',
-      play: function (a) {
-        var from;
-        return a.tap(a.row(NEXT)).then(function () { from = a.rect(a.row(NEXT)); return a.show('send', { sheet: true, hide: '#tTitle' }); })
-          .then(function () { return a.flyTo(from, '#tTitle', NEXT, true); })
-          .then(function () { return a.zoom('#sheetBody [data-a="s-day"]', 1.2); })
-          .then(function () { return a.pulse('#sheetBody [data-a="s-day"] .tile, #sheetBody [data-a="s-who"] .tile, #sheetBody [data-a="s-later"] .tile'); })
-          .then(function () { return a.unzoom(); });
-      } },
-    { ch: 2, scene: 'send', eb: '보내기', kw: '날짜는 [한 번에].', sub: '<b>날짜</b>를 누르면 오늘·내일·이번 주가 버튼으로 나와요.',
-      play: function (a) {
-        return a.tap('#sheetBody [data-a="s-day"]').then(function () { return a.show('send-day'); })
-          .then(function () { return a.zoom('#sheetBody [data-sday]:nth-child(2)', 1.35); })
-          .then(function () { return a.tap('#sheetBody [data-sday]:nth-child(2)'); }).then(function () { return a.unzoom(); });
-      } },
-    { ch: 2, scene: 'send', eb: '보내기', kw: '맡기고, [잊기].', sub: '누구에게 맡겼는지 적어 두면, 확인할 날에 다시 올라와요.',
-      play: function (a) {
-        return a.tap('#sheetBody [data-a="s-who"]').then(function () { return a.show('send-who'); })
-          .then(function () { return a.zoom('#sWhoIn', 1.3); }).then(function () { return a.tap('#sWhoIn'); })
-          .then(function () { return a.type('#sWhoIn', '박주임'); }).then(function () { return a.tap('#sWhoOk'); }).then(function () { return a.unzoom(); });
-      } },
-    { ch: 3, scene: 'home', eb: '하루 쓰기', kw: '★ 중요한 건 [위로].', sub: '중요한 일에 <b>★</b>. 맨 위로 올라와요. 하루 <b data-count="3">3</b>개면 충분해요.',
-      play: function (a) {
-        var from;
-        return a.tap(a.row(NEXT2)).then(function () { from = a.rect(a.row(NEXT2)); return a.show('star-sheet', { sheet: true }); })
-          .then(function () { return a.tap('#sheetBody [data-a="star"]'); }).then(function () { return a.show('star-done'); })
-          .then(function () { return a.flyTo(from, a.row(NEXT2), '★ ' + NEXT2); })
-          .then(function () { a.burst(a.row(NEXT2), 28, ['#FFB020', '#FFD66B', '#5B5CF6']); return a.pulse(a.row(NEXT2)); });
-      } },
-    { ch: 3, scene: 'home', eb: '하루 쓰기', kw: '밀면, [끝].', sub: '끝낸 일은 오른쪽으로 한 번. 실수했으면 <b>되돌리기</b>.',
-      play: function (a) {
-        var r;
-        return a.swipe(a.row(NEXT)).then(function () { r = a.rect(a.row(NEXT)); return a.check(r); })
-          .then(function () { return a.show('swipe-done'); })
-          .then(function () { a.burstRect(r, 60); return Promise.all([a.countHero(7, 6), a.ring(0, null)]); })
-          .then(function () { return a.pulse('#toast button'); });
-      } },
-    { ch: 3, scene: 'home', eb: '하루 쓰기', kw: '빈 시간에, [쏙].', sub: '<b>시간표</b>를 누르고 할 일을 끌어다 놓으면 구글 캘린더에 들어가요.',
-      play: function (a) { return a.tap('[data-timeview]').then(function () { return a.show('timeline'); }).then(function () { return a.zoom('.dchip', 1.25); }).then(function () { return a.pulse('.dchip'); }).then(function () { return a.unzoom(); }); } },
-    { ch: 3, scene: 'send', eb: '하루 쓰기', kw: '25분, [하나만].', sub: '<b>집중</b>을 누르면 타이머가 돌아요. 끝나면 완료.',
-      play: function (a) { return a.tap('#sheetBody [data-a="focus"]').then(function () { return a.show('focus'); }).then(function () { return a.zoom('#fmClock', 1.3); }).then(function () { return a.countdown('#fmClock', 25 * 60, 25 * 60 - 6); }).then(function () { return a.unzoom(); }); } },
-    { ch: 3, scene: 'home', eb: '하루 쓰기', kw: '남은 일은 [내일로].', sub: '하루 끝에 <b>오늘 마무리</b>. 못 한 일은 골라서 내일로 넘겨요.',
-      play: function (a) { return a.tap('[data-shutdown]').then(function () { return a.show('shutdown', { sheet: true }); }).then(function () { return a.pulse('#sdTmr'); }); } },
-    { ch: 4, scene: 'home', eb: '돌아보기', kw: '맡긴 일, [며칠째?]', sub: '<b>맡긴 일 확인</b>에서 누가, 며칠째인지 한눈에. 문구를 복사해 카톡으로.',
-      play: function (a) { return a.tap('[data-goto=waiting]').then(function () { return a.show('waiting'); }).then(function () { return a.zoom('[data-wid]', 1.25); }).then(function () { return a.pulse('[data-wid]'); }).then(function () { return a.unzoom(); }); } },
-    { ch: 4, scene: 'weekly', eb: '돌아보기', kw: '금요일엔, [비우기].', sub: '<b>주간 검토</b>가 질문을 하나씩 물어요. 답하다 보면 머리가 가벼워져요.',
-      play: function (a) { return a.bar('.prog i, .prog b, .prog span').then(function () { return a.pulse('#moreBody .card'); }).then(function () { return a.tap('[data-wks=next]'); }); } },
-    { ch: 5, scene: 'home', end: true, eb: '다 봤어요', kw: '이제 [직접] 해 봐요.', sub: '모르는 건 카톡방에 물어보세요. 바라는 기능도 들려주세요.',
-      play: function (a) { a.party(); return a.wait(10); } }
-  ];
+  <!-- C3 하루: ★ 중요 · 밀면 끝 -->
+  <section class="ch light" id="c3" data-bg="#F4F5F7" style="--len: 460" data-scenes="home,star-sheet,star-done,swipe-done">
+    <div class="stage">
+      <div class="copy">
+        <p class="eb2" data-at="0"><b>3</b>하루 쓰기</p>
+        <h2 class="big" data-split data-at="0.04" data-until="0.46">중요한 건, | <em>위로.</em></h2>
+        <h2 class="big" data-split data-at="0.5" data-until="0.94">밀면, | <em>끝.</em></h2>
+        <p class="sub" data-at="0.12" data-until="0.46">★를 달면 맨 위로 올라와요. 하루 3개면 충분해요.</p>
+        <p class="sub" data-at="0.56" data-until="0.94">끝낸 일은 오른쪽으로 한 번. 실수했으면 되돌리기.</p>
+      </div>
+      <div class="phone"><div class="scr"></div></div>
+      <div class="lift"></div>
+    </div>
+  </section>
 
-  var $ = function (id) { return document.getElementById(id); };
-  var scr = $('scr'), cam = $('cam'), fin = $('finger'), ink = $('ink'), fly = $('fly'), side = $('side'), chaps = $('chaps'), blob = $('blob');
-  var frames = [$('fa'), $('fb')], front = 0, cur = 0, token = 0, fx = -60, fy = -60, zoomed = false;
-  var SVGNS = 'http://www.w3.org/2000/svg';
+  <!-- C4 시간표 -->
+  <section class="ch day" id="c4" data-bg="#EAF4FF" style="--len: 360" data-scenes="timeline">
+    <div class="stage">
+      <div class="sky" aria-hidden="true"></div>
+      <div class="copy">
+        <p class="eb2" data-at="0"><b>4</b>시간표</p>
+        <p class="clock" id="clock" aria-hidden="true">09:00</p>
+        <h2 class="big" data-split data-at="0.04">빈 시간에, | <em>쏙.</em></h2>
+        <p class="sub" data-at="0.12">끌어다 놓으면 구글 캘린더에 그대로 들어가요.</p>
+        <p class="done" data-at="0.86"><b id="calN">0</b>개가 캘린더에 들어갔어요</p>
+      </div>
+      <div class="phone"><div class="scr"></div></div>
+      <div class="track" aria-hidden="true"></div>
+      <div class="lift"></div>
+    </div>
+  </section>
 
-  // ── 이징 ──
-  var E = {
-    out: function (t) { return 1 - Math.pow(1 - t, 3); },
-    inOut: function (t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; },
-    expo: function (t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); },
-    spring: function (t) { return 1 - Math.cos(t * Math.PI * 4.5) * Math.exp(-t * 6); }
-  };
-  function tween(ms, ease, fn) { // rAF 애니메이션. 장면이 바뀌면 멈춘다
-    var t0 = performance.now(), my = token; if (reduce) ms = 1;
-    return new Promise(function (res, rej) {
-      (function f(now) {
-        if (my !== token) return rej('stop');
-        var t = Math.min(1, (now - t0) / ms); fn(ease(t), t);
-        t < 1 ? requestAnimationFrame(f) : res();
-      })(t0);
-    });
-  }
-  function wait(ms) { var t = token; return new Promise(function (res, rej) { setTimeout(function () { t === token ? res() : rej('stop'); }, reduce ? Math.min(ms, 60) : ms); }); }
+  <!-- C5 집중 -->
+  <section class="ch dark" id="c5" data-bg="#000000" style="--len: 280" data-scenes="focus">
+    <div class="stage">
+      <svg class="bigring" viewBox="0 0 200 200" aria-hidden="true"><circle class="trk" cx="100" cy="100" r="92"/><circle class="arc" cx="100" cy="100" r="92"/></svg>
+      <svg class="bigcheck" viewBox="0 0 120 120" aria-hidden="true"><path d="M30 62 L52 84 L92 38"/></svg>
+      <div class="copy center">
+        <p class="eb2" data-at="0"><b>5</b>집중</p>
+        <h2 class="big" data-split data-at="0.04" data-until="0.8">25분, | <em>하나만.</em></h2>
+        <h2 class="big" data-split data-at="0.84">끝. | <em>체크.</em></h2>
+      </div>
+      <div class="phone"><div class="scr"></div></div>
+      <div class="lift"></div>
+    </div>
+  </section>
 
-  // ── 챕터 ──
-  CH.forEach(function (c, i) {
-    var li = document.createElement('li'), b = document.createElement('button');
-    b.type = 'button'; b.innerHTML = c + '<i><b></b></i>';
-    b.addEventListener('click', function () { for (var j = 0; j < S.length; j++) if (S[j].ch === i) return go(j); });
-    li.appendChild(b); chaps.appendChild(li);
-  });
-  function paintChaps() {
-    var ch = S[cur].ch, end = !!S[cur].end;
-    [].forEach.call(chaps.querySelectorAll('button'), function (b, i) {
-      var idx = []; S.forEach(function (s, j) { if (s.ch === i) idx.push(j); });
-      var done = idx.filter(function (j) { return j <= cur; }).length;
-      b.className = i === ch ? 'on' : (end || ch > i ? 'done' : '');
-      b.querySelector('b').style.width = (end ? 100 : Math.round(done / idx.length * 100)) + '%';
-    });
-    var h = HUE[Math.max(0, Math.min(HUE.length - 1, ch + 1))];
-    blob.style.setProperty('--b1', h[0]); blob.style.setProperty('--b2', h[1]); blob.style.setProperty('--b3', h[2]);
-  }
+  <!-- C6 돌아보기 -->
+  <section class="ch light" id="c6" data-bg="#FFF7EC" style="--len: 400" data-scenes="shutdown,waiting,weekly">
+    <div class="stage">
+      <div class="copy">
+        <p class="eb2" data-at="0"><b>6</b>돌아보기</p>
+        <h2 class="big" data-split data-at="0.04" data-until="0.34">남은 일은 | <em>내일로.</em></h2>
+        <h2 class="big" data-split data-at="0.36" data-until="0.66">맡긴 일, | <em>며칠째?</em></h2>
+        <h2 class="big" data-split data-at="0.68">금요일엔, | <em>비우기.</em></h2>
+        <p class="sub" data-at="0.1" data-until="0.34">하루 끝에 못 한 일만 골라 내일로 넘겨요.</p>
+        <p class="sub" data-at="0.42" data-until="0.66">누가, 며칠째인지 한눈에. 문구는 복사해서 카톡으로.</p>
+        <p class="sub" data-at="0.74">주간 검토가 질문을 하나씩 물어요.</p>
+      </div>
+      <div class="phone"><div class="scr"></div></div>
+      <div class="lift"></div>
+    </div>
+  </section>
 
-  // ── 휴대폰 크기 ──
-  var k = 1;
-  function fit() {
-    k = scr.clientWidth / 390; frames.forEach(function (f) { f.style.transform = 'scale(' + k + ')'; });
-    var fs = Math.round(Math.max(30, Math.min(46, 100 * k))); fin.style.width = fin.style.height = fs + 'px'; fin.style.margin = (-fs / 2) + 'px 0 0 ' + (-fs / 2) + 'px';
-  }
-  addEventListener('resize', fit);
+  <!-- C7 끝 -->
+  <section class="ch dark end" id="c7" data-bg="#05050A">
+    <div class="wrap">
+      <h2 class="mega" data-split data-reveal>이제 <em>직접</em> | 해 봐요.</h2>
+      <p class="sub" data-reveal>모르는 건 카톡방에 물어보세요. 바라는 기능도 들려주세요.</p>
+      <div class="links" data-reveal>
+        <a class="btn pri" href="../app/">GTD 워크 열기</a>
+        <a class="btn talk" href="https://open.kakao.com/o/gmiCVeWi" target="_blank" rel="noopener">💬 카톡방</a>
+        <a class="btn ghost" href="#top" data-go>처음부터 다시</a>
+      </div>
+    </div>
+  </section>
+</main>
 
-  // ── 장면(두 iframe을 번갈아) ──
-  var EXTRA = '.g-hl{animation:ghl 1.2s ease-out 1;position:relative;z-index:2}@keyframes ghl{0%{box-shadow:0 0 0 0 rgba(91,92,246,.65)}70%{box-shadow:0 0 0 14px rgba(91,92,246,0)}100%{box-shadow:0 0 0 0 rgba(91,92,246,0)}}' +
-    '.g-press{transform:scale(.95)!important;transition:transform .12s!important}.g-focus{box-shadow:0 0 0 3px rgba(91,92,246,.35),0 10px 30px rgba(91,92,246,.2)!important}.g-hide{visibility:hidden!important}' +
-    '.g-pop{animation:gpop .6s cubic-bezier(.34,1.56,.64,1)}@keyframes gpop{0%{transform:scale(.9)}100%{transform:none}}';
-  function load(f, id) {
-    return new Promise(function (res) {
-      if (f.dataset.id === id && f.dataset.fresh === '1') return res();
-      f.onload = function () {
-        try {
-          var d = f.contentDocument, st = d.createElement('style'); st.textContent = EXTRA; d.head.appendChild(st);
-          [].forEach.call(d.querySelectorAll('[data-scroll]'), function (e) { e.scrollTop = +e.getAttribute('data-scroll'); });
-        } catch (e) {}
-        f.dataset.id = id; f.dataset.fresh = '1'; res();
-      };
-      f.src = 's/' + id + '.html?v=2';
-    });
-  }
-  function doc() { return frames[front].contentDocument; }
-  function show(id, opt) {
-    opt = opt || {};
-    var back = frames[1 - front];
-    return load(back, id).then(function () {
-      back.dataset.fresh = '0';
-      var d = back.contentDocument, sh = d.getElementById('sheet'), dm = d.getElementById('dim');
-      if (opt.hide) [].forEach.call(d.querySelectorAll(opt.hide), function (e) { e.classList.add('g-hide'); });
-      if (opt.sheet && sh) { sh.classList.remove('on'); dm && dm.classList.remove('on'); } // 닫힌 채로 보여 주고 앱의 실제 애니메이션으로 연다
-      frames[front].classList.remove('on'); back.classList.add('on'); front = 1 - front;
-      if (opt.sheet && sh) return wait(80).then(function () { sh.classList.add('on'); dm && dm.classList.add('on'); return wait(650); });
-      return wait(380);
-    });
-  }
-
-  // ── 좌표: iframe 안 요소 → 휴대폰(카메라) 좌표 ──
-  function el(sel) { return typeof sel === 'string' ? doc().querySelector(sel) : sel; }
-  function row(text) {
-    var hit = null;
-    [].forEach.call(doc().querySelectorAll('.swr'), function (w) { var t = w.querySelector('.t'); if (!hit && t && t.textContent.replace(/★/g, '').trim() === text) hit = w.querySelector('.row'); });
-    return hit;
-  }
-  function rect(sel) { var e = el(sel); if (!e) return null; var r = e.getBoundingClientRect(); return { x: r.left * k, y: r.top * k, w: r.width * k, h: r.height * k }; }
-  function center(e) { var r = rect(e); return r && { x: r.x + Math.min(r.w / 2, 120 * k), y: r.y + r.h / 2 }; }
-
-  // ── 확대(scale): 볼 곳을 가운데로 당겨 크게 ──
-  function zoom(sel, s) {
-    var p = center(sel); if (!p || reduce) return wait(60);
-    cam.style.transformOrigin = p.x + 'px ' + p.y + 'px'; cam.style.transform = 'scale(' + s + ')'; zoomed = true;
-    return wait(650);
-  }
-  function unzoom() { if (!zoomed) return wait(10); cam.style.transform = ''; zoomed = false; return wait(600); }
-
-  // ── 곡선 경로(motion path) + 따라 그려지는 점선(line drawing) ──
-  function moveTo(e) {
-    var p = center(e); if (!p) return wait(100);
-    fin.classList.add('on');
-    var x0 = fx < 0 ? p.x + 60 * k : fx, y0 = fy < 0 ? scr.clientHeight + 20 : fy;
-    var dx = p.x - x0, dy = p.y - y0, dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    var bend = Math.min(90 * k, dist * .35), cx = (x0 + p.x) / 2 - dy / dist * bend, cy = (y0 + p.y) / 2 + dx / dist * bend;
-    var path = document.createElementNS(SVGNS, 'path');
-    path.setAttribute('class', 'trail'); path.setAttribute('d', 'M' + x0 + ' ' + y0 + ' Q' + cx + ' ' + cy + ' ' + p.x + ' ' + p.y);
-    ink.appendChild(path);
-    return tween(Math.max(420, Math.min(820, dist * 2.2 / Math.max(k, .5))), E.inOut, function (t) {
-      var x = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * cx + t * t * p.x, y = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * cy + t * t * p.y;
-      fin.style.left = x + 'px'; fin.style.top = y + 'px'; fx = x; fy = y;
-      // 지나온 곡선만 그린다(de Casteljau로 0~t 구간)
-      path.setAttribute('d', 'M' + x0 + ' ' + y0 + ' Q' + (x0 + (cx - x0) * t) + ' ' + (y0 + (cy - y0) * t) + ' ' + x + ' ' + y);
-    }).then(function () { path.style.transition = 'opacity .6s'; path.style.opacity = '0'; setTimeout(function () { path.remove(); }, 700); });
-  }
-  function tap(sel) {
-    var e = el(sel); if (!e) return wait(200);
-    return moveTo(e).then(function () { fin.classList.add('down', 'ping'); e.classList.add('g-press'); return wait(170); })
-      .then(function () { fin.classList.remove('down'); e.classList.remove('g-press'); return wait(320); })
-      .then(function () { fin.classList.remove('ping'); });
-  }
-  function pulse(sel) {
-    var list = typeof sel === 'string' ? [].slice.call(doc().querySelectorAll(sel)) : [sel];
-    fin.classList.remove('on');
-    list.forEach(function (e) { if (e) { e.classList.remove('g-hl'); void e.offsetWidth; e.classList.add('g-hl'); } });
-    return wait(1100);
-  }
-  function type(sel, text) {
-    var e = el(sel); if (!e) return wait(100);
-    var wrap = e.closest('.cap') || e; wrap.classList.add('g-focus'); fin.classList.remove('on');
-    var i = 0;
-    return (function next() { if (i > text.length) return wait(320); e.value = text.slice(0, i++); return wait(75 + Math.random() * 65).then(next); })()
-      .then(function () { wrap.classList.remove('g-focus'); });
-  }
-  function clear(sel) { var e = el(sel); if (e) e.value = ''; }
-  function swipe(e) {
-    if (!e) return wait(100);
-    var w = e.closest('.swr'), p0;
-    return moveTo(e).then(function () {
-      p0 = center(e); fin.classList.add('down'); w.classList.add('goR'); e.classList.add('drag');
-      return tween(520, E.inOut, function (t) { var dx = 250 * t; e.style.transform = 'translateX(' + dx + 'px)'; fin.style.left = (p0.x + dx * k) + 'px'; fx = p0.x + dx * k; });
-    }).then(function () { fin.classList.remove('down', 'on'); return wait(120); });
-  }
-
-  // ── 같은 요소가 다음 화면으로 날아가 자리를 잡음(shared element transition) ──
-  function flyTo(from, toSel, label, big) {
-    var to = el(toSel); if (!from || !to) return wait(100);
-    var tr = rect(to); to.classList.add('g-hide');
-    var c = document.createElement('div'); c.className = 'flyc'; c.textContent = label;
-    c.style.fontSize = Math.round((big ? 15 : 14.5) * k * 1.05) + 'px';
-    fly.appendChild(c); fin.classList.remove('on');
-    var lift = Math.min(from.y, tr.y) - 30 * k;
-    return tween(reduce ? 1 : 760, E.out, function (t) {
-      var x = from.x + (tr.x - from.x) * t, w = from.w + (tr.w - from.w) * t, h = from.h + (tr.h - from.h) * t;
-      var y = (1 - t) * (1 - t) * from.y + 2 * (1 - t) * t * lift + t * t * tr.y; // 위로 살짝 뜨는 곡선
-      var s = 1 + Math.sin(t * Math.PI) * .06;
-      c.style.left = x + 'px'; c.style.top = y + 'px'; c.style.width = w + 'px'; c.style.height = h + 'px'; c.style.transform = 'scale(' + s + ')';
-    }).then(function () {
-      to.classList.remove('g-hide'); to.classList.add('g-pop');
-      c.style.transition = 'opacity .25s'; c.style.opacity = '0'; setTimeout(function () { c.remove(); }, 300);
-      return wait(200);
-    }, function (e) { c.remove(); to.classList.remove('g-hide'); throw e; });
-  }
-
-  // ── 숫자가 올라감(count-up) ──
-  function countHero(a, b) {
-    var e = el('#heroN'); if (!e) return wait(10);
-    return tween(900, E.expo, function (t) { e.textContent = Math.round(a + (b - a) * t); }).then(function () { e.classList.remove('g-pop'); void e.offsetWidth; e.classList.add('g-pop'); });
-  }
-  function countSide() {
-    [].forEach.call(side.querySelectorAll('[data-count]'), function (b) {
-      var to = +b.getAttribute('data-count'); tween(1100, E.expo, function (t) { b.textContent = Math.round(to * t); }).catch(function () {});
-    });
-  }
-  function countdown(sel, from, to) {
-    var e = el(sel), s = from; fin.classList.remove('on'); if (!e) return wait(10);
-    var show = function (v) { e.textContent = Math.floor(v / 60) + ':' + ('0' + v % 60).slice(-2); };
-    show(s);
-    return (function tick() { if (s <= to) return wait(300); return wait(1000).then(function () { s--; show(s); return tick(); }); })();
-  }
-  // 진행 고리를 그리듯(line drawing): 장면의 최종 값까지
-  function ring(from) {
-    var c = el('#ringFg'); if (!c) return wait(10);
-    var total = 201, end = parseFloat(c.style.strokeDashoffset || c.getAttribute('stroke-dashoffset') || total);
-    return tween(1100, E.expo, function (t) { c.style.strokeDashoffset = total + (end - total) * t; });
-  }
-  function bar(sel) {
-    var e = el(sel); if (!e) return wait(10);
-    var w = e.style.width || getComputedStyle(e).width;
-    e.style.transition = 'none'; e.style.width = '0'; void e.offsetWidth;
-    e.style.transition = 'width 1s cubic-bezier(.16,1,.3,1)'; e.style.width = w;
-    return wait(1000);
-  }
-  // 완료 체크: 동그라미가 그려지고 체크로 바뀜(morphing + line drawing)
-  function check(r) {
-    if (!r) return wait(10);
-    var cx = r.x + 40 * k, cy = r.y + r.h / 2, R = 15 * k;
-    var g = document.createElementNS(SVGNS, 'g'), bg = document.createElementNS(SVGNS, 'circle'), p = document.createElementNS(SVGNS, 'path');
-    bg.setAttribute('class', 'tickbg'); bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', 0);
-    p.setAttribute('class', 'tick'); p.setAttribute('stroke-width', Math.max(3, 4 * k));
-    var A = [cx - 7 * k, cy], B = [cx - 2 * k, cy + 5 * k], C = [cx + 8 * k, cy - 6 * k];
-    g.appendChild(bg); g.appendChild(p); ink.appendChild(g);
-    return tween(380, E.spring, function (t) { bg.setAttribute('r', Math.max(0, R * t)); })
-      .then(function () {
-        return tween(360, E.out, function (t) { // 점 → 체크로 모양이 바뀜
-          var bx = A[0] + (B[0] - A[0]) * Math.min(1, t * 2), by = A[1] + (B[1] - A[1]) * Math.min(1, t * 2);
-          var t2 = Math.max(0, t * 2 - 1), cx2 = B[0] + (C[0] - B[0]) * t2, cy2 = B[1] + (C[1] - B[1]) * t2;
-          p.setAttribute('d', 'M' + A[0] + ' ' + A[1] + ' L' + bx + ' ' + by + (t2 > 0 ? ' L' + cx2 + ' ' + cy2 : ''));
-        });
-      }).then(function () { return wait(300); }).then(function () { g.style.transition = 'opacity .4s'; g.style.opacity = 0; setTimeout(function () { g.remove(); }, 500); });
-  }
-  function flowStep(i, ms) {
-    [].forEach.call(side.querySelectorAll('.flow li'), function (li, j) { li.classList.toggle('now', j === i); });
-    return ms ? wait(ms) : Promise.resolve();
-  }
-
-  // ── 색종이(confetti) ──
-  var cv = $('confetti'), cx2 = cv.getContext('2d'), parts = [], running = false;
-  function sizeCv() { var d = devicePixelRatio || 1; cv.width = innerWidth * d; cv.height = innerHeight * d; cx2.setTransform(d, 0, 0, d, 0, 0); }
-  sizeCv(); addEventListener('resize', sizeCv);
-  var COLORS = ['#5B5CF6', '#A35BF6', '#E06BD8', '#5FD3F3', '#FFB020', '#3CC6A0'];
-  function burstAt(x, y, n, colors, power) {
-    if (reduce) return;
-    for (var i = 0; i < n; i++) {
-      var a = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.3, v = (power || 9) * (.5 + Math.random());
-      parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 4 + Math.random() * 5, rot: Math.random() * 6, vr: (Math.random() - .5) * .4, c: (colors || COLORS)[i % (colors || COLORS).length], life: 0, shape: i % 3 });
-    }
-    if (!running) { running = true; requestAnimationFrame(drawParts); }
-  }
-  function drawParts() {
-    cx2.clearRect(0, 0, innerWidth, innerHeight);
-    parts = parts.filter(function (p) { return p.life < 140 && p.y < innerHeight + 40; });
-    parts.forEach(function (p) {
-      p.life++; p.vy += .28; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
-      cx2.save(); cx2.translate(p.x, p.y); cx2.rotate(p.rot); cx2.globalAlpha = Math.max(0, 1 - p.life / 140); cx2.fillStyle = p.c;
-      if (p.shape === 0) cx2.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
-      else if (p.shape === 1) { cx2.beginPath(); cx2.arc(0, 0, p.r / 1.6, 0, 7); cx2.fill(); }
-      else { cx2.beginPath(); cx2.moveTo(0, -p.r); cx2.lineTo(p.r, p.r); cx2.lineTo(-p.r, p.r); cx2.closePath(); cx2.fill(); }
-      cx2.restore();
-    });
-    if (parts.length) requestAnimationFrame(drawParts); else { running = false; cx2.clearRect(0, 0, innerWidth, innerHeight); }
-  }
-  function pagePoint(r) { // 휴대폰(카메라) 좌표 → 화면 좌표
-    var sr = scr.getBoundingClientRect(), s = sr.width / scr.clientWidth;
-    return { x: sr.left + (r.x + r.w / 2) * s, y: sr.top + (r.y + r.h / 2) * s };
-  }
-  function burst(sel, n, colors) { var r = rect(sel); if (r) { var p = pagePoint(r); burstAt(p.x, p.y, n, colors); } }
-  function burstRect(r, n) { if (r) { var p = pagePoint(r); burstAt(p.x, p.y, n); } }
-  function party() {
-    var b = side.querySelector('.kw').getBoundingClientRect();
-    burstAt(b.left + b.width * .3, b.top + 20, 90, null, 13); setTimeout(function () { burstAt(b.left + b.width * .8, b.top + 10, 90, null, 13); }, 250);
-    var sr = scr.getBoundingClientRect(); setTimeout(function () { burstAt(sr.left + sr.width / 2, sr.top + sr.height * .3, 70, null, 11); }, 500);
-  }
-
-  var A = { wait: wait, tap: tap, pulse: pulse, type: type, clear: clear, swipe: swipe, show: show, row: row, rect: rect, zoom: zoom, unzoom: unzoom,
-    flyTo: flyTo, countHero: countHero, countdown: countdown, ring: ring, bar: bar, check: check, flowStep: flowStep, burst: burst, burstRect: burstRect, party: party };
-
-  // ── 글: [ ]는 강조. 강조 묶음 안의 띄어쓰기와 바로 뒤 문장부호는 줄바꿈되지 않게 ──
-  function kwHtml(s) {
-    var n = 0, words = [], w = [], em = false;
-    for (var x = 0; x < s.length; x++) {
-      var ch = s[x];
-      if (ch === '[') { em = true; continue; }
-      if (ch === ']') { em = false; continue; }
-      if (ch === ' ' && !em) { if (w.length) words.push(w); w = []; continue; }
-      w.push({ c: ch === ' ' ? ' ' : ch, e: em });
-    }
-    if (w.length) words.push(w);
-    return words.map(function (wd) {
-      return '<span class="w">' + wd.map(function (o) { return '<span class="c' + (o.e ? ' e' : '') + '" style="--i:' + (n++) + '">' + o.c + '</span>'; }).join('') + '</span>';
-    }).join(' ');
-  }
-  // 강조 글자 밑에 손으로 긋는 밑줄
-  function underline(kw) {
-    // 글자는 등장 애니메이션 중이라 화면 좌표 대신 배치 좌표(offset)로 잰다. 줄이 바뀌면 마지막 줄만
-    var es = [].slice.call(kw.querySelectorAll('.c.e')); if (!es.length) return;
-    var last = es[es.length - 1], line = es.filter(function (e) { return Math.abs(e.offsetTop - last.offsetTop) < 4; });
-    var a = line[0], x0 = a.offsetLeft + (a.offsetParent !== kw ? a.offsetParent.offsetLeft : 0), x1 = last.offsetLeft + last.offsetWidth + (last.offsetParent !== kw ? last.offsetParent.offsetLeft : 0);
-    var y = last.offsetTop + (last.offsetParent !== kw ? last.offsetParent.offsetTop : 0) + last.offsetHeight * .92, w = x1 - x0;
-    var svg = document.createElementNS(SVGNS, 'svg'); svg.setAttribute('class', 'ul');
-    svg.style.left = '0'; svg.style.top = '0'; svg.setAttribute('width', kw.offsetWidth); svg.setAttribute('height', kw.offsetHeight + 24);
-    var p = document.createElementNS(SVGNS, 'path');
-    p.setAttribute('d', 'M' + x0 + ' ' + (y + 2) + ' C' + (x0 + w * .3) + ' ' + (y - 5) + ' ' + (x0 + w * .65) + ' ' + (y + 7) + ' ' + x1 + ' ' + (y - 1));
-    svg.appendChild(p); kw.appendChild(svg);
-    p.style.setProperty('--len', p.getTotalLength() + 1);
-  }
-  var painted = false;
-  function paintSide(s) {
-    var render = function () {
-      var h = '<div class="eb">' + (s.ch >= 0 && !s.end ? '<b>' + (s.ch + 1) + '</b>' : '') + s.eb + '</div>' +
-        '<h1 class="kw" aria-label="' + s.kw.replace(/[\[\]]/g, '') + '">' + kwHtml(s.kw) + '</h1><p class="sub">' + s.sub + '</p>';
-      if (s.flow) h += '<ol class="flow">' + s.flow.map(function (f, i) { return '<li style="--i:' + i + '"><span>' + f + '</span></li>'; }).join('') + '</ol>';
-      if (s.ch === -1) h += '<div class="links"><button class="btn pri" type="button" id="startBtn">시작하기 →</button></div>';
-      if (s.end) h += '<div class="links"><a class="btn pri" href="' + APP + '">GTD 워크 열기</a><a class="btn talk" href="' + TALK + '" target="_blank" rel="noopener">💬 카톡방</a><button class="btn sub2" type="button" id="againBtn">처음부터 다시</button></div>';
-      side.className = 'side'; side.innerHTML = h;
-      var kw = side.querySelector('.kw');
-      requestAnimationFrame(function () { requestAnimationFrame(function () { side.classList.add('on'); kw.classList.add('on'); underline(kw); countSide(); }); });
-      var sb = $('startBtn'); if (sb) sb.addEventListener('click', function () { go(1); });
-      var ab = $('againBtn'); if (ab) ab.addEventListener('click', function () { go(0); });
-    };
-    // 바뀔 때: 지금 글자가 흩어지며 사라지고(morph out) 새 글자가 튀어 오름
-    var old = side.querySelector('.kw');
-    if (painted && old && !reduce) { old.classList.remove('on'); old.classList.add('leave'); side.classList.add('leave'); setTimeout(render, 280); }
-    else render();
-    painted = true;
-  }
-
-  // ── 재생: 처음 모습 → 동작 → 잠깐 쉬고 반복 ──
-  function reset() {
-    fin.classList.remove('on', 'down', 'ping'); fx = fy = -60; fin.style.left = fin.style.top = '-60px';
-    cam.style.transform = ''; zoomed = false; ink.innerHTML = ''; fly.innerHTML = '';
-  }
-  function run() {
-    var s = S[cur], my = ++token;
-    reset();
-    frames[1 - front].dataset.fresh = '0';
-    return show(s.scene).then(function () {
-      if (!s.play || my !== token) return;
-      return wait(450).then(function () { return s.play(A); }).then(function () { fin.classList.remove('on'); return wait(2800); })
-        .then(function () { if (my === token && !reduce && !s.end) run(); });
-    }).catch(function () {});
-  }
-  function go(i) {
-    cur = Math.max(0, Math.min(S.length - 1, i));
-    $('prev').disabled = cur === 0; $('next').disabled = cur === S.length - 1;
-    $('count').textContent = (cur + 1) + ' / ' + S.length;
-    paintSide(S[cur]); paintChaps(); run();
-    try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {}
-  }
-  $('prev').addEventListener('click', function () { go(cur - 1); });
-  $('next').addEventListener('click', function () { go(cur + 1); });
-  $('replay').addEventListener('click', function () { run(); });
-  addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowRight' || e.key === 'PageDown') go(cur + 1);
-    if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(cur - 1);
-  });
-  var sx = null; // 휴대폰: 글 쪽을 옆으로 밀어 넘기기
-  side.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; }, { passive: true });
-  side.addEventListener('touchend', function (e) { if (sx == null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 50) go(cur + (dx < 0 ? 1 : -1)); sx = null; });
-  addEventListener('hashchange', function () { var n = parseInt((location.hash || '').slice(1), 10); if (n > 0 && n - 1 !== cur) go(n - 1); });
-
-  fit();
-  var start = parseInt((location.hash || '').slice(1), 10);
-  go(start > 0 ? start - 1 : 0);
-})();
-</script>
+<script src="../vendor/gsap.min.js" defer></script>
+<script src="../vendor/ScrollTrigger.min.js" defer></script>
+<script src="../vendor/lenis.min.js" defer></script>
+<script src="guide.js?v=3" defer></script>
 </body>
 </html>
