@@ -1595,12 +1595,13 @@ function projectStats_(tasks) {
   var by = {}, order = [];
   tasks.forEach(function (t) {
     if (!t.project) return;
-    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, nextDue: '' }; order.push(t.project); }
+    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, nextDue: '', items: [] }; order.push(t.project); }
     var g = by[t.project];
     if (t.status === STATUS.DONE) g.done++;
     else if (isActionable_(t.status)) {
       g.open++;
       if (t.priority === '높음') g.important++;
+      if (g.items.length < 12) g.items.push({ title: t.title, status: t.status, due: t.due || '', delegatee: t.delegatee || '' });
       if (t.due && (!g.nextDue || t.due < g.nextDue)) g.nextDue = t.due;
       if (t.status === STATUS.NEXT) g.next++;
       if (t.status === STATUS.DELEGATED || t.status === STATUS.SCHEDULED) g.waiting++;
@@ -2109,7 +2110,7 @@ function doPost(e) {
     updateTask: webUpdate, planDay: webPlanDay, undoTask: webUndo, notify: webNotify,
     addAction: webAddAction, setProject: webSetProject, focusMany: webFocusMany,
     getCalendars: webCalendars, setCalendars: webSetCalendars, timebox: webTimebox,
-    placeTask: webPlaceTask, unplaceTask: webUnplaceTask, reopenTask: webReopen
+    placeTask: webPlaceTask, unplaceTask: webUnplaceTask, reopenTask: webReopen, setWriteCalendar: webSetWriteCalendar, moveEvent: webMoveEvent
   };
   var out;
   try {
@@ -2134,6 +2135,18 @@ function selectedCalendarIds_() {
   var raw = String(readSettings_(SpreadsheetApp.getActiveSpreadsheet())['캘린더'] || '').trim();
   return raw ? raw.split(',').map(function (s) { return s.trim(); }).filter(String) : [];
 }
+/** 시간표 일정을 넣을 캘린더 ID ([_설정] '시간표캘린더'). 비어 있으면 기본 캘린더. */
+function writeCalendarId_() { return String(readSettings_(SpreadsheetApp.getActiveSpreadsheet())['시간표캘린더'] || '').trim(); }
+/** 읽을 캘린더: 보이는 캘린더(없으면 기본) + 시간표 캘린더(넣은 일정이 늘 보이게) */
+function readCalendarIds_() {
+  var ids = selectedCalendarIds_().slice(), w = writeCalendarId_();
+  if (!ids.length) ids = ['primary'];
+  if (w && ids.indexOf(w) === -1) ids.push(w);
+  return ids;
+}
+function writeCal_() { var w = writeCalendarId_(); var c = null; if (w) try { c = CalendarApp.getCalendarById(w); } catch (e) {} return c || CalendarApp.getDefaultCalendar(); }
+/** 넣은 일정을 찾을 캘린더: 시간표 캘린더 + 기본 캘린더(예전에 넣은 것) */
+function placedCals_() { var a = writeCal_(), d = CalendarApp.getDefaultCalendar(); return a.getId() === d.getId() ? [a] : [a, d]; }
 
 /**
  * 고른 캘린더(없으면 기본 캘린더)의 일정을 읽는다. 권한이 없거나 실패하면 빈 목록 + 사유.
@@ -2141,7 +2154,7 @@ function selectedCalendarIds_() {
  */
 function readCalendar_(startYmd, days, tz) {
   var c = cache_(), cv = (c && c.get('calv')) || '0';
-  var ckey = 'cal:' + cv + ':' + startYmd + ':' + days + ':' + selectedCalendarIds_().join('|').slice(0, 120);
+  var ckey = 'cal:' + cv + ':' + startYmd + ':' + days + ':' + readCalendarIds_().join('|').slice(0, 160);
   var hit = cacheGetJson_(ckey);
   if (hit) return hit;
   var r = readCalendarRaw_(startYmd, days, tz);
@@ -2153,13 +2166,14 @@ function readCalendarRaw_(startYmd, days, tz) {
   try {
     var start = Utilities.parseDate(startYmd + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
     var end = new Date(start.getTime() + days * 864e5);
-    var ids = selectedCalendarIds_(), cals = [];
-    ids.forEach(function (id) { try { var c = CalendarApp.getCalendarById(id); if (c) cals.push(c); } catch (e) {} });
+    var ids = readCalendarIds_(), cals = [];
+    ids.forEach(function (id) { try { var c = id === 'primary' ? CalendarApp.getDefaultCalendar() : CalendarApp.getCalendarById(id); if (c) cals.push(c); } catch (e) {} });
     if (!cals.length) cals = [CalendarApp.getDefaultCalendar()];
     var multi = cals.length > 1, items = [];
     cals.forEach(function (cal) {
       var cname = multi && cal.getName ? cal.getName() : '';
       var color = multi && cal.getColor ? cal.getColor() : '';
+      var calId = cal.getId(), own = cal.isOwnedByMe ? cal.isOwnedByMe() : false;
       cal.getEvents(start, end).forEach(function (ev) {
         var allDay = ev.isAllDayEvent();
         var s = ev.getStartTime(), e = ev.getEndTime();
@@ -2172,7 +2186,8 @@ function readCalendarRaw_(startYmd, days, tz) {
           start: allDay ? '' : Utilities.formatDate(s, tz, 'HH:mm'),
           end: allDay ? '' : Utilities.formatDate(e, tz, 'HH:mm'),
           location: ev.getLocation() || '',
-          cal: cname, color: color, kit: kit
+          cal: cname, color: color, kit: kit,
+          eventId: ev.getId ? ev.getId() : '', calId: calId, own: own && !(ev.isRecurringEvent && ev.isRecurringEvent())
         });
       });
     });
@@ -2190,10 +2205,11 @@ function bumpCalendar_() { var c = cache_(); if (c) try { c.put('calv', String(D
 function webCalendars(k) {
   checkKey_(k);
   appContext_();
-  var sel = selectedCalendarIds_(), def = CalendarApp.getDefaultCalendar(), defId = def.getId();
+  var sel = selectedCalendarIds_(), def = CalendarApp.getDefaultCalendar(), defId = def.getId(), w = writeCalendarId_() || defId;
   return CalendarApp.getAllCalendars().map(function (c) {
     var id = c.getId();
-    return { id: id, name: c.getName(), color: c.getColor ? c.getColor() : '', primary: id === defId, on: sel.length ? sel.indexOf(id) !== -1 : id === defId };
+    return { id: id, name: c.getName(), color: c.getColor ? c.getColor() : '', primary: id === defId, on: sel.length ? sel.indexOf(id) !== -1 : id === defId,
+      write: id === w, canWrite: c.isOwnedByMe ? c.isOwnedByMe() : id === defId };
   }).sort(function (a, b) { return a.primary ? -1 : b.primary ? 1 : a.name < b.name ? -1 : 1; });
 }
 
@@ -2208,26 +2224,51 @@ function webSetCalendars(k, ids) {
   return withView_({ ok: true });
 }
 
+/** 캘린더 일정 옮기기·길이 바꾸기 (시간표에서 끌었을 때, 내 캘린더의 반복 아닌 일정만) */
+function webMoveEvent(k, calId, eventId, date, start, end) {
+  checkKey_(k);
+  var ctx = appContext_();
+  date = ymd_(date) || todayYmd_(ctx.tz);
+  if (!/^\d\d:\d\d$/.test(start) || !/^\d\d:\d\d$/.test(end) || end <= start) throw new Error('시간을 확인해 주세요.');
+  var cal = CalendarApp.getCalendarById(String(calId || '')), ev = cal && cal.getEventById(String(eventId || ''));
+  if (!ev) throw new Error('일정을 찾지 못했어요.');
+  var at = function (hm) { return Utilities.parseDate(date + ' ' + hm, ctx.tz, 'yyyy-MM-dd HH:mm'); };
+  ev.setTime(at(start), at(end));
+  bumpCalendar_(); bumpDataVersion_(ctx.ss.getId());
+  return withView_({ ok: true });
+}
+
+/** 시간표 일정을 넣을 캘린더 저장 (기본 캘린더면 비워 둔다) */
+function webSetWriteCalendar(k, id) {
+  checkKey_(k);
+  var ctx = appContext_();
+  id = String(id || '').trim();
+  var defId = CalendarApp.getDefaultCalendar().getId();
+  writeSetting_(ctx.ss, '시간표캘린더', !id || id === defId || id === 'primary' ? '' : id);
+  bumpCalendar_(); bumpDataVersion_(ctx.ss.getId());
+  return withView_({ ok: true });
+}
+
 /**
- * 시간표를 기본 캘린더에 넣는다. 오늘 키트가 넣었던 일정은 먼저 지우고 다시 넣는다(다시 배치해도 겹치지 않게).
+ * 시간표를 시간표 캘린더(기본: 기본 캘린더)에 넣는다. 오늘 키트가 넣었던 일정은 먼저 지우고 다시 넣는다(다시 배치해도 겹치지 않게).
  * blocks: [{id, title, start:'HH:mm', end:'HH:mm'}]
  */
 function webTimebox(k, blocks) {
   checkKey_(k);
   var ctx = appContext_();
   var today = todayYmd_(ctx.tz);
-  var cal = CalendarApp.getDefaultCalendar();
+  var cal = writeCal_();
   // 시트 시간대 기준으로 시각을 만든다 (스크립트 시간대가 달라도 어긋나지 않게)
   var at = function (hm) { return Utilities.parseDate(today + ' ' + hm, ctx.tz, 'yyyy-MM-dd HH:mm'); };
   var dayStart = at('00:00'), dayEnd = new Date(dayStart.getTime() + 864e5);
   var removed = 0;
-  cal.getEvents(dayStart, dayEnd).forEach(function (ev) {
+  placedCals_().forEach(function (c) { c.getEvents(dayStart, dayEnd).forEach(function (ev) {
     if (String(ev.getDescription() || '').indexOf(KIT_EVENT_TAG_) === 0) { ev.deleteEvent(); removed++; }
-  });
+  }); });
   var added = 0;
   (blocks || []).slice(0, 30).forEach(function (b) {
     if (!b || !b.title || !/^\d\d:\d\d$/.test(b.start) || !/^\d\d:\d\d$/.test(b.end)) return;
-    cal.createEvent('▶ ' + String(b.title).slice(0, 200), at(b.start), at(b.end), { description: KIT_EVENT_TAG_ + String(b.id || '') + '\n시간표에서 넣은 일정입니다. 다시 넣으면 바뀝니다.' });
+    cal.createEvent(String(b.title).slice(0, 200), at(b.start), at(b.end), { description: KIT_EVENT_TAG_ + String(b.id || '') + '\n시간표에서 넣은 일정입니다. 다시 넣으면 바뀝니다.' });
     added++;
   });
   bumpCalendar_(); bumpDataVersion_(ctx.ss.getId());
@@ -2236,7 +2277,7 @@ function webTimebox(k, blocks) {
 
 /**
  * 오늘 시간표에서 할 일 하나를 원하는 시각에 놓기 (드래그). 같은 할 일을 이미 놓았으면 옮긴다.
- * 기본 캘린더에 '▶ 제목' 일정으로 넣고, 설명에 KIT_EVENT_TAG_ + 업무 ID를 남긴다.
+ * 시간표 캘린더에 할 일 제목 그대로 일정으로 넣고, 설명에 KIT_EVENT_TAG_ + 업무 ID를 남긴다.
  */
 function webPlaceTask(k, id, title, date, start, end) {
   checkKey_(k);
@@ -2245,10 +2286,10 @@ function webPlaceTask(k, id, title, date, start, end) {
   if (!/^\d\d:\d\d$/.test(start) || !/^\d\d:\d\d$/.test(end) || end <= start) throw new Error('시간을 확인해 주세요.');
   id = String(id || ''); title = String(title || '').trim().slice(0, 200);
   if (!id || !title) throw new Error('할 일을 찾지 못했습니다.');
-  var cal = CalendarApp.getDefaultCalendar();
-  removePlaced_(cal, id, date, ctx.tz);
+  var cal = writeCal_();
+  placedCals_().forEach(function (c) { removePlaced_(c, id, date, ctx.tz); });
   var at = function (hm) { return Utilities.parseDate(date + ' ' + hm, ctx.tz, 'yyyy-MM-dd HH:mm'); };
-  cal.createEvent('▶ ' + title, at(start), at(end), { description: KIT_EVENT_TAG_ + id + '\n시간표에서 넣은 일정입니다.' });
+  cal.createEvent(title, at(start), at(end), { description: KIT_EVENT_TAG_ + id + '\n시간표에서 넣은 일정입니다.' });
   bumpCalendar_(); bumpDataVersion_(ctx.ss.getId());
   return withView_({ ok: true });
 }
@@ -2258,7 +2299,7 @@ function webUnplaceTask(k, id, date) {
   checkKey_(k);
   var ctx = appContext_();
   date = ymd_(date) || todayYmd_(ctx.tz);
-  var n = removePlaced_(CalendarApp.getDefaultCalendar(), String(id || ''), date, ctx.tz);
+  var n = 0; placedCals_().forEach(function (c) { n += removePlaced_(c, String(id || ''), date, ctx.tz); });
   bumpCalendar_(); bumpDataVersion_(ctx.ss.getId());
   return withView_({ ok: true, removed: n });
 }
@@ -2483,7 +2524,7 @@ function installFromEditor() {
       KIT: KIT, STATUS: STATUS,
       fn: function (name) { return eval(name); }, // eslint-disable-line no-eval
       ensureSchema_: ensureSchema_, insertSampleTasks_: insertSampleTasks_, readSettings_: readSettings_, writeSetting_: writeSetting_,
-      todayYmd_: todayYmd_, weekStartYmd_: weekStartYmd_, addDaysYmd_: addDaysYmd_, selectedCalendarIds_: selectedCalendarIds_, getAppData: getAppData,
+      todayYmd_: todayYmd_, weekStartYmd_: weekStartYmd_, addDaysYmd_: addDaysYmd_, selectedCalendarIds_: selectedCalendarIds_, readCalendarIds_: readCalendarIds_, writeCalendarId_: writeCalendarId_, getAppData: getAppData,
       KIT_EVENT_TAG_: KIT_EVENT_TAG_, bumpDataVersion_: bumpDataVersion_,
       // 앱스크립트는 요청마다 새로 시작한다. 엔진은 계속 살아 있으므로 요청마다 실행 단위 기억을 비운다
       freshExecution: function () { SETTINGS_CACHE_ = null; DATA_VER_ = {}; LAST_SPAWN_ID_ = ''; }
@@ -2493,14 +2534,16 @@ function installFromEditor() {
     var key = calKey(start, days);
     return calData[key] || { ok: true, items: [] };
   };
-  function calKey(start, days) { return start + '|' + days + '|' + (book ? K.selectedCalendarIds_().join(',') : ''); }
+  function calKey(start, days) { return start + '|' + days + '|' + (book ? K.readCalendarIds_().join(',') : ''); }
+  function writeCalId() { return (book && K.writeCalendarId_()) || 'primary'; }
+  function placedCalIds() { var w = writeCalId(); return w === 'primary' ? ['primary'] : [w, 'primary']; }
 
   // ── 캘린더 API ──────────────────────────────────────────────
   var calList = null;
   async function calendars() {
     if (calList) return calList;
-    var r = await gapi('GET', API.cal + '/users/me/calendarList?minAccessRole=reader&fields=' + enc('items(id,summary,backgroundColor,primary)'));
-    calList = (r.items || []).map(function (c) { return { id: c.id, name: c.summary, color: c.backgroundColor || '', primary: !!c.primary }; });
+    var r = await gapi('GET', API.cal + '/users/me/calendarList?minAccessRole=reader&fields=' + enc('items(id,summary,summaryOverride,backgroundColor,primary,accessRole)'));
+    calList = (r.items || []).map(function (c) { return { id: c.id, name: c.summaryOverride || c.summary, color: c.backgroundColor || '', primary: !!c.primary, owner: c.accessRole === 'owner' }; });
     return calList;
   }
   async function readEvents(calId, startYmd, days, tz) {
@@ -2527,11 +2570,10 @@ function installFromEditor() {
   async function fetchCal0(startYmd, days, key, bg) {
     var tz = book.tz, prev = calData[key];
     try {
-      var ids = K.selectedCalendarIds_();
-      if (!ids.length) ids = ['primary'];
+      var ids = K.readCalendarIds_();
       var multi = ids.length > 1, items = [];
       // 캘린더 목록과 각 캘린더 일정을 한꺼번에 받는다 (차례로 받으면 캘린더 수만큼 느려진다)
-      var got = await Promise.all([multi ? calendars().catch(function () { return []; }) : Promise.resolve([])].concat(ids.map(function (cid) { return readEvents(cid, startYmd, days, tz); })));
+      var got = await Promise.all([calendars().catch(function () { return []; })].concat(ids.map(function (cid) { return readEvents(cid, startYmd, days, tz); })));
       var list = got[0];
       for (var i = 0; i < ids.length; i++) {
         var meta = list.filter(function (c) { return c.id === ids[i] || (ids[i] === 'primary' && c.primary); })[0] || {};
@@ -2540,7 +2582,7 @@ function installFromEditor() {
           var allDay = !ev.start.dateTime, s = allDay ? null : new Date(ev.start.dateTime), en = allDay ? null : new Date(ev.end.dateTime);
           var desc = String(ev.description || ''), kit = desc.indexOf(K.KIT_EVENT_TAG_) === 0 ? desc.slice(K.KIT_EVENT_TAG_.length).split(/\s/)[0] : '';
           items.push({ title: ev.summary || '(제목 없음)', allDay: allDay, date: allDay ? ev.start.date : utils.formatDate(s, tz, 'yyyy-MM-dd'), start: allDay ? '' : utils.formatDate(s, tz, 'HH:mm'), end: allDay ? '' : utils.formatDate(en, tz, 'HH:mm'),
-            location: ev.location || '', cal: multi ? (meta.name || '') : '', color: multi ? (meta.color || '') : '', kit: kit, eventId: ev.id, calId: ids[i] });
+            location: ev.location || '', cal: multi ? (meta.name || '') : '', color: multi ? (meta.color || '') : '', kit: kit, eventId: ev.id, calId: ids[i], own: ids[i] === 'primary' || !!meta.owner });
         });
       }
       items.sort(function (a, b) { return (a.date + (a.allDay ? '00' : a.start)) < (b.date + (b.allDay ? '00' : b.start)) ? -1 : 1; });
@@ -2565,24 +2607,28 @@ function installFromEditor() {
   // 뒤에서 받은 내용이 화면과 달라졌을 때 (여러 번이면 한 번으로)
   var changeT = null;
   function changed() { if (changeT) return; changeT = setTimeout(function () { changeT = null; if (opts.onChange) try { opts.onChange(); } catch (e) {} }, opts.changeMs === undefined ? 250 : opts.changeMs); }
+  // 넣은 일정 지우기: 시간표 캘린더 + 기본 캘린더(예전에 넣은 것)에서 찾는다
   async function removePlaced(id, date) {
-    var tz = book.tz, evs = await readEvents('primary', date, 1, tz), n = 0;
-    for (var i = 0; i < evs.length; i++) {
-      var d = String(evs[i].description || '');
-      if (d.indexOf(K.KIT_EVENT_TAG_) === 0 && (!id || d.slice(K.KIT_EVENT_TAG_.length).split(/\s/)[0] === id)) { await gapi('DELETE', API.cal + '/calendars/primary/events/' + enc(evs[i].id)); n++; }
+    var tz = book.tz, n = 0, cals = placedCalIds();
+    for (var c = 0; c < cals.length; c++) {
+      var evs = await readEvents(cals[c], date, 1, tz).catch(function () { return []; });
+      for (var i = 0; i < evs.length; i++) {
+        var d = String(evs[i].description || '');
+        if (d.indexOf(K.KIT_EVENT_TAG_) === 0 && (!id || d.slice(K.KIT_EVENT_TAG_.length).split(/\s/)[0] === id)) { await gapi('DELETE', API.cal + '/calendars/' + enc(cals[c]) + '/events/' + enc(evs[i].id)); n++; }
+      }
     }
     return n;
   }
   async function insertPlaced(id, title, date, start, end) {
     var tz = book.tz;
-    await gapi('POST', API.cal + '/calendars/primary/events', { summary: '▶ ' + title, description: K.KIT_EVENT_TAG_ + id + '\n시간표에서 넣은 일정입니다.',
+    await gapi('POST', API.cal + '/calendars/' + enc(writeCalId()) + '/events', { summary: title, description: K.KIT_EVENT_TAG_ + id + '\n시간표에서 넣은 일정입니다.',
       start: { dateTime: utils.parseDate(date + ' ' + start, tz).toISOString(), timeZone: tz }, end: { dateTime: utils.parseDate(date + ' ' + end, tz).toISOString(), timeZone: tz } });
   }
 
   // ── 앱 화면이 부르는 함수 (App.html 의 call(fn) 이름과 같다) ────
   var WEB = { getAppData: 'webData', getInbox: 'webInbox', addTasks: 'webAdd', clarifyTask: 'webClarify', completeTask: 'webComplete', postponeFollowUp: 'webPostpone', skipTask: 'webSkip',
     getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', getAll: 'webAll',
-    getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen' };
+    getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen', setWriteCalendar: 'webSetWriteCalendar' };
   var queue = Promise.resolve(); // 시트 쓰기는 한 번에 하나씩
   function serial(job) { var p = queue.then(job, job); queue = p.catch(function () {}); return p; }
   function clone(x) { return x === undefined ? null : JSON.parse(JSON.stringify(x)); }
@@ -2658,7 +2704,15 @@ function installFromEditor() {
       // 화면에 필요한 캘린더를 먼저 읽어 둔다 (이번 주 + 요청 범위)
       await preloadCal(K.weekStartYmd_(t), 7);
       if (fn === 'getCalendar') await preloadCal(args[0] || K.weekStartYmd_(t), Math.min(Math.max(Number(args[1]) || 7, 1), 42));
-      if (fn === 'getCalendars') { var sel = K.selectedCalendarIds_(), list = await calendars(); return list.map(function (c) { return { id: c.id, name: c.name, color: c.color, primary: c.primary, on: sel.length ? sel.indexOf(c.id) !== -1 : c.primary }; }); }
+      if (fn === 'getCalendars') { calList = null; var sel = K.selectedCalendarIds_(), wid = K.writeCalendarId_(), list = await calendars(); return list.map(function (c) { return { id: c.id, name: c.name, color: c.color, primary: c.primary, on: sel.length ? sel.indexOf(c.id) !== -1 : c.primary, write: wid ? c.id === wid : c.primary, canWrite: c.owner }; }); }
+      // 캘린더 일정 옮기기·길이 바꾸기 (시간표에서 끌었을 때) — 내가 만든 캘린더의 일정만
+      if (fn === 'moveEvent') {
+        var mc = String(args[0] || ''), me = String(args[1] || ''), md = args[2] || t, ms = args[3], mn = args[4];
+        if (!mc || !me || !/^\d\d:\d\d$/.test(ms) || !/^\d\d:\d\d$/.test(mn) || mn <= ms) throw new Error('시간을 확인해 주세요.');
+        await gapi('PATCH', API.cal + '/calendars/' + enc(mc) + '/events/' + enc(me), { start: { dateTime: utils.parseDate(md + ' ' + ms, book.tz).toISOString(), timeZone: book.tz }, end: { dateTime: utils.parseDate(md + ' ' + mn, book.tz).toISOString(), timeZone: book.tz } });
+        dropCal(); await preloadCal(K.weekStartYmd_(t), 7);
+        return { ok: true, view: clone(K.getAppData()) };
+      }
       if (fn === 'placeTask' || fn === 'unplaceTask' || fn === 'timebox') {
         if (fn === 'placeTask') {
           var id = String(args[0]), title = String(args[1] || '').trim(), date = args[2] || t, st = args[3], en = args[4];
@@ -2672,7 +2726,7 @@ function installFromEditor() {
       if (fn === 'notify' || fn === 'sendWeekly') throw new Error('메일 알림은 곧 지원해요. 지금은 캘린더 알림을 써 주세요.');
       var name = WEB[fn]; if (!name) throw new Error('알 수 없는 요청입니다: ' + fn);
       var res = K.fn(name).apply(null, [''].concat(args || []));
-      if (fn === 'setCalendars') { dropCal(); await preloadCal(K.weekStartYmd_(t), 7); res = { ok: true, view: clone(K.getAppData()) }; }
+      if (fn === 'setCalendars' || fn === 'setWriteCalendar') { dropCal(); await preloadCal(K.weekStartYmd_(t), 7); res = { ok: true, view: clone(K.getAppData()) }; }
       saveLater(); saveSnap();
       return clone(res);
     });
