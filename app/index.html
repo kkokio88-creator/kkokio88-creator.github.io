@@ -25,7 +25,7 @@
   #kitGate.kg-bar .kg-btn { width: auto; min-height: 44px; padding: 0 14px; font-size: 15px; margin-left: auto; }
   #kitGate.kg-bar .kg-msg { width: 100%; min-height: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=a610fb622e"></script><script src="auth.js?v=a610fb622e"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=692af3b71e"></script><script src="auth.js?v=692af3b71e"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -352,6 +352,13 @@
   .todayGrid .colA.unhot { outline: 2px dashed var(--g); outline-offset: 6px; border-radius: 18px; }
   .blk.ev.mv { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
   .blk.ev .rsz::after { background: var(--blue); } .blk.ev.mv:hover .rsz::after { opacity: .5; }
+  .tabbar [hidden], .side [hidden] { display: none !important; }
+  /* 끌어다 놓는 곳: 나중에 · 맡기기(사람) · 프로젝트 폴더 */
+  body.dragging-task [data-drop] { box-shadow: inset 0 0 0 1.5px var(--g); background: color-mix(in srgb, var(--gt) 55%, var(--card)); border-radius: 12px; }
+  body.dragging-task .dcard { box-shadow: 0 0 0 2px color-mix(in srgb, var(--g) 35%, transparent); }
+  body.dragging-task #trashDrop { box-shadow: inset 0 0 0 1.5px var(--red); color: var(--red); }
+  [data-drop].hot { background: var(--gt) !important; box-shadow: inset 0 0 0 2px var(--g) !important; color: var(--g) !important; transform: scale(1.05); }
+  .pjtg { display: flex; align-items: center; gap: 8px; width: 100%; }
   .h2 .capb { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; font-weight: 700; color: var(--g); padding: 8px 12px; margin: -6px 0; border-radius: 12px; background: var(--gt); }
   .pjcard .row .m .imp { color: var(--red); font-weight: 700; }
   .pjt { list-style: none; margin: 6px 0 0; padding: 0; } .pjt li { display: flex; gap: 8px; align-items: baseline; font-size: 14px; color: var(--t2); padding: 2px 0; }
@@ -453,7 +460,17 @@
     .sheet { left: 50%; right: auto; bottom: auto; top: 50%; width: 460px; border-radius: 26px; transform: translate(-50%, -46%) scale(.97); opacity: 0; pointer-events: none; transition: transform .35s var(--spring), opacity .2s; }
     .sheet.on { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
     .sheet .grab { display: none; }
-    .todayGrid { display: grid; grid-template-columns: minmax(340px, .9fr) minmax(0, 1.1fr); gap: 32px; align-items: start; }
+    .todayGrid { display: grid; grid-template-columns: minmax(300px, .82fr) minmax(0, 1.18fr) auto; gap: 28px; align-items: start; }
+    .todayGrid .colC { position: sticky; top: 44px; }
+    .todayGrid .colC { width: 236px; }
+    .sendp .h2 { margin-top: 6px; }
+    .sendp .sec { display: flex; align-items: center; justify-content: space-between; margin: 16px 4px 8px; font-size: 13.5px; font-weight: 800; color: var(--t2); }
+    .sendp .sec .lnk { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; padding: 4px 2px; margin: 0; }
+    .sendp .pjtg { display: flex; align-items: center; gap: 6px; width: 100%; font-size: 13.5px; font-weight: 800; color: var(--t2); }
+    .sendp .pjtg em { font-style: normal; color: var(--g); } .sendp .pjtg .sp { flex: 1; }
+    .sendp .pjtg .chev { display: inline-flex; color: var(--t3); transition: transform .2s; } .sendp .pjtg .chev.on { transform: rotate(90deg); }
+    .dcard .row { padding-top: 11px; padding-bottom: 11px; } .dcard .row .t { font-size: 14.5px; } .dcard .row .m { font-size: 12px; }
+    .dcard .newpj { width: 100%; text-align: left; color: var(--t3); }
     .swr .row.prow { touch-action: none; }
     .prow { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
     .prow.dragging { opacity: .35; }
@@ -498,7 +515,7 @@
   <aside class="side">
     <div class="brand"><span class="tile"><svg class="i" data-i="check" width="18" height="18"></svg></span><span class="lb">GTD 워크</span><button type="button" class="sidetg" id="sideTg" aria-label="사이드바 접기" title="사이드바 접기 ( [ )" aria-expanded="true"><svg class="i" data-i="panel" width="20" height="20"></svg></button></div>
     <button class="nv on" data-go="today" title="오늘"><svg class="i" data-i="home" width="20" height="20"></svg><span class="lb">오늘</span><span class="sp"></span><span class="cnt" id="sNow" style="display:none"></span></button>
-    <button class="nv" data-go="inbox" title="수집함"><svg class="i" data-i="inbox" width="20" height="20"></svg><span class="lb">수집함</span><span class="sp"></span><span class="cnt" id="sInbox" style="display:none;background:var(--amber);color:#fff"></span></button>
+    <button class="nv" data-go="inbox" title="수집함" hidden><svg class="i" data-i="inbox" width="20" height="20"></svg><span class="lb">수집함</span><span class="sp"></span><span class="cnt" id="sInbox" style="display:none;background:var(--amber);color:#fff"></span></button>
     <button class="nv" data-go="calendar" title="캘린더"><svg class="i" data-i="calendar" width="20" height="20"></svg><span class="lb">캘린더</span></button>
     <button class="nv" data-go="more" title="더보기"><svg class="i" data-i="grid" width="20" height="20"></svg><span class="lb">더보기</span></button>
     <button class="nv" id="sideSearch" type="button" title="검색 ( / )"><svg class="i" data-i="search" width="20" height="20"></svg><span class="lb">검색</span><span class="sp"></span><kbd class="kb lb">/</kbd></button>
@@ -524,6 +541,7 @@
           <div id="todayA"></div>
         </div>
         <div class="colB" id="todayB"></div>
+        <aside class="colC" id="todayC"></aside>
       </div>
     </section>
 
@@ -545,7 +563,7 @@
 
 <nav class="tabbar">
   <button data-go="today" class="on"><svg class="i" data-i="home" width="24" height="24"></svg>오늘</button>
-  <button data-go="inbox"><svg class="i" data-i="inbox" width="24" height="24"></svg>수집함<span class="dot" id="tInbox"></span></button>
+  <button data-go="inbox" hidden><svg class="i" data-i="inbox" width="24" height="24"></svg>수집함<span class="dot" id="tInbox"></span></button>
   <button data-go="calendar"><svg class="i" data-i="calendar" width="24" height="24"></svg>캘린더</button>
   <button data-go="more"><svg class="i" data-i="grid" width="24" height="24"></svg>더보기</button>
 </nav>
@@ -836,7 +854,6 @@
     if (d.reviewDue && (dw >= 5 || dw === 0)) al += '<button class="apill" data-goto="weekly">' + tile('calcheck', 'green', 15) + '주간 검토</button>';
     if (al) a += '<div class="alerts">' + al + '</div>';
     a += carryHtml(d);
-    a += '<div id="todayInbox"></div>';
     var showTime = timeView && !isPC();
     a += '<div class="h2">' + (showTime ? '시간표' : '할 일') + '<span class="sp"></span>' + (showTime ? '<button class="capb" data-cap>' + svg('camera', 15) + '캡처</button><span class="trashb" id="trashDrop" role="img" aria-label="휴지통">' + svg('trash', 17) + '</span>' : '') + '<button class="lnk mOnly' + (showTime ? ' on' : '') + '" data-timeview>' + (showTime ? '목록' : '시간표') + '</button></div>';
     if (showTime) a += dayPlanHtml(d, list);
@@ -856,14 +873,13 @@
           (extra ? '<button class="txtlink" data-more>' + extra + '개 더 보기</button>' : '');
       }
     }
-    if (list.length) a += '<div class="pillbtns"><button class="pillbtn" data-plan>' + svg('star', 15, 'var(--amber)', true) + '3개만 고르기</button><button class="pillbtn" data-shutdown>' + svg('moon', 15, 'var(--purple)') + '오늘 마무리</button></div>';
+    if (list.length) a += '<div class="pillbtns"><button class="pillbtn" data-shutdown>' + svg('moon', 15, 'var(--purple)') + '오늘 마무리</button></div>';
     $('todayA').innerHTML = a;
-    syncTodayInbox();
 
     // 오른쪽(휴대폰: 아래): 이번 주 + (PC) 시간표
     var b = '<div class="h2">이번 주<span class="sp"></span><span class="wknav"><button data-wk="-1" aria-label="이전 주">' + svg('chevL', 18) + '</button><button data-wk="1" aria-label="다음 주">' + svg('chev', 18) + '</button></span></div><div id="wkBox">' + weekHtml(wkOffset === 0 ? d.week : wkData) + '</div>';
     if (isPC()) b += '<div class="h2">오늘 시간표<span class="sp"></span><button class="capb" data-cap title="오늘 시간표를 이미지로 복사">' + svg('camera', 15) + '캡처</button><span class="trashb" id="trashDrop" role="img" aria-label="휴지통: 할 일을 끌어다 놓으면 삭제" title="할 일을 끌어다 놓으면 삭제">' + svg('trash', 17) + '</span></div>' + dayPlanHtml(d, list, true);
-    b += projectsHtml(d);
+    if (isPC()) $('todayC').innerHTML = projRailHtml(d); else { $('todayC').innerHTML = ''; b += projectsHtml(d); }
     $('todayB').innerHTML = b;
     scrollGridToNow();
     if (animNext) { stagger($('todayA')); stagger($('todayB')); animNext = false; }
@@ -1040,9 +1056,8 @@
     var t = c[0];
     return '<div class="h2">어제 못 끝낸 일<span class="sp"></span>' + (c.length > 1 ? '<button class="lnk" data-cy="allToday">모두 오늘 다시</button>' : '') + '</div>' +
       '<div class="card ibcard carry"><div class="ib"><div class="eyebrow" style="margin:0 0 2px">다시 정해요' + (c.length > 1 ? ' · ' + c.length + '개 남음' : '') + '</div><div class="tt">' + esc(t.title) + '</div>' +
-      '<div class="grid2"><button class="big pri" data-cy="today">' + tile('star', '', 20) + '오늘 다시 할래요</button><button class="big" data-cy="list">' + tile('check', 'green', 20) + '할 일 목록에</button>' +
-      '<button class="big" data-cy="tomorrow">' + tile('calendar', 'blue', 20) + '내일 할래요</button><button class="big" data-cy="someday">' + tile('archive', 'gray', 20) + '나중에 할 일</button></div>' +
-      '<div class="links"><button data-cy="drop">' + svg('trash', 15) + '이제 안 해도 돼요</button></div></div></div>';
+      '<div class="grid2"><button class="big pri" data-cy="today">' + tile('star', '', 20) + '오늘 다시 할래요</button><button class="big" data-cy="tomorrow">' + tile('calendar', 'blue', 20) + '내일 할래요</button>' +
+      '<button class="big" data-cy="someday">' + tile('archive', 'gray', 20) + '나중에 할 일</button><button class="big" data-cy="drop">' + tile('trash', 'red', 20) + '이제 안 해도 돼요</button></div></div></div>';
   }
   function carryAct(k) {
     var c = data.carry || [], t = c[0], td = data.today; if (!t) return;
@@ -1064,14 +1079,74 @@
     if (k === 'drop') return call('clarifyTask', t.id, { status: STATUS.DROPPED }).then(done('지웠어요')).catch(fail);
   }
 
+  // ── 끌어다 놓는 곳 ──
+  function people() {
+    var seen = {}, out = [], add = function (n) { n = String(n || '').trim(); if (n && !seen[n]) { seen[n] = 1; out.push(n); } };
+    try { JSON.parse(localStorage.getItem('kitPeople') || '[]').forEach(add); } catch (e) {}
+    ((data && data.delegated) || []).forEach(function (t) { add(t.delegatee); });
+    return out.slice(0, 8);
+  }
+  function addPerson(n) { var l = []; try { l = JSON.parse(localStorage.getItem('kitPeople') || '[]'); } catch (e) {} l = [n].concat(l.filter(function (x) { return x !== n; })).slice(0, 12); try { localStorage.setItem('kitPeople', JSON.stringify(l)); } catch (e) {} }
+  function pjOpen0() { try { return localStorage.getItem('kitPjOpen') === '1'; } catch (e) { return false; } }
+  function pjSet(on) { try { localStorage.setItem('kitPjOpen', on ? '1' : '0'); } catch (e) {} }
+  function openPjList(d) { return (d.projects || []).filter(function (p) { return !p.finished || p.empty; }).sort(function (a, b) { return (b.important || 0) - (a.important || 0) || (b.open || 0) - (a.open || 0); }); }
+  // PC 오른쪽 '보내기' 칸: 나중에 · 맡기기(사람) · 프로젝트(기본 접힘). 할 일을 끌어다 놓으면 그리로 보낸다.
+  function projRailHtml(d, peek) {
+    var list = openPjList(d), pjo = pjOpen0() || peek;
+    var drow = function (drop, icon, cls, title, sub, extra) { return '<div class="row drow" ' + (extra || '') + ' data-drop="' + esc(drop) + '">' + tile(icon, cls, 18) + '<div class="tx"><div class="t">' + title + '</div>' + (sub ? '<div class="m">' + sub + '</div>' : '') + '</div></div>'; };
+    var h = '<div class="sendp"><div class="h2">보내기<span class="sp"></span><span class="lnk" style="cursor:default;font-size:12.5px">할 일을 끌어다 놓기</span></div>';
+    h += '<div class="card dcard">' + drow('later', 'archive', 'gray', '나중에', '언젠가 할 일로 미뤄 둬요') + '</div>';
+    h += '<div class="sec"><span>맡기기</span><button class="lnk" data-addwho>' + svg('plus', 14) + '사람</button></div><div class="card dcard">' +
+      (people().length ? people().map(function (n) { return drow('who:' + n, 'user', 'blue', esc(n), '3일 뒤 확인', 'tabindex="0" role="button" data-who="' + esc(n) + '"'); }).join('') : '<div class="empty" style="padding:16px 12px;font-size:13px">자주 맡기는 사람을 추가해 두세요</div>') + '</div>';
+    h += '<div class="sec"><button class="pjtg" data-pjtoggle aria-expanded="' + (pjo ? 'true' : 'false') + '"><span>프로젝트</span>' + (list.length ? '<em>' + list.length + '</em>' : '') + '<span class="sp"></span><span class="chev' + (pjo ? ' on' : '') + '">' + svg('chev', 16) + '</span></button></div>';
+    if (pjo) h += '<div class="card dcard">' + list.map(function (p) {
+        return drow('pj:' + p.name, 'folder', 'purple', esc(p.name), (p.open ? '할 일 ' + p.open + '개' : '비어 있어요') + (p.important ? '<span class="dot"></span><span class="red">중요 ' + p.important + '</span>' : ''), 'tabindex="0" role="button" data-pjid="' + esc(p.name) + '"');
+      }).join('') + '<button class="row newpj" data-newpj>' + tile('plus', 'gray', 18) + '<div class="tx"><div class="t">새 프로젝트</div></div></button></div>';
+    else h += '<div class="card dcard"><div class="row drow pjclosed" data-pjtoggle data-peek="1">' + tile('folder', 'purple', 18) + '<div class="tx"><div class="t">프로젝트 ' + list.length + '개</div><div class="m">끌어 오면 펼쳐져요</div></div></div></div>';
+    return h + '</div>';
+  }
+  function unplaceIfPlaced(id) {
+    var placed = ((data.events && data.events.items) || []).some(function (e) { return e.kit === id; });
+    if (!placed) return Promise.resolve();
+    data.events.items = data.events.items.filter(function (e) { return e.kit !== id; });
+    return call('unplaceTask', id, data.today).catch(function () {});
+  }
+  function sendTo(id, where) {
+    if (!data) return;
+    var fail = function (e) { toast(e.message); load(); };
+    if (where === 'later') { animNext = false; dropLocal(id); return unplaceIfPlaced(id).then(function () { return call('clarifyTask', id, { status: STATUS.SOMEDAY, focus: '' }); }).then(function (r) { toast('나중에 할 일로 보냈어요', r.undo); setView(r.view); }).catch(fail); }
+    if (where.indexOf('who:') === 0) {
+      var who = where.slice(4), fu = addDays(data.today, 3); addPerson(who); animNext = false; dropLocal(id);
+      return unplaceIfPlaced(id).then(function () { return call('clarifyTask', id, { status: STATUS.DELEGATED, delegatee: who, followUp: fu, focus: '' }); }).then(function (r) { toast(who + '님께 맡겼어요 · ' + rel(fu) + ' 확인', r.undo); setView(r.view); }).catch(fail);
+    }
+    if (where.indexOf('pj:') === 0) { var pn = where.slice(3); optimistic(id, { project: pn }); return call('updateTask', id, { project: pn }).then(function (r) { toast('\'' + pn + '\' 프로젝트로 묶었어요'); setView(r.view); }).catch(fail); }
+  }
+  function newProject(then) {
+    openSheet('<div class="st">새 프로젝트</div><div class="ss">두 단계 이상 걸리는 일을 묶는 폴더예요. 할 일은 담기 칸에서 적고 끌어다 놓으세요</div><input class="field" id="npName" placeholder="예) 12월 워크숍" maxlength="40"><button class="cta" id="npOk">만들기</button>');
+    newPjThen = then || null;
+  }
+  var newPjThen = null;
+  // 빈 시간 몇 개 (지금 이후, 일정·이미 놓은 것을 피해서)
+  function freeSlots(dur, n) {
+    var items = ((data.events && data.events.items) || []).filter(function (e) { return !e.allDay && e.start && e.end; });
+    var busy = items.map(function (e) { return [toMin(e.start), Math.max(toMin(e.end), toMin(e.start) + 15)]; });
+    var now = new Date(), cur = Math.max(9 * 60, Math.ceil((now.getHours() * 60 + now.getMinutes()) / 15) * 15), out = [];
+    while (out.length < n && cur + dur <= 21 * 60) {
+      var hit = busy.filter(function (b) { return b[0] < cur + dur && b[1] > cur; })[0];
+      if (!hit) { out.push(cur); cur += Math.max(dur, 30); } else cur = Math.ceil(hit[1] / 15) * 15;
+    }
+    return out;
+  }
+
   // 시간표 아래: 중요 프로젝트 (중요 표시가 많은 순 → 다음 행동 없음 → 마감 가까운 순)
   function projectsHtml(d) {
-    var open = (d.projects || []).filter(function (p) { return !p.finished; });
+    var open = (d.projects || []).filter(function (p) { return !p.finished || p.empty; });
     if (!open.length) return '';
     open = open.slice().sort(function (a, b) {
       return (b.important || 0) - (a.important || 0) || (b.stalled ? 1 : 0) - (a.stalled ? 1 : 0) || ((a.nextDue || '9') < (b.nextDue || '9') ? -1 : (a.nextDue || '9') > (b.nextDue || '9') ? 1 : 0);
     });
-    return '<div class="h2">중요 프로젝트<span class="sp"></span><button class="lnk" data-allpj>전체 ' + open.length + '</button></div><div class="card pjcard">' + open.slice(0, 3).map(function (p) {
+    if (!pjOpen0()) return '<div class="h2"><button class="pjtg" data-pjtoggle aria-expanded="false">프로젝트 <em style="font-style:normal;color:var(--g)">' + open.length + '</em><span class="sp"></span>' + svg('chev', 18) + '</button></div>';
+    return '<div class="h2"><button class="pjtg" data-pjtoggle aria-expanded="true">프로젝트 <em style="font-style:normal;color:var(--g)">' + open.length + '</em><span class="sp"></span><span style="transform:rotate(90deg);display:inline-flex">' + svg('chev', 18) + '</span></button></div><div class="card pjcard">' + open.slice(0, 5).map(function (p) {
       var bits = [];
       if (p.important) bits.push('<span class="imp">중요 ' + p.important + '</span>');
       if (p.stalled) bits.push('<span class="red">다음 행동 없음</span>');
@@ -1265,6 +1340,7 @@
       if (dg.group.length > 1) gh.innerHTML = '<b>' + dg.group.length + '개 같이 옮기기</b>';
       document.body.appendChild(gh); dg.ghost = gh; if (navigator.vibrate && !calm()) try { navigator.vibrate(10); } catch (e) {}
       if (dg.fromSheet) { $('sheet').classList.add('dragout'); $('dim').classList.add('dragout'); }
+      if (!dg.evid) document.body.classList.add('dragging-task');
     }
     function end(e) {
       if (rs) { var r0 = rs; rs = null; r0.el.classList.remove('resizing'); swipedAt = Date.now(); if (e && e.type !== 'pointercancel' && r0.dur !== r0.dur0) { if (r0.evid) moveEventTo(r0.calid, r0.evid, data.today, r0.start, r0.dur); else placeTask(r0.id, r0.title, r0.start, r0.dur); } else renderToday(); return; }
@@ -1284,6 +1360,14 @@
         return renderToday();
       }
       if (e && e.type !== 'pointercancel' && d.day) { if (d.fromSheet) closeSheet(); return moveToDay(d.id, d.day); }
+      [].forEach.call(document.querySelectorAll('[data-drop].hot'), function (z) { z.classList.remove('hot'); });
+      document.body.classList.remove('dragging-task');
+      if (e && e.type !== 'pointercancel' && d.drop && !d.evid) {
+        planSel = {};
+        if (d.isDone) { toast('끝낸 일은 계획 칸으로 먼저 옮겨 주세요'); return renderToday(); }
+        return d.group.reduce(function (p, id) { return p.then(function () { return sendTo(id, d.drop); }); }, Promise.resolve());
+      }
+      if (!pjOpen0() && $('todayC') && !$('todayC').querySelector('.pjclosed')) { animNext = false; renderToday(); }
       if (e && e.type !== 'pointercancel' && d.trash) { planSel = {}; return d.group.reduce(function (p, id) { return p.then(function () { return trashTask(id); }); }, Promise.resolve()); }
       if (e && e.type !== 'pointercancel' && d.unplace) { planSel = {}; return d.group.reduce(function (p, id) { return p.then(function () { return unplaceTask(id); }); }, Promise.resolve()); }
       if (!e || e.type === 'pointercancel' || d.slot === null || d.slot === undefined) return;
@@ -1332,6 +1416,11 @@
       e.preventDefault();
       dg.ghost.style.left = e.clientX + 'px'; dg.ghost.style.top = e.clientY + 'px';
       var over = function (el2) { if (!el2) return false; var rr = el2.getBoundingClientRect(); return e.clientX >= rr.left - 8 && e.clientX <= rr.right + 8 && e.clientY >= rr.top - 8 && e.clientY <= rr.bottom + 8; };
+      var dz = null; if (!dg.evid) [].forEach.call(document.querySelectorAll('[data-drop]'), function (z) { if (over(z)) dz = z; });
+      [].forEach.call(document.querySelectorAll('[data-drop].hot'), function (z) { if (z !== dz) z.classList.remove('hot'); });
+      var rail = document.querySelector('#todayC .pjclosed'); if (rail && !dg.evid && over(rail)) { $('todayC').innerHTML = projRailHtml(data, true); }
+      dg.drop = dz ? dz.getAttribute('data-drop') : null;
+      if (dz) { dz.classList.add('hot'); dg.trash = false; dg.unplace = false; dg.slot = null; dg.day = null; if ($('trashDrop')) $('trashDrop').classList.remove('hot'); var ca1 = document.querySelector('.todayGrid .colA'); if (ca1) ca1.classList.remove('unhot'); if ($('dropMark')) $('dropMark').hidden = true; if ($('doneLane')) $('doneLane').classList.remove('hot'); return; }
       var tb = $('trashDrop'); dg.trash = over(tb); if (tb) tb.classList.toggle('hot', dg.trash);
       var ca = document.querySelector('.todayGrid .colA'); dg.unplace = !dg.trash && dg.placed && !dg.evid && !dg.fromSheet && isPC() && over($('todayA')) && !over($('capForm')); if (ca) ca.classList.toggle('unhot', dg.unplace);
       if (dg.trash || dg.unplace) { dg.slot = null; dg.day = null; if ($('dropMark')) $('dropMark').hidden = true; if ($('doneLane')) $('doneLane').classList.remove('hot'); return; }
@@ -1391,6 +1480,11 @@
     if ((b = e.target.closest('[data-rpt]'))) { e.stopPropagation(); var rt = findTask(b.getAttribute('data-rpt')); return rt && openRepeat(rt); }
     if ((b = e.target.closest('[data-cy]'))) return carryAct(b.getAttribute('data-cy'));
     if ((b = e.target.closest('[data-allpj]'))) { go('more'); return openProjects(); }
+    if ((b = e.target.closest('[data-pjtoggle]'))) { pjSet(!pjOpen0()); animNext = false; return renderToday(); }
+    if ((b = e.target.closest('[data-newpj]'))) return newProject();
+    if ((b = e.target.closest('[data-addwho]'))) { openSheet('<div class="st">자주 맡기는 사람</div><div class="ss">여기에 할 일을 끌어다 놓으면 그 사람에게 맡겨져요</div><input class="field" id="awName" placeholder="예) 여소정" maxlength="20"><button class="cta" id="awOk">추가</button>'); return; }
+    if ((b = e.target.closest('[data-who]'))) return openWaiting();
+    if ((b = e.target.closest('[data-drop=later]'))) return toast('할 일을 끌어다 놓으면 나중에 할 일로 보내져요');
     if ((b = e.target.closest('[data-pjid]'))) return openProjectSheet(b.getAttribute('data-pjid'));
     if ((b = e.target.closest('[data-autoplan]'))) return autoPlan();
     if ((b = e.target.closest('.dchip[data-drag]'))) return toast(isPC() ? '끌어서 오른쪽 시간표에 놓아 주세요' : '꾹 누른 채로 끌어서 시간에 놓아 주세요');
@@ -1404,7 +1498,7 @@
     if ((b = e.target.closest('.swr[data-id]')) && (e.shiftKey || e.metaKey || e.ctrlKey || Object.keys(sel).length)) { e.preventDefault(); return toggleSel(b.getAttribute('data-id')); }
     if ((b = e.target.closest('[data-id]'))) return openTaskShared(b);
   }
-  $('todayA').addEventListener('click', todayClick); $('todayB').addEventListener('click', todayClick);
+  $('todayA').addEventListener('click', todayClick); $('todayB').addEventListener('click', todayClick); $('todayC').addEventListener('click', todayClick);
   function loadWeek() {
     if (wkOffset === 0) { wkData = null; return renderToday(); }
     var box = $('wkBox'); if (box && box.firstChild) box.firstChild.style.opacity = .4;
@@ -1455,7 +1549,7 @@
     e.preventDefault(); var v = $('capInput').value.trim(); if (!v) return;
     $('capInput').value = '';
     var cb = $('capBtn'); cb.classList.add('ok'); setTimeout(function () { cb.classList.remove('ok'); }, 900);
-    var target = isPC() ? document.querySelector('.side [data-go=inbox]') : document.querySelector('.tabbar [data-go=inbox]');
+    var target = isPC() ? document.querySelector('.side [data-go=today]') : document.querySelector('.tabbar [data-go=today]');
     flyTo(cb, target, function () { if (data && data.counts) { data.counts.inbox++; setBadges(); bump($('sInbox')); bump($('tInbox')); } });
     call('addTasks', v).then(function (r) { setView(r.view); flushOutbox(); var g = captureNote(r.parsed && r.parsed[0]); if (g) toast('담았어요 · ' + g); })
       .catch(function (e) {
@@ -1530,8 +1624,9 @@
     var starred = t.focus && t.focus <= data.today;
     var sub = [t.due ? rel(t.due) + ' 마감' : '', t.repeat ? '반복 · ' + t.repeat : '', t.project ? t.project : ''].filter(Boolean).join('  ·  ');
     openSheet('<div class="st" id="tTitle" contenteditable="true" spellcheck="false" enterkeyhint="done">' + esc(t.title) + '</div><div class="ss">' + esc(sub) + '</div>' +
-      '<div class="actgrid">' + qa('play', 'green', '집중', 'focus') + qa('star', 'amber', starred ? '★ 빼기' : '꼭 하기', 'star') + qa('calendar', 'purple', '날짜', 'due') + qa('clock', 'blue', '시간', 'est') + qa('repeat', 'green', t.repeat ? '반복 바꾸기' : '반복', 'repeat') + '</div>' +
-      '<div class="sep"></div>' + (t.repeat ? act('moon', 'purple', '이번 회차 건너뛰기', 'skip') : '') + act('file', 'blue', t.memo ? '메모 보기 · 덧붙이기' : '메모 남기기', 'memo') + act('dots', 'gray', '더 설정하기', 'more') + act('archive', 'gray', '나중에 하기', 'someday') + act('trash', 'red', '삭제', 'drop', true));
+      '<div class="lbl" style="margin:2px 0 4px">어디로 보낼까요</div><div class="actgrid">' + qa('calendar', 'purple', '시간표', 's-plan') + qa('calcheck', 'blue', '날짜', 's-day') + qa('user', 'blue', '맡기기', 's-who') + qa('folder', 'purple', '프로젝트', 's-pj') + qa('archive', 'gray', '나중에', 's-later') + '</div>' +
+      '<div class="actgrid">' + qa('play', 'green', '집중', 'focus') + qa('star', 'amber', starred ? '★ 빼기' : '꼭 하기', 'star') + qa('clock', 'blue', '시간', 'est') + qa('repeat', 'green', t.repeat ? '반복 바꾸기' : '반복', 'repeat') + qa('file', 'blue', '메모', 'memo') + '</div>' +
+      '<div class="sep"></div>' + (t.repeat ? act('moon', 'purple', '이번 회차 건너뛰기', 'skip') : '') + act('dots', 'gray', '더 설정하기', 'more') + act('trash', 'red', '삭제', 'drop', true));
   }
   function openTaskShared(el) {
     var id = el.getAttribute('data-id'), tEl = el.querySelector('.t');
@@ -1569,6 +1664,26 @@
       if (a === 'star') { closeSheet(); var on = t.focus && t.focus <= td; optimistic(t.id, { focus: on ? '' : td }); return call('updateTask', t.id, { focus: on ? '' : true }).then(ok(on ? '꼭 할 일에서 뺐어요' : '★ 오늘 꼭 하기')).catch(failReload); }
       if (a === 'tomorrow') { closeSheet(); dropLocal(t.id); return moveTomorrow(t.id); }
       if (a === 'skip') { closeSheet(); return call('skipTask', t.id).then(function (r) { toast(r.next ? '건너뛰었어요 · 다음 ' + rel(r.next) : '건너뛰었어요', r.undo); setView(r.view); }).catch(fail); }
+      if (a === 's-later') { closeSheet(); return sendTo(t.id, 'later'); }
+      if (a === 's-plan') {
+        var dur0 = t.est || 30, sl = freeSlots(dur0, 6);
+        if (!sl.length) return toast('오늘 남은 빈 시간이 없어요');
+        return openSheet('<div class="st">언제 할까요?</div><div class="ss">' + esc(t.title) + ' · ' + minText(dur0) + ' · 오늘 빈 시간</div><div class="chips">' + sl.map(function (m) { return '<button class="chip" data-splan="' + m + '">' + hm2(m) + '</button>'; }).join('') + '</div>');
+      }
+      if (a === 's-day') {
+        var dd = []; for (var di = 0; di < 8; di++) dd.push(addDays(td, di));
+        return openSheet('<div class="st">언제로 옮길까요?</div><div class="ss">' + esc(t.title) + '</div><div class="chips">' + dd.map(function (x) { var dt2 = new Date(x + 'T00:00:00'); return '<button class="chip" data-sday="' + x + '">' + (x === td ? '오늘' : x === addDays(td, 1) ? '내일' : (dt2.getMonth() + 1) + '/' + dt2.getDate() + ' ' + DOW[dt2.getDay()]) + '</button>'; }).join('') + '</div><div class="lbl">직접 고르기</div><input class="field" type="date" id="sDayIn"><button class="cta" id="sDayOk">옮기기</button>');
+      }
+      if (a === 's-who') {
+        var pp = people();
+        return openSheet('<div class="st">누구에게 맡길까요?</div><div class="ss">' + esc(t.title) + ' · 3일 뒤 확인해요</div>' + (pp.length ? '<div class="chips">' + pp.map(function (n) { return '<button class="chip" data-swho="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>' : '') +
+          '<div class="lbl">다른 사람</div><input class="field" id="sWhoIn" placeholder="이름" maxlength="20"><button class="cta" id="sWhoOk">맡기기</button>');
+      }
+      if (a === 's-pj') {
+        var pl = openPjList(data);
+        return openSheet('<div class="st">어느 프로젝트에 묶을까요?</div><div class="ss">' + esc(t.title) + '</div>' + (pl.length ? '<div class="chips">' + pl.map(function (p) { return '<button class="chip' + (t.project === p.name ? ' on' : '') + '" data-spj="' + esc(p.name) + '">' + esc(p.name) + '</button>'; }).join('') + '</div>' : '') +
+          '<div class="lbl">새 프로젝트</div><input class="field" id="sPjIn" placeholder="프로젝트 이름" maxlength="40"><button class="cta" id="sPjOk">묶기</button>');
+      }
       if (a === 'due') {
         var sat2 = addDays(td, (6 - dowOf(td) + 7) % 7 || 7), mon2 = addDays(weekStartOf(td), 7);
         return openSheet('<div class="st">언제까지 할까요?</div><div class="ss">' + esc(t.title) + '</div><div class="chips">' +
@@ -1679,6 +1794,15 @@
     if (e.target.id === 'planOk') { closeSheet(); return call('planDay', plan).then(function (r) { toast('★ ' + plan.length + '개에 집중해요'); setView(r.view); }).catch(fail); }
     // 오늘 마무리
     if (e.target.closest('[data-cap2]')) return capturePlan();
+    if ((b = e.target.closest('[data-splan]'))) { closeSheet(); return placeTask(t.id, t.title, +b.getAttribute('data-splan'), t.est || 30); }
+    if ((b = e.target.closest('[data-sday]')) || e.target.id === 'sDayOk') { var sd = b ? b.getAttribute('data-sday') : $('sDayIn').value; if (!sd) return toast('날짜를 골라 주세요'); closeSheet(); return moveToDay(t.id, sd); }
+    if ((b = e.target.closest('[data-swho]')) || e.target.id === 'sWhoOk') { var sw = b ? b.getAttribute('data-swho') : $('sWhoIn').value.trim(); if (!sw) return toast('이름을 적어 주세요'); closeSheet(); return sendTo(t.id, 'who:' + sw); }
+    if ((b = e.target.closest('[data-spj]')) || e.target.id === 'sPjOk') {
+      var sp = b ? b.getAttribute('data-spj') : $('sPjIn').value.trim(); if (!sp) return toast('프로젝트 이름을 적어 주세요'); closeSheet();
+      return (b ? Promise.resolve() : call('setProject', sp, '').catch(function () {})).then(function () { return sendTo(t.id, 'pj:' + sp); });
+    }
+    if (e.target.id === 'npOk') { var np = $('npName').value.trim(); if (!np) return toast('프로젝트 이름을 적어 주세요'); closeSheet(); pjSet(true); return call('setProject', np, '').then(function (r) { setView(r.view); toast('\'' + np + '\' 프로젝트를 만들었어요 · 할 일을 끌어다 놓으세요'); }).catch(fail); }
+    if (e.target.id === 'awOk') { var aw = $('awName').value.trim(); if (!aw) return toast('이름을 적어 주세요'); addPerson(aw); closeSheet(); animNext = false; renderToday(); return toast(aw + '님을 추가했어요 · 할 일을 끌어다 놓으면 맡겨져요'); }
     if (e.target.id === 'capNmOk') { var nm = $('capNm').value.trim(); try { localStorage.setItem('kitCapName', nm); } catch (x) {} closeSheet(); if (capAfterName) return capturePlan(); toast(nm ? '캡처에 \'' + nm + '\'(으)로 넣어요' : '캡처에 이름을 넣지 않아요'); return renderMore(); }
     if (e.target.id === 'sdKeep') { closeSheet(); return toast('수고했어요. 내일 봐요!'); }
     if ((b = e.target.closest('[data-sd]'))) { b.querySelector('.chk').classList.toggle('on'); var nOn = document.querySelectorAll('#sdList .chk.on').length; $('sdTmr').textContent = nOn ? '내일 꼭 하기 ' + nOn + '개' : '고른 일이 없어요'; return; }
@@ -1852,7 +1976,7 @@
     if (c.mode === 'day') {
       var dt = new Date(c.start + 'T00:00:00');
       $('cTitle').textContent = (dt.getMonth() + 1) + '월 ' + dt.getDate() + '일 ' + DOW[dt.getDay()];
-      $('cBody').innerHTML = dayListHtml(c, c.start) + '<form class="dayadd" data-dayadd="' + c.start + '"><input class="field" placeholder="' + md(c.start) + '에 할 일 추가" enterkeyhint="done"></form>'; stagger($('cBody')); return;
+      $('cBody').innerHTML = dayListHtml(c, c.start) + ''; stagger($('cBody')); return;
     }
     var cols = days.slice(0, 7).filter(showDay), tpl = 'grid-template-columns:repeat(' + cols.length + ',minmax(0,1fr))';
     if (c.mode === 'week') {
@@ -1874,7 +1998,7 @@
         var w = dowOf(d);
         return '<div class="mc' + (d.slice(0, 7) !== mon ? ' out' : '') + (w === 0 || w === 6 ? ' we' : '') + (d === c.today ? ' today' : '') + (d === sel ? ' sel' : '') + '" data-cday="' + d + '"><span class="dn">' + (+d.slice(8)) + '</span>' + dotsHtml(c, d) + '</div>';
       }).join('') + '</div>';
-    $('cDay').innerHTML = '<div class="h2">' + md(sel) + ' ' + DOW[dowOf(sel)] + '요일</div>' + dayListHtml(c, sel) + '<form class="dayadd" data-dayadd="' + sel + '"><input class="field" placeholder="' + md(sel) + '에 할 일 추가" enterkeyhint="done"></form>';
+    $('cDay').innerHTML = '<div class="h2">' + md(sel) + ' ' + DOW[dowOf(sel)] + '요일</div>' + dayListHtml(c, sel) + '';
   }
   $('cBody').addEventListener('click', function (e) {
     var b = e.target.closest('[data-cday]'); if (!b || !cLast) return;
@@ -1903,7 +2027,7 @@
     var row = function (icon, cls, title, key, n) { return '<div class="row" tabindex="0" role="button" data-m="' + key + '">' + tile(icon, cls) + '<div class="tx"><div class="t">' + title + '</div></div>' + (n ? '<span class="cnt">' + n + '</span>' : '') + CHEV + '</div>'; };
     $('moreBody').innerHTML = '<div class="h1" style="margin-bottom:22px">더보기</div>' +
       '<div class="card">' + row('search', 'gray', '검색', 'search') + row('keyboard', 'gray', isPC() ? '단축키 · 빠르게 담는 법' : '빠르게 담는 법', 'keys') + '</div><div class="gap"></div>' +
-      '<div class="card">' + row('user', 'blue', '맡긴 일', 'waiting', (d.delegated || []).length) + row('folder', 'purple', '프로젝트', 'projects', (d.projects || []).filter(function (p) { return !p.finished; }).length) + row('repeat', 'green', '루틴 만들기', 'routine') + row('calcheck', 'purple', '주간 검토', 'weekly') + '</div><div class="gap"></div>' +
+      '<div class="card">' + row('user', 'blue', '맡긴 일', 'waiting', (d.delegated || []).length) + row('folder', 'purple', '프로젝트', 'projects', (d.projects || []).filter(function (p) { return !p.finished; }).length) + row('calcheck', 'purple', '주간 검토', 'weekly') + '</div><div class="gap"></div>' +
       '<div class="card">' + row('list', 'gray', '모든 할 일', 'all') + row('archive', 'gray', '나중에 할 일', 'someday', d.someday || '') + row('calendar', 'blue', '캘린더 설정', 'cals') + '</div><div class="gap"></div>' +
       '<div class="card">' + prefRow('sun', 'amber', '화면 모드', 'theme', [['auto', '자동'], ['light', '라이트'], ['dark', '다크']], window.kitTheme ? window.kitTheme() : 'auto') +
       prefRow('file', 'blue', '글자 크기', 'font', [['sm', '작게'], ['', '보통'], ['lg', '크게']], document.documentElement.getAttribute('data-font') || '') +
@@ -1977,7 +2101,7 @@
     var p = (data.projects || []).filter(function (x) { return x.name === name; })[0] || { name: name, outcome: '' };
     openSheet('<div class="st">' + esc(p.name) + '</div><div class="ss">남은 일 ' + (p.open || 0) + '개 · 끝낸 일 ' + (p.done || 0) + '개</div>' +
       '<div class="lbl">끝나면 어떤 모습인가요?</div><input class="field" id="poIn" value="' + esc(p.outcome || '') + '" placeholder="예) 워크숍이 끝나고 후기가 공유됨">' +
-      '<div class="lbl">다음 행동 추가</div><input class="field" data-proj="' + esc(p.name) + '" placeholder="입력 후 엔터">' +
+      '<div class="ss" style="margin:12px 0 0;font-size:13.5px">이 프로젝트의 할 일은 오늘 화면 담기 칸에 적고, 이 폴더로 끌어다 놓거나 할 일 ▸ 프로젝트로 묶어요</div>' +
       '<button class="cta" id="poOk" data-name="' + esc(p.name) + '">저장</button>');
   }
   function onWaiting() { var h = document.querySelector('#moreBody .h1'); return $('p-more').classList.contains('on') && h && /맡긴 일/.test(h.textContent); }
@@ -2022,7 +2146,7 @@
     showMore();
     $('moreBody').innerHTML = backBtn() + '<div class="h1">주간 검토</div>';
     call('getWeekly').then(function (w) {
-      var steps = ['done', 'sweep', 'inbox', 'cal'];
+      var steps = ['done', 'sweep', 'cal'];
       if (w.delegated.length) steps.push('deleg');
       if ((w.projects || []).some(function (p) { return !p.finished; })) steps.push('proj');
       if (w.someday.length) steps.push('someday');
@@ -2083,10 +2207,10 @@
     }
     if (key === 'sweep') h = '<div class="h1" style="margin-bottom:8px">머리 비우기</div><div class="sub2" style="margin-bottom:16px">떠오르는 걸 다 적어요. 정리는 나중에 해요</div>' +
       '<div class="card" style="padding:18px"><div class="eyebrow" style="margin:0 0 6px">' + (wk.sw + 1) + ' / ' + SWEEP.length + '</div><div class="t" style="font-size:18px;font-weight:700;margin-bottom:12px" id="swQ">' + esc(SWEEP[wk.sw]) + '</div>' +
-      '<input class="field" data-sweep placeholder="생각나면 적고 엔터" style="margin:0"><div class="chips" id="swAdded" style="margin-top:10px"></div>' +
+      '<div class="sub2" style="font-size:14px">떠오르면 오늘 화면 맨 위 담기 칸에 적어 두세요</div>' +
       '<button class="txtlink" data-sw style="margin-top:4px">' + (wk.sw < SWEEP.length - 1 ? '다음 질문' : '처음 질문부터') + ' ' + svg('chev', 14) + '</button></div>';
     if (key === 'cal') { h = '<div class="h1" style="margin-bottom:8px">캘린더 앞뒤 보기</div><div class="sub2" style="margin-bottom:16px">챙길 일이 떠오르면 적어 두세요</div><div id="wkCal"><div class="card"><div class="empty">불러오는 중…</div></div></div>' +
-      '<input class="field" data-sweep placeholder="후속 조치·준비할 일 적고 엔터"><div class="chips" id="swAdded"></div>'; setTimeout(loadWeekCal, 0); }
+      '<div class="sub2" style="font-size:14px;margin-top:10px">챙길 일은 오늘 화면 담기 칸에 적어 두세요</div>'; setTimeout(loadWeekCal, 0); }
     if (key === 'inbox') h = '<div class="h1" style="margin-bottom:18px">수집함 <em>' + (w.inbox.length + (wk.swept || 0)) + '</em><em>개</em></div>' + (w.inbox.length + (wk.swept || 0) ? '<div class="sub2" style="margin:-8px 0 0">하나씩 정리하고 돌아오세요</div><button class="cta" data-goto2="inbox">지금 정리하기</button>' : empty('inbox', 'amber', '비어 있어요'));
     if (key === 'deleg') h = '<div class="h1" style="margin-bottom:18px">맡긴 일 <em>' + w.delegated.length + '</em><em>개</em></div><div class="card">' + w.delegated.map(waitRow).join('') + '</div>';
     if (key === 'someday') h = '<div class="h1" style="margin-bottom:18px">나중에 할 일</div><div class="card">' + w.someday.map(function (t) { return '<div class="row" style="cursor:default"><div class="tx"><div class="t">' + esc(t.title) + '</div></div><button class="pillbtn" style="background:var(--gt);color:var(--g);box-shadow:none" data-promote="' + esc(t.id) + '">이제 할래요</button></div>'; }).join('') + '</div>';
@@ -2094,7 +2218,7 @@
       h = '<div class="h1" style="margin-bottom:8px">프로젝트 <em>' + ops.length + '</em><em>개</em></div><div class="sub2" style="margin-bottom:16px">' + (st.length ? '멈춘 ' + st.length + '개는 다음에 할 한 가지만 적어 주세요' : '모두 다음 행동이 있어요') + '</div>' +
       st.map(function (p) {
         return '<div class="card" style="padding:16px 18px;margin-bottom:10px"><div class="t" style="font-size:16.5px;font-weight:700;display:flex;align-items:center;gap:8px">' + svg('folder', 18, 'var(--purple)') + esc(p.name) + '</div>' +
-          (p.outcome ? '<div class="m" style="margin:4px 0 0;color:var(--t2);font-size:14px">' + esc(p.outcome) + '</div>' : '') + '<input class="field" data-proj="' + esc(p.name) + '" placeholder="다음 행동 입력 후 엔터"></div>';
+          (p.outcome ? '<div class="m" style="margin:4px 0 0;color:var(--t2);font-size:14px">' + esc(p.outcome) + '</div>' : '') + '<div class="m" style="margin:6px 0 0;color:var(--t3);font-size:13px">다음 할 일을 담기 칸에 적고 이 프로젝트로 묶어 주세요</div></div>';
       }).join('') + (ops.length > st.length ? '<div class="card">' + ops.filter(function (p) { return !p.stalled; }).map(projRow).join('') + '</div>' : ''); }
     if (key === 'next') { var c = uniq(w.next.concat(w.upcoming)).slice(0, 12); h = '<div class="h1" style="margin-bottom:18px">다음 주 꼭 할 일 3개</div>' + (c.length ? '<div class="card" id="wkPick">' + c.map(function (t) { return '<div class="row" data-pick="' + esc(t.id) + '"><span class="chk">' + svg('check', 15) + '</span><div class="tx"><div class="t">' + esc(t.title) + '</div></div></div>'; }).join('') + '</div>' : empty('sun', 'amber', '고를 일이 없어요')) + (window.KIT_ENGINE ? '' : '<button class="txtlink" data-wks="mail">' + svg('mail', 15) + ' 이번 주 요약 메일로 받기</button>'); }
     $('moreBody').innerHTML = head + h + next;
@@ -2227,7 +2351,7 @@
     if (!$('sheet').classList.contains('on')) {
       if (e.key === '/') { e.preventDefault(); return openSearch(); }
       if (e.key === '?') { e.preventDefault(); return openKeys(); }
-      var tab = { t: 'today', i: 'inbox', c: 'calendar', m: 'more' }[e.key];
+      var tab = { t: 'today', c: 'calendar', m: 'more' }[e.key];
       if (tab) { e.preventDefault(); return go(tab); }
       if (e.key === 'j' || e.key === 'k') { e.preventDefault(); return moveFocus(e.key === 'j' ? 1 : -1); }
       var fw = document.activeElement && document.activeElement.closest && document.activeElement.closest('.swr[data-id]');

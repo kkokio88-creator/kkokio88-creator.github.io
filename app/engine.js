@@ -935,7 +935,10 @@ function addTasks(text) {
     var today = todayYmd_(ctx.tz);
     var parsed = lines.map(function (line) { return parseCapture_(line, today); });
     appendTasks_(ctx, parsed.map(function (p) {
-      var t = { title: p.title, status: STATUS.INBOX, created: today };
+      // 담은 일은 곧 오늘 할 일(★). 날짜를 적었으면 그날의 일정으로 (따로 '정리하기' 단계 없음)
+      var later = p.due && p.due > today;
+      var t = { title: p.title, status: later ? STATUS.SCHEDULED : STATUS.NEXT, created: today };
+      if (!later) t.focus = today;
       ['due', 'context', 'project', 'priority', 'est'].forEach(function (k) { if (p[k]) t[k] = p[k]; });
       return t;
     }));
@@ -1325,7 +1328,11 @@ function readProjectOutcomes_(ss) {
 /** 프로젝트 현황(projectStats_)에 완료 모습을 붙인다 */
 function withOutcomes_(ss, projects) {
   var o = readProjectOutcomes_(ss);
-  return (projects || []).map(function (p) { p.outcome = o[p.name] || ''; return p; });
+  var have = {};
+  var out = (projects || []).map(function (p) { have[p.name] = 1; p.outcome = o[p.name] || ''; return p; });
+  // 할 일이 아직 없는 새 프로젝트 폴더도 보이게
+  Object.keys(o).forEach(function (n) { if (!have[n]) out.push({ name: n, open: 0, done: 0, next: 0, waiting: 0, important: 0, nextDue: '', items: [], stalled: false, finished: false, empty: true, outcome: o[n] }); });
+  return out;
 }
 
 /** 프로젝트 완료 모습 저장 (없으면 시트·줄을 만든다) */
@@ -1930,11 +1937,11 @@ function menuAbout() {
 function sampleTasks_(today) {
   var d = function (n) { return addDaysYmd_(today, n); };
   return [
-    { title: '거래처 견적서 비교표 만들기', status: STATUS.INBOX, created: d(0) },
-    { title: '다음 달 워크숍 장소 알아보기', status: STATUS.INBOX, created: d(0) },
-    { title: '노트북 배터리 교체 문의', status: STATUS.INBOX, created: d(-1) },
+    { title: '거래처 견적서 비교표 만들기', status: STATUS.NEXT, focus: d(0), created: d(0) },
+    { title: '다음 달 워크숍 장소 알아보기', status: STATUS.NEXT, focus: d(0), created: d(0) },
+    { title: '노트북 배터리 교체 문의', status: STATUS.NEXT, focus: d(0), created: d(-1) },
     { title: '주간회의 안건 3개 정리해서 공유', status: STATUS.NEXT, context: '@컴퓨터', due: d(1), created: d(-2) },
-    { title: '세무사님께 부가세 자료 일정 전화로 확인', status: STATUS.NEXT, context: '@전화', created: d(-1) },
+    { title: '세무사님께 부가세 자료 일정 전화로 확인', status: STATUS.NEXT, context: '@전화', focus: d(0), created: d(-1) },
     { title: '분기 보고서 초안 목차 쓰기', status: STATUS.NEXT, context: '@컴퓨터', due: d(-1), created: d(-6) },
     { title: '신규 입사자 계정 발급 요청', status: STATUS.DELEGATED, delegatee: '김대리', followUp: d(-1), created: d(-4) },
     { title: '홈페이지 배너 시안 받기', status: STATUS.DELEGATED, delegatee: '디자인 외주', followUp: d(3), due: d(7), created: d(-2) },
@@ -2447,13 +2454,20 @@ function buildTodayView_(tasks, today) {
   };
   // ★(오늘 할 일)는 그날만. 지난 날 ★인데 못 끝낸 일은 '어제 못 끝낸 일'(carry)로 모아 오늘 다시 정하게 한다.
   var isFocus = function (t) { return isActionable_(t.status) && t.focus && t.focus === today; };
-  var isCarry = function (t) { return isActionable_(t.status) && !t.repeat && t.focus && t.focus < today; };
+  // 오늘 마감·예정인 일(★ 없이도 오늘 할 일)
+  var isDueToday = function (t) { return (t.status === STATUS.NEXT || t.status === STATUS.SCHEDULED) && !t.focus && t.due && t.due <= today; };
+  // 다시 정할 일: 지난 날 ★인데 못 끝낸 일, 예전 수집함, 날짜 없는 '할 일 목록'
+  var isCarry = function (t) {
+    if (!isActionable_(t.status) || t.repeat || t.status === STATUS.DELEGATED || isDueToday(t)) return false;
+    if (t.focus) return t.focus < today;
+    return t.status === STATUS.INBOX || (t.status === STATUS.NEXT && !(t.due && t.due > today));
+  };
   var focus = tasks.filter(isFocus).sort(byPrio);
   var carry = tasks.filter(isCarry).sort(byPrio);
   var routines = tasks.filter(function (t) { return isRoutineToday(t) && !isFocus(t); }).sort(byDue);
   var now = tasks.filter(function (t) {
     if (isRoutineToday(t) || isFocus(t) || isCarry(t)) return false;
-    return t.status === STATUS.NEXT || (t.status === STATUS.SCHEDULED && t.due && t.due <= today);
+    return isDueToday(t);
   }).sort(byPrio);
   var mins = function (list) { return list.reduce(function (s, t) { return s + (t.est || 30); }, 0); };
   var dueToday = tasks.filter(function (t) {
