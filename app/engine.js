@@ -2386,7 +2386,12 @@ function webAddRoutine(k, title, rule, start, context) { checkKey_(k); appContex
 function webReviewDone(k) {
   checkKey_(k);
   var ctx = appContext_();
-  writeSetting_(ctx.ss, '마지막주간검토', todayYmd_(ctx.tz));
+  var td = todayYmd_(ctx.tz);
+  writeSetting_(ctx.ss, '마지막주간검토', td);
+  // 인사이트 배지(주간 검토 연속)용: 검토한 날을 최근 60개까지 남긴다
+  var hist = String(readSettings_(ctx.ss)['주간검토기록'] || '').split(',').filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x); });
+  if (hist.indexOf(td) < 0) hist.push(td);
+  writeSetting_(ctx.ss, '주간검토기록', hist.slice(-60).join(','));
   return withView_({ ok: true });
 }
 
@@ -2394,8 +2399,10 @@ function webReviewDone(k) {
 function webAll(k) {
   checkKey_(k);
   var ctx = appContext_();
+  var st = readSettings_(ctx.ss), rv = String(st['주간검토기록'] || '').split(',').filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x); });
+  var lr = ymd_(st['마지막주간검토'], ctx.tz); if (lr && rv.indexOf(lr) < 0) rv.push(lr);
   return {
-    today: todayYmd_(ctx.tz),
+    today: todayYmd_(ctx.tz), reviews: rv.sort(),
     items: readAllTasks_(ctx).map(function (t) {
       return { id: t.id, title: t.title, status: t.status, due: t.due, context: t.context, delegatee: t.delegatee,
         followUp: t.followUp, memo: t.memo, created: t.created, completed: t.completed, repeat: t.repeat, project: t.project,
