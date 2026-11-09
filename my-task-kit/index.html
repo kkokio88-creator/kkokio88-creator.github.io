@@ -2595,10 +2595,11 @@
   }
   // 계정: 지금 로그인한 구글 계정 · 로그아웃(다른 계정으로 바꿀 때)
   function openAccount() {
-    // 예전 앱스크립트 웹앱(v1)은 앱 안 로그인이 없다: 구글 계정 고르기로 바꾼 뒤 그 계정의 앱 링크로 다시 연다
+    // 예전 앱스크립트 웹앱(v1)은 링크 하나가 시트 하나에 묶여 있다(만든 사람 권한으로 실행): 브라우저의 구글 계정을 바꿔도 같은 시트가 열린다.
+    // 그래서 '구글 계정 바꾸기'를 두지 않는다(누르면 구글 계정 관리 화면으로만 가서 헷갈림, 2026-11-09 제보)
     if (!window.KIT_AUTH) {
-      openSheet('<div class="st">계정</div><div class="ss" style="margin-top:6px">이 앱은 지금 브라우저에 로그인된 구글 계정으로 열려요. 다른 계정으로 쓰려면 구글 계정을 바꾼 뒤, 그 계정으로 받은 앱 링크를 다시 여세요.</div>' +
-        '<a class="cta" href="https://accounts.google.com/AccountChooser" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none">구글 계정 바꾸기</a>');
+      openSheet('<div class="st">계정</div><div class="card" style="margin-top:12px"><div class="row" style="cursor:default">' + tile('file', 'green') + '<div class="tx"><div class="t">이 링크 = 내 시트 하나</div><div class="m">로그아웃할 필요가 없어요</div></div></div></div>' +
+        '<div class="ss" id="v1Acct" style="margin-top:12px">이 앱은 받은 링크에 연결된 시트를 열어요. 브라우저의 구글 계정을 바꿔도 같은 할 일이 보여요. 다른 시트(다른 계정)의 할 일을 보려면 그 시트로 받은 앱 링크를 여세요.</div>');
       return;
     }
     var em = (window.KIT_AUTH && window.KIT_AUTH.email && window.KIT_AUTH.email()) || '구글 계정';

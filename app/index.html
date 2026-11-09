@@ -25,7 +25,7 @@
   #kitGate.kg-bar .kg-btn { width: auto; min-height: 44px; padding: 0 14px; font-size: 15px; margin-left: auto; }
   #kitGate.kg-bar .kg-msg { width: 100%; min-height: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=99fde07010"></script><script src="auth.js?v=99fde07010"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=8bf582f4b1"></script><script src="auth.js?v=8bf582f4b1"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -2619,10 +2619,11 @@
   }
   // 계정: 지금 로그인한 구글 계정 · 로그아웃(다른 계정으로 바꿀 때)
   function openAccount() {
-    // 예전 앱스크립트 웹앱(v1)은 앱 안 로그인이 없다: 구글 계정 고르기로 바꾼 뒤 그 계정의 앱 링크로 다시 연다
+    // 예전 앱스크립트 웹앱(v1)은 링크 하나가 시트 하나에 묶여 있다(만든 사람 권한으로 실행): 브라우저의 구글 계정을 바꿔도 같은 시트가 열린다.
+    // 그래서 '구글 계정 바꾸기'를 두지 않는다(누르면 구글 계정 관리 화면으로만 가서 헷갈림, 2026-11-09 제보)
     if (!window.KIT_AUTH) {
-      openSheet('<div class="st">계정</div><div class="ss" style="margin-top:6px">이 앱은 지금 브라우저에 로그인된 구글 계정으로 열려요. 다른 계정으로 쓰려면 구글 계정을 바꾼 뒤, 그 계정으로 받은 앱 링크를 다시 여세요.</div>' +
-        '<a class="cta" href="https://accounts.google.com/AccountChooser" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none">구글 계정 바꾸기</a>');
+      openSheet('<div class="st">계정</div><div class="card" style="margin-top:12px"><div class="row" style="cursor:default">' + tile('file', 'green') + '<div class="tx"><div class="t">이 링크 = 내 시트 하나</div><div class="m">로그아웃할 필요가 없어요</div></div></div></div>' +
+        '<div class="ss" id="v1Acct" style="margin-top:12px">이 앱은 받은 링크에 연결된 시트를 열어요. 브라우저의 구글 계정을 바꿔도 같은 할 일이 보여요. 다른 시트(다른 계정)의 할 일을 보려면 그 시트로 받은 앱 링크를 여세요.</div>');
       return;
     }
     var em = (window.KIT_AUTH && window.KIT_AUTH.email && window.KIT_AUTH.email()) || '구글 계정';
