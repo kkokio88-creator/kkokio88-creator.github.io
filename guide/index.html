@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>사용법 — GTD 워크</title>
-<meta name="description" content="GTD 워크 사용법: 담기, 보내기, 하루 쓰기, 집중, 돌아보기. 실제 앱 화면에서 꺼낸 컴포넌트가 스크롤에 맞춰 움직이며 보여 줘요.">
+<meta name="description" content="머릿속을 비우고, 쌓인 일을 빠르게 나누고, 오늘 할 일에만 집중하는 법. 실제 앱 화면으로 보여 드려요.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235B5CF6'/%3E%3Cpath d='M19 33l9 9 17-19' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="guide.css?v=3">
+<link rel="stylesheet" href="guide.css?v=4">
 <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
@@ -21,8 +21,8 @@
 <nav class="gnav" id="gnav">
   <div class="gnav-in">
     <a class="brand" href="../"><i aria-hidden="true"></i>GTD 워크 <small>사용법</small></a>
-    <ol class="chips" id="chips" aria-label="챕터">
-      <li><a href="#c1" data-go>담기</a></li><li><a href="#c2" data-go>보내기</a></li><li><a href="#c3" data-go>하루</a></li><li><a href="#c4" data-go>시간표</a></li><li><a href="#c5" data-go>집중</a></li><li><a href="#c6" data-go>돌아보기</a></li>
+    <ol class="steps" id="steps" aria-label="단계">
+      <li data-from="0"><b>0</b>왜</li><li data-from="0.15"><b>1</b>비우기</li><li data-from="0.42"><b>2</b>나누기</li><li data-from="0.76"><b>3</b>집중</li>
     </ol>
     <a class="cta" href="../app/">시작하기</a>
   </div>
@@ -30,124 +30,45 @@
 </nav>
 
 <main>
-  <!-- C0: 휴대폰에서 네 가지가 튀어나온다 -->
-  <section class="ch dark" id="c0" data-bg="#05050A" style="--len: 230" data-scenes="home,send,swipe-done,focus">
+  <!-- 하나의 고정 장면: 휴대폰은 가운데 고정, 스크롤만큼 이야기가 진행된다 -->
+  <section class="ch story" id="story" style="--len: 1500" data-scenes="home,send,focus">
     <div class="stage">
-      <div class="copy hero">
-        <p class="eb" data-at="0">GTD 워크 사용법</p>
-        <h1 class="mega" data-split data-at="0" data-until="0.55">3분이면, | 다 써요.</h1>
-        <h2 class="mega" data-split data-at="0.6">이 네 개면 | 충분해요.</h2>
-        <p class="sub" data-at="0.65">실제 앱 화면에서 꺼내 보여 드릴게요. 스크롤하세요.</p>
-      </div>
-      <div class="phone"><div class="scr"></div></div>
-      <div class="lift"></div>
-      <p class="scrollcue" data-at="0" data-until="0.2">아래로 스크롤</p>
-    </div>
-  </section>
-
-  <!-- C1 담기 -->
-  <section class="ch light" id="c1" data-bg="#FFFFFF" style="--len: 330" data-scenes="home,capture-added">
-    <div class="stage">
+      <div class="thoughts" id="thoughts" aria-hidden="true"></div>
       <div class="copy">
-        <p class="eb2" data-at="0"><b>1</b>담기</p>
-        <h2 class="big" data-split data-at="0.04" data-until="0.5">떠오르면, | <em>한 줄.</em></h2>
-        <h2 class="big" data-split data-at="0.5" data-until="0.92">엔터 한 번이면 | <em>오늘 할 일.</em></h2>
-        <p class="sub" data-at="0.12" data-until="0.5">판단은 나중에. 맨 위 입력칸에 적기만 해요.</p>
-        <p class="sub" data-at="0.55" data-until="0.92">정리 단계 없이 바로 오늘 목록에 들어가요.</p>
+        <p class="eb2" data-at="0" data-until="0.14">왜 비워야 할까요</p>
+        <h2 class="big" data-split data-at="0.01" data-until="0.14">언젠가 할 일이, | <em>오늘을 방해해요.</em></h2>
+        <p class="sub" data-at="0.04" data-until="0.14">머릿속에 찝찝하게 남은 일은 죄책감이 되고, 지금 할 일에 집중하지 못하게 해요.</p>
+
+        <p class="eb2" data-at="0.15" data-until="0.41"><b>1</b>비우기</p>
+        <h2 class="big" data-split data-at="0.15" data-until="0.35">생각나는 대로, | <em>다 적어요.</em></h2>
+        <p class="sub" data-at="0.17" data-until="0.35">판단은 나중에. 입력칸에 적고 엔터. 정리는 하지 않아도 돼요.</p>
+        <h2 class="big" data-split data-at="0.35" data-until="0.41">머릿속이, | <em>텅 비었어요.</em></h2>
+        <p class="sub" data-at="0.36" data-until="0.41">걱정하던 일이 모두 한곳에 모였어요.</p>
+
+        <p class="eb2" data-at="0.42" data-until="0.75"><b>2</b>나누기</p>
+        <h2 class="big" data-split data-at="0.42" data-until="0.75">쌓인 일은, | <em>빠르게 나눠요.</em></h2>
+        <p class="sub" data-at="0.45" data-until="0.75">할 일을 누르고 한 번만 고르면 끝. <b>오늘</b> · <b>맡기기</b> · <b>나중에</b> · <b>날짜</b>.</p>
+
+        <p class="eb2" data-at="0.76"><b>3</b>집중</p>
+        <h2 class="big" data-split data-at="0.76" data-until="0.9">오늘의 시간은, | <em>오늘 할 일에만.</em></h2>
+        <p class="sub" data-at="0.78" data-until="0.9">나머지는 잊어도 돼요. 때가 되면 알아서 다시 올라와요.</p>
+        <h2 class="big" data-split data-at="0.9">끝. | <em>가볍게.</em></h2>
+        <p class="sub" data-at="0.91">하나씩 끝낼 때마다 오늘이 가벼워져요.</p>
       </div>
       <div class="phone"><div class="scr"></div></div>
+      <svg class="ring" id="ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="trk" cx="100" cy="100" r="92"/><circle class="arc" cx="100" cy="100" r="92"/></svg>
+      <div class="bins" id="bins" aria-hidden="true"></div>
       <div class="lift"></div>
+      <p class="scrollcue" data-at="0" data-until="0.05">스크롤해서 보기</p>
     </div>
   </section>
 
-  <!-- C2 보내기 -->
-  <section class="ch dark" id="c2" data-bg="#0B1030" style="--len: 460" data-scenes="home,send,send-day,send-who">
-    <div class="stage">
-      <div class="copy">
-        <p class="eb2" data-at="0"><b>2</b>보내기</p>
-        <h2 class="big" data-split data-at="0.04" data-until="0.42">누르면, | <em>어디로?</em></h2>
-        <h2 class="big" data-split data-at="0.44" data-until="0.64">날짜는 | <em>한 번에.</em></h2>
-        <h2 class="big" data-split data-at="0.66" data-until="0.88">맡기고, | <em>잊기.</em></h2>
-        <p class="sub" data-at="0.14" data-until="0.42">할 일을 누르면 보낼 곳이 한 번에 펼쳐져요.</p>
-        <p class="sub" data-at="0.48" data-until="0.64">오늘·내일·이번 주가 버튼으로 나와요.</p>
-        <p class="sub" data-at="0.7" data-until="0.88">확인할 날이 되면 다시 올라와요.</p>
-      </div>
-      <div class="phone"><div class="scr"></div></div>
-      <div class="lift"></div>
-    </div>
-  </section>
-
-  <!-- C3 하루: ★ 중요 · 밀면 끝 -->
-  <section class="ch light" id="c3" data-bg="#F4F5F7" style="--len: 460" data-scenes="home,star-sheet,star-done,swipe-done">
-    <div class="stage">
-      <div class="copy">
-        <p class="eb2" data-at="0"><b>3</b>하루 쓰기</p>
-        <h2 class="big" data-split data-at="0.04" data-until="0.46">중요한 건, | <em>위로.</em></h2>
-        <h2 class="big" data-split data-at="0.5" data-until="0.94">밀면, | <em>끝.</em></h2>
-        <p class="sub" data-at="0.12" data-until="0.46">★를 달면 맨 위로 올라와요. 하루 3개면 충분해요.</p>
-        <p class="sub" data-at="0.56" data-until="0.94">끝낸 일은 오른쪽으로 한 번. 실수했으면 되돌리기.</p>
-      </div>
-      <div class="phone"><div class="scr"></div></div>
-      <div class="lift"></div>
-    </div>
-  </section>
-
-  <!-- C4 시간표 -->
-  <section class="ch day" id="c4" data-bg="#EAF4FF" style="--len: 360" data-scenes="timeline">
-    <div class="stage">
-      <div class="sky" aria-hidden="true"></div>
-      <div class="copy">
-        <p class="eb2" data-at="0"><b>4</b>시간표</p>
-        <p class="clock" id="clock" aria-hidden="true">09:00</p>
-        <h2 class="big" data-split data-at="0.04">빈 시간에, | <em>쏙.</em></h2>
-        <p class="sub" data-at="0.12">끌어다 놓으면 구글 캘린더에 그대로 들어가요.</p>
-        <p class="done" data-at="0.86"><b id="calN">0</b>개가 캘린더에 들어갔어요</p>
-      </div>
-      <div class="phone"><div class="scr"></div></div>
-      <div class="track" aria-hidden="true"></div>
-      <div class="lift"></div>
-    </div>
-  </section>
-
-  <!-- C5 집중 -->
-  <section class="ch dark" id="c5" data-bg="#000000" style="--len: 280" data-scenes="focus">
-    <div class="stage">
-      <svg class="bigring" viewBox="0 0 200 200" aria-hidden="true"><circle class="trk" cx="100" cy="100" r="92"/><circle class="arc" cx="100" cy="100" r="92"/></svg>
-      <svg class="bigcheck" viewBox="0 0 120 120" aria-hidden="true"><path d="M30 62 L52 84 L92 38"/></svg>
-      <div class="copy center">
-        <p class="eb2" data-at="0"><b>5</b>집중</p>
-        <h2 class="big" data-split data-at="0.04" data-until="0.8">25분, | <em>하나만.</em></h2>
-        <h2 class="big" data-split data-at="0.84">끝. | <em>체크.</em></h2>
-      </div>
-      <div class="phone"><div class="scr"></div></div>
-      <div class="lift"></div>
-    </div>
-  </section>
-
-  <!-- C6 돌아보기 -->
-  <section class="ch light" id="c6" data-bg="#FFF7EC" style="--len: 400" data-scenes="shutdown,waiting,weekly">
-    <div class="stage">
-      <div class="copy">
-        <p class="eb2" data-at="0"><b>6</b>돌아보기</p>
-        <h2 class="big" data-split data-at="0.04" data-until="0.34">남은 일은 | <em>내일로.</em></h2>
-        <h2 class="big" data-split data-at="0.36" data-until="0.66">맡긴 일, | <em>며칠째?</em></h2>
-        <h2 class="big" data-split data-at="0.68">금요일엔, | <em>비우기.</em></h2>
-        <p class="sub" data-at="0.1" data-until="0.34">하루 끝에 못 한 일만 골라 내일로 넘겨요.</p>
-        <p class="sub" data-at="0.42" data-until="0.66">누가, 며칠째인지 한눈에. 문구는 복사해서 카톡으로.</p>
-        <p class="sub" data-at="0.74">주간 검토가 질문을 하나씩 물어요.</p>
-      </div>
-      <div class="phone"><div class="scr"></div></div>
-      <div class="lift"></div>
-    </div>
-  </section>
-
-  <!-- C7 끝 -->
-  <section class="ch dark end" id="c7" data-bg="#05050A">
+  <section class="ch end" id="end" data-bg="#05050A">
     <div class="wrap">
-      <h2 class="mega" data-split data-reveal>이제 <em>직접</em> | 해 봐요.</h2>
+      <h2 class="mega" data-split data-reveal>비우고, 나누고, | <em>오늘에 집중.</em></h2>
       <p class="sub" data-reveal>모르는 건 카톡방에 물어보세요. 바라는 기능도 들려주세요.</p>
       <div class="links" data-reveal>
-        <a class="btn pri" href="../app/">GTD 워크 열기</a>
+        <a class="btn pri" href="../app/">GTD 워크 시작하기</a>
         <a class="btn talk" href="https://open.kakao.com/o/gmiCVeWi" target="_blank" rel="noopener">💬 카톡방</a>
         <a class="btn ghost" href="#top" data-go>처음부터 다시</a>
       </div>
@@ -158,6 +79,6 @@
 <script src="../vendor/gsap.min.js" defer></script>
 <script src="../vendor/ScrollTrigger.min.js" defer></script>
 <script src="../vendor/lenis.min.js" defer></script>
-<script src="guide.js?v=3" defer></script>
+<script src="guide.js?v=4" defer></script>
 </body>
 </html>

@@ -210,287 +210,204 @@
     if (w) p.setAttribute('stroke-width', w); if (color) p.setAttribute('stroke', color); sec.ink.appendChild(p); return p;
   }
 
-  // ══════════ 장면별 연출 ══════════
   var S = {};
-
-  // C0: 휴대폰에서 네 가지가 튀어나와 둘레에 자리를 잡는다
-  S.c0 = {
-    build: function (sec) {
-      this.items = [
-        { c: new Comp(sec, 'home', '.capwrap'), tag: '담기', d: '떠오르면 한 줄' },
-        { c: new Comp(sec, 'home', function (d) { return rowOf(d, NEXT); }, { ctx: ['<div class="card">'] }), tag: '보내기', d: '누르면 어디로' },
-        { c: new Comp(sec, 'send', '#sheetBody [data-a="star"]', { ctx: ['<div class="sheet on">', '<div id="sheetBody">', '<div class="actgrid">'] }), tag: '★ 중요', d: '맨 위로' },
-        { c: new Comp(sec, 'focus', '#fmClock', { ctx: ['<div class="fm on">'], keep: true, css: '.fm{padding:10px 26px!important;border-radius:28px!important;background:#11121a!important}' }), tag: '집중', d: '25분 하나만' }
-      ];
-      this.items.forEach(function (it) {
-        var t = document.createElement('div'); t.className = 'tag'; t.innerHTML = '<i>' + it.tag + '</i>' + it.d; sec.lift.appendChild(t); it.t = t;
-      });
-    },
-    run: function (p, sec) {
-      sec.show('home');
-      var B = sec.box(), W = B.width, H = B.height, nw = narrow();
-      var spots = nw
-        ? [[.3, .5, .5], [.7, .56, .5], [.3, .78, .3], [.7, .86, .34]]
-        : [[.17, .3, .27], [.83, .3, .27], [.2, .74, .12], [.8, .74, .2]];
-      var anyOut = 0;
-      this.items.forEach(function (it, i) {
-        var out1 = seg(p, .18 + i * .05, .42 + i * .05), back1 = seg(p, .86, .98), t = out1 * (1 - back1);
-        anyOut = Math.max(anyOut, t);
-        var sp = spots[i], A = it.c.home(it.c.n === 'home' ? null : null);
-        // 꺼내는 원래 자리는 지금 보이는 홈 화면 기준(별·시계는 휴대폰 가운데에서 튀어나옴)
-        if (it.c.n !== 'home') { var ph = sec.phone.getBoundingClientRect(), bx = sec.box(); A = { x: ph.left - bx.left + ph.width / 2 - it.c.nat.w * .2, y: ph.top - bx.top + ph.height * .55, s: .4 }; }
-        var Bt = it.c.at(sp[0] * W, sp[1] * H, sp[2] * W);
-        var P = it.c.fly(A, Bt, t, 60, it.c.n === 'home');
-        if (it.c.n !== 'home') it.c.host.style.opacity = t <= 0.001 ? 0 : Math.min(1, t * 3);
-        var pw = it.c.nat.w * P.s, ph2 = it.c.nat.h * P.s, right = sp[0] > .5;
-        it.t.style.opacity = seg(t, .7, 1);
-        it.t.style.transform = 'translate(' + (right ? P.x : P.x) + 'px,' + (P.y + ph2 + 14) + 'px)';
-      });
-      sec.dim(anyOut);
-    }
+  // ══════════ 이야기: 비우기 → 나누기 → 집중 (휴대폰은 고정) ══════════
+  var ITEMS = [
+    { t: '팀장님께 보고서 초안 보내기', to: 'today' },
+    { t: '세무사님께 부가세 자료 요청', to: 'who' },
+    { t: '운동 등록하기', to: 'later' },
+    { t: '치과 예약', to: 'day' },
+    { t: '거래처 견적서 비교', to: 'today', warn: 1 },
+    { t: '이사 견적 받아보기', to: 'who' },
+    { t: '빌린 책 반납', to: 'later', warn: 1 },
+    { t: '엄마 생신 선물 고르기', to: 'day' },
+    { t: '회의록 정리해서 공유', to: 'today' }
+  ];
+  var BINS = {
+    today: { name: '오늘', ds: '오늘 끝낼 일', bg: '#EEEEFF', fg: '#5B5CF6', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>' },
+    who: { name: '맡기기', ds: '며칠째인지 알려 줘요', a: 's-who' },
+    later: { name: '나중에', ds: '지금은 아닌 일', a: 's-later' },
+    day: { name: '날짜', ds: '그날 아침에 올라와요', a: 's-day' }
   };
+  var ORDER = ['today', 'who', 'later', 'day'];
+  var BG = [[0, [7, 7, 13]], [.14, [7, 7, 13]], [.22, [244, 245, 247]], [.76, [244, 245, 247]], [.84, [255, 255, 255]], [1, [255, 255, 255]]];
+  function bgAt(p) {
+    for (var i = 1; i < BG.length; i++) if (p <= BG[i][0]) { var a = BG[i - 1], b = BG[i], k = seg(p, a[0], b[0]); return 'rgb(' + [0, 1, 2].map(function (j) { return Math.round(lerp(a[1][j], b[1][j], k)); }).join(',') + ')'; }
+    return 'rgb(255,255,255)';
+  }
 
-  // C1 담기: 입력칸이 휴대폰 밖으로 → 크게 타이핑 → 한 줄이 목록으로 날아 들어감
-  S.c1 = {
+  S.story = {
     build: function (sec) {
+      var self = this, d = sec.doc('home');
+      // 휴대폰: 빈 목록에서 시작(예시 할 일은 치우고, 머릿속 일을 담을 줄을 미리 만들어 숨겨 둠)
+      var list = $('#listCard', d), tpl = $('.swr', list).cloneNode(true);
+      $$('.swr', list).forEach(function (w) { w.remove(); });
+      $$('.sub2 .m, .meta', tpl).forEach(function (m) { m.remove(); });
+      this.list = list;
+      this.rows = ITEMS.map(function (it) {
+        var w = tpl.cloneNode(true), t = $('.t', w); t.textContent = it.t;
+        $$('.m, .sub, .due, .dl, .st', w).forEach(function (x) { if (x !== t && x.closest('.row') && !x.contains(t)) x.remove(); });
+        w.style.display = ''; list.appendChild(w); return w;
+      });
+      this.heroN = $('#heroN', d); this.heroSub = $('#heroSub', d);
+      // 휴대폰에서 꺼낼 컴포넌트
       this.cap = new Comp(sec, 'home', '.capwrap');
-      this.row = new Comp(sec, 'capture-added', function (d) { return rowOf(d, '은행 서류 떼기'); }, { ctx: ['<div class="card">'], keep: true });
-      this.input = $('input', this.cap.root);
-      this.text = '은행 서류 떼기';
+      this.capIn = $('input', this.cap.root);
+      this.rc = this.rows.map(function (w) { return new Comp(sec, 'home', function () { return w; }, { ctx: ['<div class="card">'], keep: true }); });
+      this.tiles = {};
+      ['who', 'later', 'day'].forEach(function (k) { self.tiles[k] = new Comp(sec, 'send', '#sheetBody [data-a="' + BINS[k].a + '"]', { ctx: ['<div class="sheet on">', '<div id="sheetBody">', '<div class="actgrid">'] }); });
+      this.hero = new Comp(sec, 'home', '.hero > div:first-child', { ctx: ['<div class="hero">'] });
+      this.clock = new Comp(sec, 'focus', '#fmClock', { ctx: ['<div class="fm on">'], keep: true, css: '.fm{background:#fff!important;border-radius:32px!important;padding:6px 30px!important;box-shadow:0 30px 80px rgba(60,60,140,.25)}.clock{color:#191F28!important}' });
+      this.clock.measure();
+      this.rows.forEach(function (w) { w.style.display = 'none'; });
+      list.style.minHeight = '0';
+      // 머릿속 생각(떠다니는 말풍선)
+      var box = $('#thoughts');
+      this.th = ITEMS.map(function (it, i) {
+        var e = document.createElement('div'); e.className = 'th' + (it.warn ? ' warn' : ''); e.innerHTML = (it.warn ? '<i>아 맞다,</i>' : '') + it.t; box.appendChild(e);
+        return { el: e, seed: i * 1.7 + .3 };
+      });
+      // 나누는 칸 4개(아이콘은 앱의 보내기 버튼과 같은 그림)
+      var bins = $('#bins');
+      this.bins = {};
+      ORDER.forEach(function (k) {
+        var b = BINS[k], icon = b.svg, bg = b.bg, fg = b.fg;
+        if (b.a) { var q = sec.q('send', '#sheetBody [data-a="' + b.a + '"] .tile'); icon = q ? q.innerHTML : ''; var cs = q && sec.frames.send.contentWindow.getComputedStyle(q); bg = cs ? cs.backgroundColor : '#F2F4F6'; fg = cs ? cs.color : '#4E5968'; }
+        var e = document.createElement('div'); e.className = 'bin' + (k === 'today' ? ' today' : '');
+        e.innerHTML = '<div class="hd"><span class="ic" style="background:' + bg + ';color:' + fg + '">' + icon + '</span>' + b.name + '<span class="n">0</span></div><p class="ds">' + b.ds + '</p><ul></ul>';
+        bins.appendChild(e); self.bins[k] = { el: e, n: $('.n', e), ul: $('ul', e), got: [] };
+      });
+      this.tick = pathEl(sec, 'tick', 'M0 0', 6, '#5B5CF6');
+      this.ringArc = $('#ring .arc'); this.ringEl = $('#ring');
+      this.t0 = performance.now();
     },
     run: function (p, sec) {
-      var B = sec.box(), W = B.width, H = B.height, nw = narrow();
-      var target = nw ? this.cap.at(W * .5, H * .3, W * .9) : this.cap.at(W * .27, H * .44, W * .4);
-      var up = seg(p, .06, .2), down = seg(p, .62, .78);
-      var added = p >= .55;
-      sec.show(added ? 'capture-added' : 'home');
-      // 입력칸: 올라왔다가(scale) 내려감
-      var A = this.cap.home(added ? 'capture-added' : 'home');
-      if (added) { this.cap.src.style.visibility = ''; this.cap.src = sec.q('capture-added', '.capwrap'); }
-      else { this.cap.src = sec.q('home', '.capwrap'); sec.q('capture-added', '.capwrap').style.visibility = ''; }
-      this.cap.fly(A, target, up * (1 - down), 0);
-      if (up * (1 - down) > .001) this.cap.host.style.opacity = 1 - seg(p, .5, .56); // 엔터: 입력칸은 사라지고 한 줄로 바뀜
-      // 타이핑(스크롤만큼 글자가 찍힘)
-      var n = Math.round(seg(p, .22, .44) * this.text.length);
-      this.input.value = p < .55 ? this.text.slice(0, n) : '';
-      this.input.parentElement.style.boxShadow = (p > .2 && p < .55) ? '0 0 0 4px rgba(91,92,246,.25)' : '';
-      // 엔터: 글자가 한 줄(실제 할 일 줄)로 바뀌어 목록 제자리로 날아감
-      var fly = seg(p, .5, .72);
-      var srcRow = rowOf(sec.doc('capture-added'), this.text);
-      if (srcRow) {
-        this.row.src = srcRow;
-        var H0 = this.row.at(target.x + this.cap.nat.w * target.s / 2, target.y + this.cap.nat.h * target.s / 2 + 10, this.cap.nat.w * target.s * .96);
-        var home = this.row.home('capture-added');
-        if (p < .5) { this.row.hide(); srcRow.style.visibility = 'hidden'; }
-        else this.row.fly(H0, home, fly, nw ? 40 : 120);
-        if (fly >= 1) { this.row.host.style.opacity = 0; srcRow.style.visibility = ''; srcRow.querySelector('.row').style.boxShadow = 'inset 0 0 0 2px rgba(91,92,246,' + (1 - seg(p, .74, .9)) + ')'; }
-      }
-      // 숫자가 올라감(오늘 할 일 7 → 8)
-      var hn = sec.q('capture-added', '#heroN'); if (hn) hn.textContent = p < .72 ? 7 : Math.round(lerp(7, 8, seg(p, .72, .8)));
-      var self = this;
-      sec.once('c1burst', p > .72, function () { var r = self.row.src.getBoundingClientRect(), f = sec.frames['capture-added'].getBoundingClientRect(), k = f.width / 390; burst(f.left + (r.left + r.width / 2) * k, f.top + (r.top + r.height / 2) * k, 50); });
-      sec.dim(Math.max(up * (1 - down), fly > 0 && fly < 1 ? .5 : 0));
-    }
-  };
+      var self = this, B = sec.box(), W = B.width, H = B.height, nw = narrow(), now = (performance.now() - this.t0) / 1000;
+      // 배경: 어두운 머릿속 → 밝은 정리 → 하얀 집중
+      $('#bg').style.backgroundColor = bgAt(p);
+      var dark = p < .19; sec.stage.classList.toggle('dk', dark); $('#gnav').classList.toggle('light', !dark);
+      $$('#steps li').forEach(function (li, i, all) { var f = +li.dataset.from, nx = all[i + 1] ? +all[i + 1].dataset.from : 2; li.classList.toggle('on', p >= f && p < nx); });
+      sec.show('home');
+      var ph = sec.phone.getBoundingClientRect(), pc = { x: ph.left - B.left + ph.width / 2, y: ph.top - B.top + ph.height / 2, w: ph.width, h: ph.height };
 
-  // C2 보내기: 할 일이 튀어나오고, 보낼 곳 다섯 개가 그 둘레로 펼쳐짐 → 날짜 → 맡기기
-  S.c2 = {
-    build: function (sec) {
-      this.row = new Comp(sec, 'home', function (d) { return rowOf(d, NEXT); }, { ctx: ['<div class="card">'], keep: true });
-      var A = ['s-plan', 's-day', 's-who', 's-pj', 's-later'];
-      this.tiles = A.map(function (a) { return new Comp(sec, 'send', '#sheetBody [data-a="' + a + '"]', { ctx: ['<div class="sheet on">', '<div id="sheetBody">', '<div class="actgrid">'] }); });
-      this.days = new Comp(sec, 'send-day', '#sheetBody .chips', { ctx: ['<div class="sheet on">', '<div id="sheetBody">'], keep: true, css: '.sheet{border-radius:24px!important;padding:16px 16px 8px!important}' });
-      this.who = new Comp(sec, 'send-who', '#sheetBody', { ctx: ['<div class="sheet on">'], keep: true, css: '.sheet{border-radius:28px!important;padding:20px!important}' });
-      this.whoIn = $('#sWhoIn', this.who.root);
-    },
-    run: function (p, sec) {
-      var B = sec.box(), W = B.width, H = B.height, nw = narrow();
-      sec.show(p < .2 ? 'home' : p < .44 ? 'send' : p < .66 ? 'send-day' : 'send-who');
-      // 1) 할 일 한 줄이 튀어나옴
-      var rowUp = seg(p, .04, .16), rowDown = seg(p, .88, .98);
-      var rc = nw ? [W * .5, H * .2, W * .86] : [W * .3, H * .5, W * .36];
-      var rowT = this.row.at(rc[0], rc[1], rc[2]);
-      var rowP = this.row.fly(this.row.home('home'), rowT, rowUp * (1 - rowDown), 40);
-      // 2) 보낼 곳 다섯 개: 할 일 가운데서 곡선을 그리며 둘레로
-      var R = nw ? W * .36 : Math.min(W * .19, H * .4), cxr = rc[0], cyr = rc[1];
-      var focus = p < .44 ? -1 : p < .66 ? 1 : 2; // 날짜 / 맡기기
-      var self = this;
-      this.tiles.forEach(function (tc, i) {
-        var ang = -Math.PI / 2 + (i - 2) * (nw ? .5 : .42) + (nw ? Math.PI : 0); // 할 일 위쪽 반원
-        var out1 = seg(p, .18 + i * .025, .34 + i * .025), back1 = seg(p, .84, .94), t = out1 * (1 - back1);
-        var big = focus === i ? 1.35 : 1;
-        var tw = (nw ? W * .17 : Math.min(W * .075, 120)) * big;
-        var T = nw ? tc.at(W * (.14 + i * .18), H * .33, tw) : tc.at(cxr + Math.cos(ang) * R, cyr + Math.sin(ang) * R * .62 - 46, tw);
-        var A = tc.at(cxr, cyr, tw * .2);
-        tc.fly(A, T, t, 0, false);
-        tc.host.style.opacity = t <= .001 ? 0 : Math.min(1, t * 3) * (focus >= 0 && focus !== i ? .35 : 1);
+      // ── 0. 머릿속 생각들이 휴대폰 둘레를 무겁게 떠다닌다 ──
+      var capT = nw ? this.cap.at(W * .5, pc.y - pc.h * .42, W * .92) : this.cap.at(pc.x, pc.y - pc.h * .36, Math.min(W * .34, 520));
+      var capC = { x: capT.x + this.cap.nat.w * capT.s / 2, y: capT.y + this.cap.nat.h * capT.s / 2 };
+      var arrived = 0, typing = '';
+      this.th.forEach(function (o, i) {
+        var a = o.seed, bx, by;
+        if (nw) { bx = W * (.12 + ((i * .37) % 1) * .7); by = H * (.08 + ((i * .53) % 1) * .5); }
+        else { bx = W * (.42 + ((i * .41) % 1) * .52); by = H * (.1 + ((i * .61) % 1) * .8); if (Math.abs(bx - pc.x) < pc.w * .55) bx += (bx < pc.x ? -1 : 1) * pc.w * .6; }
+        var wob = { x: Math.sin(now * .6 + a) * 14, y: Math.cos(now * .5 + a * 1.3) * 10 };
+        var appear = seg(p, i * .006, .05 + i * .006);
+        var w0 = .19 + i * .017, t = seg(p, w0, w0 + .032); // 입력칸으로 빨려 들어감
+        var e = io(t), x = lerp(bx + wob.x, capC.x, e), y = lerp(by + wob.y, capC.y, e) - Math.sin(Math.PI * e) * 60;
+        var r = o.el.getBoundingClientRect();
+        o.el.style.transform = 'translate(' + (x - r.width / 2 * (1 - e * .6)) + 'px,' + (y - r.height / 2) + 'px) scale(' + lerp(1, .35, e) * lerp(.8, 1, appear) + ') rotate(' + (Math.sin(a) * 4 * (1 - e)) + 'deg)';
+        o.el.style.opacity = appear * (1 - seg(t, .75, 1)) * (dark || p > .14 ? 1 : 1);
+        o.el.style.filter = 'blur(' + (p < .14 ? (i % 3 === 0 ? 1.5 : 0) : 0) + 'px)';
+        if (t > .35 && t < 1) typing = ITEMS[i].t.slice(0, Math.ceil(seg(t, .35, .85) * ITEMS[i].t.length));
+        if (t >= 1) arrived = i + 1;
+      });
+      sec.dim(p < .14 ? .5 * seg(p, .0, .06) : 0);
+
+      // ── 1. 비우기: 입력칸이 휴대폰 위로 튀어나와 생각을 빨아들이고, 한 줄씩 목록에 쌓인다 ──
+      var capOut = seg(p, .15, .19) * (1 - seg(p, .36, .4));
+      this.cap.fly(this.cap.home(), capT, capOut, 0);
+      if (this.capIn) this.capIn.value = capOut > 0 ? typing : '';
+      if (this.capIn) this.capIn.parentElement.style.boxShadow = typing ? '0 0 0 5px rgba(91,92,246,.28), 0 20px 60px rgba(91,92,246,.35)' : '';
+      // 나누기 단계에서 날아간 것은 목록에서 빠진다
+      var gone = {}, landed = {};
+      ITEMS.forEach(function (it, i) { var s0 = .5 + i * .026; gone[i] = p >= s0 + .004; landed[i] = p >= s0 + .04; });
+      var todayBack = p >= .84;
+      var visible = 0;
+      this.rows.forEach(function (w, i) {
+        var show = i < arrived && !gone[i];
+        if (todayBack && ITEMS[i].to === 'today') show = true;
+        w.style.display = show ? '' : 'none'; if (show) visible++;
+        var r = $('.row', w); if (r) { r.style.transition = 'background .4s'; r.style.background = (i === arrived - 1 && p < .36) ? '#EEEEFF' : ''; }
+      });
+      this.list.style.display = visible ? '' : 'none';
+      var count = p < .42 ? arrived : visible;
+      if (p >= .76 && p < .84) count = 0;
+      if (this.heroN) this.heroN.textContent = p > .955 ? 2 : count;
+      sec.once('emptyHead', p > .355 && p < .4, function () { var c = sec.toPage(capC.x, capC.y); burst(c.x, c.y, 50, 10); });
+
+      // ── 2. 나누기: 첫 할 일이 튀어나오고 → 보낼 곳 버튼이 터져 나와 → 네 칸이 된다. 나머지는 차례로 칸에 쏙 ──
+      var binIn = seg(p, .47, .52), binOut = seg(p, .76, .82);
+      var slots = nw
+        ? { today: [W * .27, H * .43], who: [W * .73, H * .43], later: [W * .27, H * .53], day: [W * .73, H * .53] }
+        : { today: [W * .82, H * .2], who: [W * .82, H * .42], later: [W * .82, H * .62], day: [W * .82, H * .82] };
+      var bw = nw ? 168 : 250;
+      ORDER.forEach(function (k, i) {
+        var b = self.bins[k], s = slots[k];
+        var away = k === 'today' ? 0 : binOut, tx = s[0] + away * W * .3, ty = s[1];
+        var inT = seg(p, .48 + i * .01, .52 + i * .01);
+        var sc = lerp(.6, 1, back(inT));
+        if (k === 'today') { var m = seg(p, .78, .84); tx = lerp(tx, pc.x, io(m)); ty = lerp(ty, pc.y - pc.h * .38, io(m)); sc *= lerp(1, .5, m); }
+        var tr = 'translate(' + (tx - bw / 2) + 'px,' + (ty - b.el.offsetHeight / 2) + 'px)';
+        b.el.style.setProperty('--t', tr);
+        b.el.style.transform = tr + ' scale(' + sc + ')';
+        b.el.style.opacity = inT * (k === 'today' ? 1 - seg(p, .82, .85) : 1 - away);
+      });
+      // 첫 할 일이 크게 튀어나옴(누르면 → 보낼 곳)
+      var r0 = this.rc[0], liftT = nw ? r0.at(W * .5, H * .3, W * .86) : r0.at(pc.x + pc.w * .2, pc.y, Math.min(W * .3, 440));
+      var up0 = seg(p, .43, .46);
+      ['who', 'later', 'day'].forEach(function (k, i) {
+        var tc = self.tiles[k], c0 = { x: liftT.x + r0.nat.w * liftT.s / 2, y: liftT.y + r0.nat.h * liftT.s / 2 };
+        var ang = (nw ? Math.PI / 2 : -Math.PI / 2) + (i - 1) * .7, R = nw ? W * .3 : Math.min(W * .14, 220);
+        var tw = nw ? W * .16 : 92;
+        var A = tc.at(c0.x, c0.y, tw * .2), M = tc.at(c0.x + Math.cos(ang) * R, c0.y + Math.sin(ang) * R * .8, tw);
+        var s = slots[k], E = tc.at(s[0] - bw / 2 + (nw ? 22 : 37), s[1] - (nw ? 0 : 24), nw ? 28 : 38);
+        var t1 = seg(p, .45, .48), t2 = seg(p, .48, .52);
+        if (t2 > 0) tc.fly(M, E, t2, 40, false); else tc.fly(A, M, t1, 0, false);
+        tc.host.style.opacity = t1 <= .001 ? 0 : (1 - seg(t2, .7, 1));
         if (tc.src) tc.src.style.visibility = '';
       });
-      // 3) 날짜 버튼 줄
-      var dIn = seg(p, .45, .54), dOut = seg(p, .62, .67);
-      var dc = nw ? [W * .5, H * .4, W * .9] : [rc[0], rc[1] + H * .2, W * .36];
-      var DT = this.days.at(dc[0], dc[1], dc[2]), DA = this.days.at(dc[0], dc[1] + 60, dc[2] * .7);
-      this.days.fly(DA, DT, dIn * (1 - dOut), 0, false); if (dIn * (1 - dOut) <= 0.001) this.days.host.style.opacity = 0;
-      var tmr = $$('[data-sday]', this.days.root)[1];
-      if (tmr) { var on = p > .57; tmr.style.background = on ? '#5B5CF6' : ''; tmr.style.color = on ? '#fff' : ''; tmr.style.transform = on ? 'scale(' + (1 + .12 * (1 - seg(p, .57, .6))) + ')' : ''; }
-      // 4) 맡기기: 이름을 적는 시트
-      var wIn = seg(p, .67, .75), wOut = seg(p, .86, .92);
-      var wc = nw ? [W * .5, H * .33, W * .9] : [rc[0], rc[1] + H * .02, W * .36];
-      this.who.fly(this.who.at(wc[0], wc[1] + 80, wc[2] * .7), this.who.at(wc[0], wc[1], wc[2]), wIn * (1 - wOut), 0, false);
-      if (wIn * (1 - wOut) <= 0.001) this.who.host.style.opacity = 0;
-      if (this.whoIn) this.whoIn.value = '박주임'.slice(0, Math.round(seg(p, .76, .83) * 3));
-      if (wIn > 0) { this.row.host.style.opacity = 1 - wIn * (1 - wOut) * .9; }
-      sec.dim(Math.max(rowUp * (1 - rowDown)));
-    }
-  };
-
-  // C3 하루: ★가 날아와 박히고 맨 위로 → 밀어서 완료(체크 그리기 · 진행 고리 · 숫자)
-  S.c3 = {
-    build: function (sec) {
-      this.row = new Comp(sec, 'home', function (d) { return rowOf(d, NEXT2); }, { ctx: ['<div class="card">'], keep: true });
-      this.rowStar = new Comp(sec, 'star-done', function (d) { return rowOf(d, NEXT2); }, { ctx: ['<div class="card">'], keep: true });
-      this.star = new Comp(sec, 'star-sheet', '#sheetBody [data-a="star"]', { ctx: ['<div class="sheet on">', '<div id="sheetBody">', '<div class="actgrid">'] });
-      this.sw = new Comp(sec, 'home', function (d) { return rowOf(d, NEXT); }, { ctx: ['<div class="card">'], keep: true });
-      this.ring = new Comp(sec, 'swipe-done', '#ring', { ctx: ['<div class="hero">'] });
-      this.swRow = $('.row', this.sw.root); this.swWrap = $('.swr', this.sw.root);
-      this.ringFg = $('#ringFg', this.ring.root);
-      this.ringEnd = parseFloat((sec.q('swipe-done', '#ringFg') || {}).style ? sec.q('swipe-done', '#ringFg').style.strokeDashoffset : 172) || 172;
-      this.ringTxt = $('#ring span, #ring b, #ring .pct', this.ring.root);
-      this.tick = pathEl(sec, 'tick', 'M0 0', 6);
-    },
-    run: function (p, sec) {
-      var B = sec.box(), W = B.width, H = B.height, nw = narrow();
-      // ── ★ ──
-      var up = seg(p, .04, .14), stamp = seg(p, .16, .28), goTop = seg(p, .3, .44);
-      sec.show(p < .3 ? 'home' : p < .5 ? 'star-done' : p < .74 ? 'home' : 'swipe-done');
-      var rc = nw ? [W * .5, H * .3, W * .86] : [W * .3, H * .48, W * .38];
-      var T = this.row.at(rc[0], rc[1], rc[2]);
-      if (p < .3) { this.rowStar.hide(); this.row.fly(this.row.home('home'), T, up, 30); }
-      else { this.row.hide(); var homeTop = this.rowStar.home('star-done'); this.rowStar.fly(homeTop, this.rowStar.at(rc[0], rc[1], rc[2]), 1 - goTop, 90); if (p >= .5) this.rowStar.hide(); }
-      // 별 타일이 오른쪽 위에서 곡선을 그리며 날아와 할 일에 박힘(크게 → 작게)
-      var sT = this.star.at(rc[0] + rc[2] * .42, rc[1], (nw ? W * .12 : 70));
-      var sA = this.star.at(nw ? W * .85 : W * .44, nw ? H * .1 : H * .14, nw ? W * .22 : 150);
-      var st = p < .3 ? stamp : 0;
-      this.star.fly(sA, sT, st, 120, false); this.star.host.style.opacity = st <= .001 || st >= 1 ? 0 : 1;
-      var self = this;
-      sec.once('c3star', p > .28 && p < .3, function () { var c = self.row.center(); burst(c.x + c.w * .4, c.y, 30, 8, ['#FFB020', '#FFD66B', '#5B5CF6']); });
-      // ── 밀면 끝 ──
-      var sUp = seg(p, .5, .58), slide = seg(p, .6, .72), sDown = seg(p, .9, .98);
-      var sc = nw ? [W * .5, H * .26, W * .86] : [W * .3, H * .4, W * .38];
-      var swT = this.sw.at(sc[0], sc[1], sc[2]);
-      if (p >= .5 && p < .74) this.sw.fly(this.sw.home('home'), swT, sUp, 30);
-      else if (p >= .74) { this.sw.set(swT, 1 - seg(p, .74, .8)); this.sw.src && (this.sw.src.style.visibility = ''); }
-      else this.sw.hide();
-      if (this.swRow) { this.swRow.style.transform = 'translateX(' + (io(slide) * 260) + 'px)'; this.swWrap.classList.toggle('goR', slide > 0); }
-      // 체크: 동그라미 자리에서 그려짐(line drawing)
-      var tk = seg(p, .72, .8);
-      if (tk > 0 && p < .86) {
-        var c = this.sw.center(), s = c.w / 350, bx = sec.box();
-        var x0 = c.x - bx.left - c.w / 2 + 44 * s, y0 = c.y - bx.top;
-        this.tick.setAttribute('d', 'M' + (x0 - 14 * s) + ' ' + y0 + ' L' + (x0 - 4 * s) + ' ' + (y0 + 10 * s) + ' L' + (x0 + 16 * s) + ' ' + (y0 - 12 * s));
-        this.tick.setAttribute('stroke-width', 7 * s); strokeTo(this.tick, tk); this.tick.style.opacity = 1 - seg(p, .8, .86);
-      } else this.tick.style.opacity = 0;
-      sec.once('c3done', p > .74, function () { var c = self.sw.center(); burst(c.x, c.y, 70, 12); });
-      // 진행 고리가 그려지고 숫자가 오름
-      var rIn = seg(p, .76, .84), rOut = seg(p, .92, .99);
-      var rc2 = nw ? [W * .5, H * .5, W * .36] : [W * .3, H * .66, Math.min(W * .14, 200)];
-      this.ring.fly(this.ring.home('swipe-done'), this.ring.at(rc2[0], rc2[1], rc2[2]), rIn * (1 - rOut), 50);
-      var draw = seg(p, .8, .9);
-      if (this.ringFg) this.ringFg.style.strokeDashoffset = lerp(201, this.ringEnd, out(draw));
-      var pct = $('#ring', this.ring.root); var span = pct && pct.querySelector('span'); if (span) span.textContent = Math.round(14 * out(draw)) + '%';
-      var hn = sec.q('swipe-done', '#heroN'); if (hn) hn.textContent = Math.round(lerp(7, 6, seg(p, .78, .86)));
-      sec.dim(Math.max(up * (1 - goTop), sUp * (1 - seg(p, .86, .95))));
-    }
-  };
-
-  // C4 시간표: 할 일 칩이 휴대폰에서 빠져나와 하루 시간표 빈 칸으로 날아가 박힘. 시계가 흐름
-  S.c4 = {
-    build: function (sec) {
-      var self = this;
-      this.track = $('.track', sec.el);
-      this.chips = $$('.dchip', sec.doc('timeline')).slice(0, 6).map(function (el) { return new Comp(sec, 'timeline', function () { return el; }, { ctx: ['<div class="tray">', '<div class="dchips">'] }); });
-      this.slots = [9, 9.5, 11, 11.5, 13, 15];
-      this.track.innerHTML = '';
-      for (var h = 9; h <= 18; h++) { var d = document.createElement('div'); d.className = 'hr'; d.dataset.h = h; d.innerHTML = '<span>' + h + ':00</span>'; this.track.appendChild(d); }
-      [[10, 1, '팀 회의', '구글 캘린더'], [14, 1, '고객사 미팅', '구글 캘린더']].forEach(function (e) { var d = document.createElement('div'); d.className = 'ev'; d.dataset.h = e[0]; d.dataset.d = e[1]; d.innerHTML = e[2] + '<small>' + e[0] + ':00 · ' + e[3] + '</small>'; self.track.appendChild(d); });
-    },
-    run: function (p, sec) {
-      var B = sec.box(), W = B.width, H = B.height, nw = narrow();
-      sec.show('timeline');
-      var top = nw ? H * .1 : H * .12, hgt = nw ? H * .42 : H * .76, ph = hgt / 9;
-      this.track.style.top = top + 'px';
-      $$('.hr', this.track).forEach(function (d) { d.style.top = (d.dataset.h - 9) * ph + 'px'; });
-      $$('.ev', this.track).forEach(function (d) { d.style.top = (d.dataset.h - 9) * ph + 'px'; d.style.height = d.dataset.d * ph - 4 + 'px'; });
-      var tr = this.track.getBoundingClientRect(), bx = sec.box(), tl = tr.left - bx.left, tw = tr.width;
-      var self = this, placed = 0;
-      this.chips.forEach(function (c, i) {
-        var t = seg(p, .14 + i * .1, .3 + i * .1);
-        var y = top + (self.slots[i] - 9) * ph + ph * .25;
-        var T = c.atH(tl + tw * .5, y, ph * .46);
-        if (c.nat.w * T.s > tw * .96) T = c.at(tl + tw * .5, y, tw * .96);
-        c.fly(c.home(), T, t, nw ? 30 : 160);
-        if (t >= 1) placed++;
+      // '오늘 할 일 N개' 머리글이 휴대폰에서 빠져나와 오늘 칸이 됨
+      var hT = seg(p, .47, .52), hs = slots.today;
+      this.hero.fly(this.hero.home(), this.hero.at(hs[0], hs[1] - (nw ? 0 : 20), nw ? 120 : 200), hT, 30);
+      this.hero.host.style.opacity = hT <= .001 ? 0 : 1 - seg(hT, .7, 1);
+      if (this.hero.src) this.hero.src.style.visibility = hT > 0 && hT < 1 ? 'hidden' : '';
+      // 할 일이 하나씩 칸으로 날아가 합쳐짐
+      this.rc.forEach(function (c, i) {
+        var it = ITEMS[i], s0 = .5 + i * .026, t = seg(p, s0, s0 + .04), s = slots[it.to];
+        var A = i === 0 ? liftT : c.home();
+        if (i === 0 && p < s0) { c.fly(c.home(), liftT, up0, 30); return; }
+        if (p < s0 || t >= 1) { c.hide(); if (p >= s0) c.src.style.visibility = ''; return; }
+        var Bt = c.at(s[0], s[1], (nw ? 140 : 220) * .7);
+        var P = c.fly(A, Bt, t, nw ? 30 : 90, false);
+        c.src.style.visibility = 'hidden';
+        c.host.style.opacity = 1 - seg(t, .8, 1);
       });
-      var mins = Math.round(lerp(9 * 60, 18 * 60, seg(p, .05, .95)) / 10) * 10;
-      $('#clock').textContent = ('0' + Math.floor(mins / 60)).slice(-2) + ':' + ('0' + mins % 60).slice(-2);
-      $('#calN').textContent = Math.round(lerp(0, 6, seg(p, .86, .94)));
-      // 하늘색: 아침 → 저녁
-      var k = seg(p, .3, 1); sec.stage.style.setProperty('--sky1', 'hsl(' + lerp(214, 28, k) + ',' + lerp(100, 90, k) + '%,' + lerp(93, 88, k) + '%)');
-      sec.stage.style.setProperty('--sky2', 'hsl(' + lerp(210, 40, k) + ',100%,' + lerp(98, 96, k) + '%)');
-      sec.once('c4done', placed === 6, function () { var r = self.track.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height * .4, 60, 11); });
-      sec.dim(seg(p, .1, .2) * .6);
-      if (nw) sec.phone.style.opacity = 1 - .9 * seg(p, .1, .2); else sec.phone.style.opacity = '';
-    }
-  };
-
-  // C5 집중: 시계가 크게 나오고 둘레에 고리가 그려지며 25분이 흐른 뒤 체크
-  S.c5 = {
-    build: function (sec) {
-      this.clock = new Comp(sec, 'focus', '#fmClock', { ctx: ['<div class="fm on">'], css: '.fm{background:transparent!important}' });
-      this.arc = $('.bigring .arc', sec.el); this.check = $('.bigcheck path', sec.el);
-      this.txt = this.clock.clone;
-    },
-    run: function (p, sec) {
-      var B = sec.box(), W = B.width, H = B.height, nw = narrow();
-      sec.show('focus');
-      var up = seg(p, .04, .2);
-      var T = this.clock.at(W * .5, H * .62, nw ? W * .66 : Math.min(W * .36, 560));
-      this.clock.fly(this.clock.home(), T, up, 0);
-      var run = seg(p, .2, .8), left = Math.round(25 * 60 * (1 - run));
-      if (this.txt) this.txt.textContent = Math.floor(left / 60) + ':' + ('0' + left % 60).slice(-2);
-      this.arc.style.strokeDashoffset = 578 * (1 - run);
-      var ck = seg(p, .82, .9);
-      this.check.style.strokeDashoffset = 100 * (1 - out(ck));
-      this.clock.host.style.opacity = up <= .001 ? 0 : 1 - seg(p, .8, .84);
-      sec.phone.style.opacity = 1 - up * .85;
-      sec.phone.style.transform = 'translate(-50%,-50%) scale(' + (1 - up * .25) + ')';
-      sec.once('c5done', p > .86, function () { var r = sec.box(); burst(r.left + r.width / 2, r.top + r.height * .55, 100, 14); });
-    }
-  };
-
-  // C6 돌아보기: 마무리 시트 → 맡긴 일 → 주간 검토 카드가 차례로 크게
-  S.c6 = {
-    build: function (sec) {
-      this.a = new Comp(sec, 'shutdown', '#sheetBody', { ctx: ['<div class="sheet on">'], keep: true, css: '.sheet{border-radius:30px!important;padding:22px!important}' });
-      this.b = new Comp(sec, 'waiting', function (d) { return $('[data-wid]', d).closest('.card'); }, { ctx: ['<div id="moreBody">'] });
-      this.c = new Comp(sec, 'weekly', '#moreBody .card', { ctx: ['<div id="moreBody">'] });
-      this.wq = $('.card', this.c.root);
-    },
-    run: function (p, sec) {
-      var B = sec.box(), W = B.width, H = B.height, nw = narrow();
-      var ph = p < .35 ? 'shutdown' : p < .67 ? 'waiting' : 'weekly';
-      sec.show(ph);
-      var self = this, any = 0;
-      [[this.a, 'shutdown', .06, .3, .34], [this.b, 'waiting', .38, .6, .66], [this.c, 'weekly', .7, .92, 1.1]].forEach(function (x) {
-        var c = x[0], t = seg(p, x[2], x[2] + .08) * (1 - seg(p, x[3], x[4]));
-        var T = nw ? c.at(W * .5, H * .32, W * .9) : (c === self.a ? c.atH(W * .3, H * .5, H * .8) : c.at(W * .3, H * .5, W * .4));
-        if (nw && c === self.a) T = c.atH(W * .5, H * .36, H * .5);
-        if (sec.cur === x[1] || t > 0) c.fly(c.home(x[1]), T, t, 40); else c.hide();
-        any = Math.max(any, t);
+      ORDER.forEach(function (k) {
+        var b = self.bins[k], want = ITEMS.filter(function (it, i) { return it.to === k && landed[i]; });
+        if (want.length !== b.got.length) {
+          var grew = want.length > b.got.length;
+          b.got = want; b.ul.innerHTML = want.slice(-3).map(function (it) { return '<li>' + it.t + '</li>'; }).join('');
+          b.n.textContent = want.length;
+          if (grew) { b.el.classList.remove('pop'); void b.el.offsetWidth; b.el.classList.add('pop'); }
+        }
       });
-      // 며칠째: 맡긴 일 줄을 하나씩 강조
-      $$('[data-wid]', this.b.root).forEach(function (r, i) { r.style.boxShadow = seg(p, .46 + i * .05, .5 + i * .05) > 0 && p < .62 ? 'inset 0 0 0 2px rgba(91,92,246,.6)' : ''; });
-      sec.dim(any);
+
+      // ── 3. 집중: 나머지 칸은 물러나고 오늘 칸만 휴대폰으로 합쳐짐 → 시계와 고리 → 하나 끝 ──
+      var clk = seg(p, .86, .89) * (1 - seg(p, .955, .975));
+      var cT = this.clock.at(pc.x, pc.y, nw ? W * .6 : Math.min(W * .26, 420));
+      this.clock.fly(this.clock.home(), cT, clk, 0, false); this.clock.host.style.opacity = clk <= .001 ? 0 : clk;
+      var run = seg(p, .88, .95), left = Math.round(25 * 60 * (1 - run));
+      if (this.clock.clone) this.clock.clone.textContent = Math.floor(left / 60) + ':' + ('0' + left % 60).slice(-2);
+      this.ringEl.style.opacity = seg(p, .85, .88) * (1 - seg(p, .985, 1));
+      this.ringArc.style.strokeDashoffset = 578 * (1 - run);
+      sec.dim(Math.max(capOut * .5, up0 * (1 - seg(p, .5, .53)) * .6, clk * .7));
+      // 체크: 첫 오늘 할 일 위에 그려짐
+      var first = this.rows[0], ck = seg(p, .95, .965);
+      if (ck > 0 && p < .99 && first.style.display !== 'none') {
+        var rr = sec.rectIn('home', $('.chk', first) || first), cx = rr.x + rr.w / 2, cy = rr.y + rr.h / 2, s2 = rr.k * 1.4;
+        this.tick.setAttribute('d', 'M' + (cx - 8 * s2) + ' ' + cy + ' L' + (cx - 2 * s2) + ' ' + (cy + 6 * s2) + ' L' + (cx + 9 * s2) + ' ' + (cy - 7 * s2));
+        this.tick.setAttribute('stroke-width', Math.max(3, 3.5 * s2)); strokeTo(this.tick, ck); this.tick.style.opacity = 1;
+        $('.row', first).style.opacity = 1 - .5 * ck;
+      } else { this.tick.style.opacity = 0; if (first) { var fr = $('.row', first); if (fr) fr.style.opacity = ''; } }
+      sec.once('done', p > .96, function () { var c = sec.toPage(pc.x, pc.y - pc.h * .1); burst(c.x, c.y, 110, 14); });
     }
   };
 
@@ -506,10 +423,12 @@
       if (sc) try { sc.build(sec); built = true; } catch (e) { console.warn(el.id, e); }
       render(lastP);
     });
-    ScrollTrigger.create({ trigger: el, start: 'top top', end: 'bottom bottom', onUpdate: function (self) { render(self.progress); }, onRefresh: function (self) { render(self.progress); } });
+    var vis = false;
+    ScrollTrigger.create({ trigger: el, start: 'top top', end: 'bottom bottom', onUpdate: function (self) { render(self.progress); }, onRefresh: function (self) { render(self.progress); }, onToggle: function (self) { vis = self.isActive; } });
+    if (el.id === 'story' && !reduce) gsap.ticker.add(function () { if (vis && lastP < .42) render(lastP); }); // 생각 말풍선이 계속 떠다니게
     addEventListener('resize', function () { sec.fit(); if (built && sc) { [].forEach.call(sec.lift.querySelectorAll('.comp'), function () {}); } render(lastP); });
   });
   $$('.ch:not([data-scenes])').forEach(function (el) { ScrollTrigger.create({ trigger: el, start: 'top top', end: 'bottom bottom', onUpdate: function (self) { cues(el, self.progress); } }); });
-  ScrollTrigger.create({ trigger: '#c7', start: 'top 40%', once: false, onEnter: function () { var r = innerWidth; burst(r * .3, innerHeight * .4, 90, 13); setTimeout(function () { burst(r * .7, innerHeight * .4, 90, 13); }, 220); } });
-  cues($('#c0'), 0);
+  ScrollTrigger.create({ trigger: '#end', start: 'top 40%', once: false, onEnter: function () { var r = innerWidth; burst(r * .3, innerHeight * .4, 90, 13); setTimeout(function () { burst(r * .7, innerHeight * .4, 90, 13); }, 220); } });
+  cues($('#story'), 0);
 })();
