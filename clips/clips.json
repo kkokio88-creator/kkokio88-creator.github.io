@@ -5,9 +5,9 @@
   "seconds": 4.5
  },
  {
-  "id": "inbox",
-  "title": "수집함 정리",
-  "seconds": 5.6
+  "id": "send",
+  "title": "보내기",
+  "seconds": 8.3
  },
  {
   "id": "swipe",
@@ -16,17 +16,17 @@
  },
  {
   "id": "timeline",
-  "title": "시간표 → 캘린더",
-  "seconds": 5.5
+  "title": "빈 시간에 한 번에",
+  "seconds": 5.6
  },
  {
   "id": "remind",
   "title": "맡긴 일 리마인드",
-  "seconds": 5.9
+  "seconds": 6
  },
  {
   "id": "weekly",
-  "title": "주간 검토 머리 비우기",
-  "seconds": 6.1
+  "title": "주간 검토",
+  "seconds": 6.6
  }
 ]

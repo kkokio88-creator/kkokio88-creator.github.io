@@ -298,12 +298,15 @@ function createKitEngine(opts) {
  * │    예전 트리거가 그 이름으로 계속 호출한다.                                  │
  * │ 6. 사용자가 직접 추가한 열, 직접 만든 시트, 직접 만든 조건부 서식은 건드리지 않는다. │
  * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ※ 열(COLUMNS)·상태(STATUS)·탭 이름을 바꾸거나 추가하면 AI 연결 안내문(App.html aiPrompt)도 같이 고친다.
+ *   기준 문서: docs/AI-연결.md · 빠뜨리면 tests/v2-tests.js 'AI 연결 안내문이 시트 구조와 맞음'이 실패한다.
  */
 
 var KIT = {
   NAME: 'GTD 워크',
   VERSION: '1.7.2',       // 코드 버전 (화면 표시용)
-  SCHEMA_VERSION: 5,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열
+  SCHEMA_VERSION: 6,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
   SETTINGS_SHEET: '_설정',
@@ -363,7 +366,13 @@ var COLUMNS = [
     note: '예상 소요 시간(분). 타임박스 자동 배치에 씁니다. 비우면 30분으로 계산합니다.' },
   { key: 'priority',  header: '우선순위',   width: 80,  since: 4, aliases: [], list: ['높음', '보통', '낮음'] },
   { key: 'delegatedOn', header: '맡긴 날',  width: 100, since: 5, aliases: [], type: 'date',
-    note: '위임으로 바꾼 날. 자동으로 적힙니다. "며칠째 기다리는지" 계산에 씁니다.' }
+    note: '위임으로 바꾼 날. 자동으로 적힙니다. "며칠째 기다리는지" 계산에 씁니다.' },
+  { key: 'urgent',    header: '긴급',       width: 60,  since: 6, aliases: [], list: ['급함'],
+    note: '급한 일(↑). 우선순위 "높음"(★ 중요)과 함께 중요·긴급 4분면을 만듭니다.' },
+  { key: 'spent',     header: '쓴 시간(분)', width: 90, since: 6, aliases: [], type: 'number',
+    note: '실제로 쓴 시간(분). 시간표에서 끝낸 블록의 길이가 자동으로 적힙니다.' },
+  { key: 'postponed', header: '미룬 횟수',  width: 80,  since: 6, aliases: [], type: 'number',
+    note: '내일·다른 날로 미룬 횟수. 자동으로 셉니다.' }
 ];
 
 var PRIORITY_ORDER = { '높음': 0, '보통': 1, '': 1, '낮음': 2 };
@@ -480,7 +489,10 @@ function rowToTask_(values, map, tz, rowNumber) {
     focus: ymd_(get('focus'), tz),
     est: Math.max(0, Math.round(Number(get('est')) || 0)),
     priority: str('priority'),
-    delegatedOn: ymd_(get('delegatedOn'), tz)
+    delegatedOn: ymd_(get('delegatedOn'), tz),
+    urgent: str('urgent'),
+    spent: Math.max(0, Math.round(Number(get('spent')) || 0)),
+    postponed: Math.max(0, Math.round(Number(get('postponed')) || 0))
   };
 }
 
@@ -1099,6 +1111,7 @@ function clarifyTask(id, d) {
     if (d.est !== undefined) set('est', Number(d.est) > 0 ? Math.round(Number(d.est)) : '');
     if (d.priority !== undefined) set('priority', ['높음', '보통', '낮음'].indexOf(d.priority) !== -1 ? d.priority : '');
     if (d.focus !== undefined) set('focus', d.focus === true ? today : ymd_(d.focus));
+    applyTrack_(ctx, row, d);
     set('completed', d.status === STATUS.DONE ? today : '');
     if (d.status === STATUS.DELEGATED && before.status !== STATUS.DELEGATED) set('delegatedOn', today);
     var next = '', nextId = '';
@@ -1149,6 +1162,7 @@ function updateTask(id, patch) {
     if (patch.project !== undefined) set('project', String(patch.project).trim());
     if (patch.followUp !== undefined) set('followUp', ymd_(patch.followUp));
     if (patch.delegatee !== undefined && String(patch.delegatee).trim()) set('delegatee', String(patch.delegatee).trim());
+    applyTrack_(ctx, row, patch);
     if (patch.memoAppend && ctx.map.memo) {
       var cur = String(ctx.sheet.getRange(row, ctx.map.memo).getValue() || '').trim();
       var add = '[' + today.slice(5) + '] ' + String(patch.memoAppend).trim();
@@ -1156,6 +1170,17 @@ function updateTask(id, patch) {
     }
     return { ok: true };
   });
+}
+
+/** 긴급(↑)·쓴 시간·미룬 횟수: patch.urgent(true/false), patch.spent(분), patch.postpone(true면 +1) */
+function applyTrack_(ctx, row, p) {
+  var set = function (key, val) { if (ctx.map[key]) ctx.sheet.getRange(row, ctx.map[key]).setValue(val); };
+  if (p.urgent !== undefined) set('urgent', p.urgent ? '급함' : '');
+  if (p.spent !== undefined) set('spent', Number(p.spent) > 0 ? Math.round(Number(p.spent)) : '');
+  if (p.postpone && ctx.map.postponed) {
+    var cur = Number(ctx.sheet.getRange(row, ctx.map.postponed).getValue()) || 0;
+    set('postponed', cur + 1);
+  }
 }
 
 /** 여러 업무의 ★ 날짜를 한 번에 (오늘 마무리 → 내일, 주간 검토 → 다음 주 월요일). 한 번의 왕복으로 끝낸다 */
@@ -1602,19 +1627,21 @@ function projectStats_(tasks) {
   var by = {}, order = [];
   tasks.forEach(function (t) {
     if (!t.project) return;
-    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, nextDue: '', items: [] }; order.push(t.project); }
+    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, someday: 0, nextDue: '', items: [] }; order.push(t.project); }
     var g = by[t.project];
     if (t.status === STATUS.DONE) g.done++;
+    // 나중에(언젠가) 할 일도 프로젝트 안에 보이게 (프로젝트가 '끝남'으로 사라지지 않게)
+    else if (t.status === STATUS.SOMEDAY) { g.someday++; if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: '' }); }
     else if (isActionable_(t.status)) {
       g.open++;
       if (t.priority === '높음') g.important++;
-      if (g.items.length < 12) g.items.push({ title: t.title, status: t.status, due: t.due || '', delegatee: t.delegatee || '' });
+      if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: t.delegatee || '' });
       if (t.due && (!g.nextDue || t.due < g.nextDue)) g.nextDue = t.due;
       if (t.status === STATUS.NEXT) g.next++;
       if (t.status === STATUS.DELEGATED || t.status === STATUS.SCHEDULED) g.waiting++;
     }
   });
-  return order.map(function (k) { var g = by[k]; g.stalled = g.open > 0 ? g.next === 0 && g.waiting === 0 : false; g.finished = g.open === 0; return g; });
+  return order.map(function (k) { var g = by[k]; g.stalled = g.open > 0 ? g.next === 0 && g.waiting === 0 : false; g.finished = g.open === 0 && !g.someday; return g; });
 }
 
 /** 이번 주 루틴 달성: 반복 업무를 제목별로 완료·건너뜀 횟수 집계 */
@@ -2359,7 +2386,12 @@ function webAddRoutine(k, title, rule, start, context) { checkKey_(k); appContex
 function webReviewDone(k) {
   checkKey_(k);
   var ctx = appContext_();
-  writeSetting_(ctx.ss, '마지막주간검토', todayYmd_(ctx.tz));
+  var td = todayYmd_(ctx.tz);
+  writeSetting_(ctx.ss, '마지막주간검토', td);
+  // 인사이트 배지(주간 검토 연속)용: 검토한 날을 최근 60개까지 남긴다
+  var hist = String(readSettings_(ctx.ss)['주간검토기록'] || '').split(',').filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x); });
+  if (hist.indexOf(td) < 0) hist.push(td);
+  writeSetting_(ctx.ss, '주간검토기록', hist.slice(-60).join(','));
   return withView_({ ok: true });
 }
 
@@ -2367,12 +2399,14 @@ function webReviewDone(k) {
 function webAll(k) {
   checkKey_(k);
   var ctx = appContext_();
+  var st = readSettings_(ctx.ss), rv = String(st['주간검토기록'] || '').split(',').filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x); });
+  var lr = ymd_(st['마지막주간검토'], ctx.tz); if (lr && rv.indexOf(lr) < 0) rv.push(lr);
   return {
-    today: todayYmd_(ctx.tz),
+    today: todayYmd_(ctx.tz), reviews: rv.sort(),
     items: readAllTasks_(ctx).map(function (t) {
       return { id: t.id, title: t.title, status: t.status, due: t.due, context: t.context, delegatee: t.delegatee,
         followUp: t.followUp, memo: t.memo, created: t.created, completed: t.completed, repeat: t.repeat, project: t.project,
-        focus: t.focus, est: t.est, priority: t.priority, delegatedOn: t.delegatedOn };
+        focus: t.focus, est: t.est, priority: t.priority, delegatedOn: t.delegatedOn, urgent: !!t.urgent, spent: t.spent || 0, postponed: t.postponed || 0 };
     })
   };
 }
@@ -2454,7 +2488,7 @@ function buildTodayView_(tasks, today) {
   var s = buildWeeklySummary_(tasks, today);
   var pick = function (t) {
     return { id: t.id, title: t.title, due: t.due, context: t.context, delegatee: t.delegatee, followUp: t.followUp, status: t.status, repeat: t.repeat || '', project: t.project || '',
-      focus: t.focus || '', est: t.est || 0, priority: t.priority || '', delegatedOn: t.delegatedOn || '', memo: t.memo || '' };
+      focus: t.focus || '', est: t.est || 0, priority: t.priority || '', delegatedOn: t.delegatedOn || '', memo: t.memo || '', urgent: !!t.urgent };
   };
   var isRoutineToday = function (t) { return !!t.repeat && isActionable_(t.status) && (!t.due || t.due <= today); };
   var byDue = function (a, b) { return (a.due || '9999') < (b.due || '9999') ? -1 : (a.due || '9999') > (b.due || '9999') ? 1 : 0; };
@@ -2491,7 +2525,7 @@ function buildTodayView_(tasks, today) {
     counts: { doneToday: s.done.filter(function (t) { return t.completed === today; }).length, inbox: s.inbox.length, focus: focus.length, now: now.length, routines: routines.length, overdue: s.overdue.length, followUp: s.followUp.length, doneWeek: s.done.length },
     routines: routines.map(pick),
     carry: carry.map(pick),
-    doneToday: tasks.filter(function (t) { return t.status === STATUS.DONE && t.completed === today; }).map(function (t) { return { id: t.id, title: t.title, project: t.project || '', repeat: t.repeat || '' }; }),
+    doneToday: tasks.filter(function (t) { return t.status === STATUS.DONE && t.completed === today; }).map(function (t) { return { id: t.id, title: t.title, project: t.project || '', repeat: t.repeat || '', priority: t.priority || '', urgent: !!t.urgent, spent: t.spent || 0 }; }),
     routineDone: s.routineDone,
     now: now.map(pick),
     followUp: s.followUp.map(pick),
@@ -2502,6 +2536,7 @@ function buildTodayView_(tasks, today) {
     }).map(pick),
     inbox: s.inbox.map(pick),
     someday: s.someday.length,
+    somedayList: s.someday.slice(0, 30).map(pick),
     reference: s.reference.length,
     projects: s.projects,
     contexts: uniq_(tasks.filter(function (t) { return isActionable_(t.status) && t.context; }).map(function (t) { return t.context; })),
