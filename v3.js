@@ -562,16 +562,30 @@
     // 단계 펼치기는 signupSteps()가 스크롤에 맞춰 한다. 입력하거나 초점이 들어오면 그 단계까지 바로 펼친다.
     form.addEventListener('focusin', function (e) { var st = e.target.closest('.st'); revealTo(st ? +st.dataset.step : 0); });
     email.addEventListener('input', function () { revealTo(1); });
+    // 스크롤 감지가 안 도는 브라우저(카톡 안 브라우저 등)에서도 막히지 않게: 적는 대로 다음 칸을 펼친다
+    var nameIn = form.elements.namedItem('name');
+    nameIn.addEventListener('input', function () { if (nameIn.value.trim()) revealTo(2); });
+    // 키보드의 '다음'(Enter)을 누르면 다음 칸으로
+    function goNext(st) { var n = +st.dataset.step + 1; revealTo(n); var nx = $('#signup .st[data-step="' + n + '"]'); if (nx) setTimeout(function () { var f = $('input:not([hidden]):not([type=checkbox]), textarea, .chips button', nx); try { nx.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {} if (f && f.tagName !== 'BUTTON') f.focus(); else document.activeElement.blur(); }, 80); }
+    email.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); revealTo(1); setTimeout(function () { nameIn.focus(); }, 80); } });
+    nameIn.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); if (nameIn.value.trim()) goNext(nameIn.closest('.st')); } });
+    var etcIn0 = $('#fRoleEtc'); etcIn0.addEventListener('input', function () { if (etcIn0.value.trim()) revealTo(3); });
+    etcIn0.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); goNext(this.closest('.st')); } });
+    // 신청 칸을 지나쳐 내려가면 남은 단계를 모두 펼친다
+    var c11 = $('#c11');
+    addEventListener('scroll', function () { if (suMax < 5 && c11.getBoundingClientRect().bottom < innerHeight) revealTo(5); }, { passive: true });
     $$('.chips', form).forEach(function (g) {
       g.addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
         var was = b.classList.contains('on'); $$('button', g).forEach(function (x) { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
         if (!was) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); }
         if (g.dataset.name === 'role') { var etcIn = $('#fRoleEtc'); etcIn.hidden = !(b.hasAttribute('data-etc') && !was); if (!etcIn.hidden) etcIn.focus(); }
+        // 고르면 다음 칸을 펼친다 (기타는 직접 적은 뒤)
+        if (!was && !b.hasAttribute('data-etc')) revealTo(+g.closest('.st').dataset.step + 1);
       });
     });
     var rIn = $('#fReason'), rCnt = $('#fReasonCnt');
-    rIn.addEventListener('input', function () { var n = rIn.value.replace(/\s/g, '').length; rCnt.textContent = n + ' / 20자'; rCnt.classList.toggle('ok', n >= 20); });
+    rIn.addEventListener('input', function () { var n = rIn.value.replace(/\s/g, '').length; rCnt.textContent = n + ' / 20자'; rCnt.classList.toggle('ok', n >= 20); if (n >= 20) revealTo(5); });
     var chip = function (name) { var b = $('.chips[data-name="' + name + '"] .on', form); return b ? b.textContent : ''; };
 
     form.addEventListener('submit', function (e) {
