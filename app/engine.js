@@ -1581,11 +1581,13 @@ function projectStats_(tasks) {
   var by = {}, order = [];
   tasks.forEach(function (t) {
     if (!t.project) return;
-    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0 }; order.push(t.project); }
+    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, nextDue: '' }; order.push(t.project); }
     var g = by[t.project];
     if (t.status === STATUS.DONE) g.done++;
     else if (isActionable_(t.status)) {
       g.open++;
+      if (t.priority === '높음') g.important++;
+      if (t.due && (!g.nextDue || t.due < g.nextDue)) g.nextDue = t.due;
       if (t.status === STATUS.NEXT) g.next++;
       if (t.status === STATUS.DELEGATED || t.status === STATUS.SCHEDULED) g.waiting++;
     }
@@ -2387,11 +2389,14 @@ function buildTodayView_(tasks, today) {
     var pb = PRIORITY_ORDER[b.priority] === undefined ? 1 : PRIORITY_ORDER[b.priority];
     return pa !== pb ? pa - pb : byDue(a, b);
   };
-  var isFocus = function (t) { return isActionable_(t.status) && t.focus && t.focus <= today; };
+  // ★(오늘 할 일)는 그날만. 지난 날 ★인데 못 끝낸 일은 '어제 못 끝낸 일'(carry)로 모아 오늘 다시 정하게 한다.
+  var isFocus = function (t) { return isActionable_(t.status) && t.focus && t.focus === today; };
+  var isCarry = function (t) { return isActionable_(t.status) && !t.repeat && t.focus && t.focus < today; };
   var focus = tasks.filter(isFocus).sort(byPrio);
+  var carry = tasks.filter(isCarry).sort(byPrio);
   var routines = tasks.filter(function (t) { return isRoutineToday(t) && !isFocus(t); }).sort(byDue);
   var now = tasks.filter(function (t) {
-    if (isRoutineToday(t) || isFocus(t)) return false;
+    if (isRoutineToday(t) || isFocus(t) || isCarry(t)) return false;
     return t.status === STATUS.NEXT || (t.status === STATUS.SCHEDULED && t.due && t.due <= today);
   }).sort(byPrio);
   var mins = function (list) { return list.reduce(function (s, t) { return s + (t.est || 30); }, 0); };
@@ -2404,6 +2409,8 @@ function buildTodayView_(tasks, today) {
     estMinutes: { focus: mins(focus), now: mins(now), routines: mins(routines) },
     counts: { doneToday: s.done.filter(function (t) { return t.completed === today; }).length, inbox: s.inbox.length, focus: focus.length, now: now.length, routines: routines.length, overdue: s.overdue.length, followUp: s.followUp.length, doneWeek: s.done.length },
     routines: routines.map(pick),
+    carry: carry.map(pick),
+    doneToday: tasks.filter(function (t) { return t.status === STATUS.DONE && t.completed === today; }).map(function (t) { return { id: t.id, title: t.title, project: t.project || '' }; }),
     routineDone: s.routineDone,
     now: now.map(pick),
     followUp: s.followUp.map(pick),
