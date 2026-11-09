@@ -733,3 +733,78 @@ html:not(.js) .tray { width: 30vw; }
 .st .cnt { margin: 2px 4px 0; font-size: 13px; font-weight: 700; color: var(--t4); text-align: right; }
 .st .cnt.ok { color: var(--g); }
 .js .st.on { max-height: 420px; }
+
+/* ═══════════════════════════════════════════════════════════
+   Mobile polish (2026-11-10) — desktop layout UNCHANGED
+   Scoped to phone/narrow portrait only so 1440×900 stays
+   pixel-identical. Do not put rules outside this media query.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px), (max-aspect-ratio: 1/1) {
+  /* Notch / home-indicator safe areas (viewport-fit=cover already set) */
+  .lnav-in {
+    padding-left: max(var(--pad), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--pad), env(safe-area-inset-right, 0px));
+    height: calc(48px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .lnav { padding-top: 0; }
+
+  /* Tap target: nav CTA was 32px tall */
+  .lnav .cta {
+    min-height: 44px;
+    padding: 10px 18px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* C5 day timeline: --hw 44vw made 30-min cards ~75px → Korean labels clipped.
+     Widen columns; JS reads --hw so scroll math stays consistent. */
+  .dtrack { --hw: 60vw; bottom: 8vh; height: 38vh; }
+  .slot { font-size: 13px; padding: 10px 12px; border-radius: 14px; }
+  .slot b { font-size: 13px; line-height: 1.3; }
+  .slot span { font-size: 11px; }
+  .day .big { font-size: clamp(30px, 8.2vw, 40px); line-height: 1.15; }
+  .day-copy { top: 64px; }
+  .day-copy .sub { font-size: 15px; margin-top: 10px; }
+  .hours i { font-size: 12px; bottom: -28px; }
+
+  /* C4 sort: 4 bins in one row were ~85px each — switch to 2×2 */
+  .bins {
+    height: auto;
+    min-height: 112px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: minmax(52px, auto);
+    gap: 8px;
+    bottom: 12px;
+  }
+  .bin { min-height: 52px; }
+  .bin b { font-size: 13px; }
+  .sort-copy { bottom: calc(12px + 120px + 8px); }
+  .sort-phone { height: calc(100svh - 100px - 240px); }
+
+  /* Toast / floating labels: avoid nowrap bleed past viewport */
+  .captoast, .flyc {
+    white-space: normal;
+    max-width: min(92vw, 340px);
+    text-align: center;
+  }
+
+  /* C7 phone carousel: leave room for caption; slightly smaller phone */
+  .hp-panel .ph { height: min(48vh, 440px); }
+  .hp-txt h3 { font-size: clamp(26px, 7vw, 32px); }
+  .hp-panel { padding: 110px var(--pad) 52px; gap: 14px; }
+
+  /* Long scroll chapters: shorten only the tallest on small screens
+     (progress still 0→1 across the section; feels less endless) */
+  .ch.sort { height: calc(var(--len) * 0.78vh); }
+  .ch.hl { height: calc(var(--len) * 0.72vh); }
+  .ch.day { height: calc(var(--len) * 0.85vh); }
+
+  /* Signup chips: keep 16px inputs (iOS zoom) already set; tighten wrap */
+  .chips { gap: 8px; }
+  .chips button { min-height: 44px; padding: 10px 14px; }
+
+  /* Footer / legal links */
+  footer a, .foot a { min-height: 44px; display: inline-flex; align-items: center; }
+}
