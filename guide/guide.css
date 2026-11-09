@@ -260,3 +260,11 @@ a { color: inherit; }
 /* 단계 표시는 모두 같은 자리(흐름에서 빼서 서로 밀지 않게) */
 .story .copy .eb2 { position: absolute; top: 0; left: 0; }
 @media (max-aspect-ratio: 1/1), (max-width: 860px) { .story .copy .eb2 { right: 0; display: flex; justify-content: center; } }
+/* 처음: 생각들이 휴대폰을 가린다 */
+.story .stage.dk .th { background: rgba(40, 42, 58, .72); border-color: rgba(255, 255, 255, .16); backdrop-filter: blur(10px); }
+.story .stage.dk .th.warn { background: rgba(90, 30, 48, .72); }
+/* 끝 */
+.end .mega { color: #fff; }
+/* 첫 질문은 크게 */
+.story .copy .big.q { font-size: clamp(44px, 5.2vw, 92px); white-space: nowrap; }
+@media (max-aspect-ratio: 1/1), (max-width: 860px) { .story .copy .big.q { font-size: clamp(36px, 11vw, 56px); } }

@@ -304,7 +304,12 @@
     },
     // 전체 이야기: 앞부분(비우기·나누기)은 0~0.56, 그 뒤 배치·타임어택·인사이트
     run: function (p, sec) {
-      this.runA(Math.min(p / .56, 1) * .85, sec);
+      var q = p < .4 ? p / .4 * .748 : p < .47 ? .748 + (p - .4) / .07 * .007 : Math.min(.755 + (p - .47) / .086 * .095, .85);
+      this.runA(q, sec);
+      var bins = this.bins;
+      sec.once('allFiled', p > .402 && p < .47, function () { // 모든 생각이 제 칸에 들어감
+        ORDER.forEach(function (k, i) { var e = bins[k].el, r = e.getBoundingClientRect(); e.classList.remove('pop'); void e.offsetWidth; e.classList.add('pop'); setTimeout(function () { burst(r.left + r.width / 2, r.top + 30, 36, 8); }, i * 90); });
+      });
       $$('#steps li').forEach(function (li, i, all) { var f = +li.dataset.from, nx = all[i + 1] ? +all[i + 1].dataset.from : 2; li.classList.toggle('on', p >= f && p < nx); });
       this.runB(p, sec);
     },
@@ -389,10 +394,12 @@
       var arrived = 0, typing = '';
       this.th.forEach(function (o, i) {
         var a = o.seed, bx, by;
-        if (nw) { bx = W * (.12 + ((i * .37) % 1) * .7); by = H * (.08 + ((i * .53) % 1) * .5); }
-        else { bx = W * (.42 + ((i * .41) % 1) * .52); by = H * (.1 + ((i * .61) % 1) * .8); if (Math.abs(bx - pc.x) < pc.w * .55) bx += (bx < pc.x ? -1 : 1) * pc.w * .6; }
+        // 휴대폰(오늘 할 일·이번 주) 위를 계속 가로질러 가린다
+        var lane = ((i * .61) % 1) - .5, sp = .22 + .05 * (i % 3);
+        if (nw) { bx = W * .5 + Math.sin(now * sp + a * 2) * W * .34; by = pc.y + lane * pc.h * 1.05; }
+        else { bx = pc.x + pc.w * .3 + Math.sin(now * sp + a * 2) * pc.w * .78; by = pc.y + lane * pc.h * .95; }
         var wob = { x: Math.sin(now * .6 + a) * 14, y: Math.cos(now * .5 + a * 1.3) * 10 };
-        var appear = seg(p, i * .006, .05 + i * .006);
+        var appear = seg(p, .04 + i * .006, .08 + i * .006);
         var w0 = .19 + i * .017, t = seg(p, w0, w0 + .032); // 입력칸으로 빨려 들어감
         var e = io(t), x = lerp(bx + wob.x, capC.x, e), y = lerp(by + wob.y, capC.y, e) - Math.sin(Math.PI * e) * 60;
         var r = o.el.getBoundingClientRect();
@@ -402,7 +409,7 @@
         if (t > .35 && t < 1) typing = ITEMS[i].t.slice(0, Math.ceil(seg(t, .35, .85) * ITEMS[i].t.length));
         if (t >= 1) arrived = i + 1;
       });
-      sec.dim(p < .14 ? .5 * seg(p, .0, .06) : 0);
+      sec.dim(p < .14 ? .5 * seg(p, .05, .1) : 0);
 
       // ── 1. 비우기: 입력칸이 휴대폰 위로 튀어나와 생각을 빨아들이고, 한 줄씩 목록에 쌓인다 ──
       var capOut = seg(p, .15, .19) * (1 - seg(p, .36, .4));
