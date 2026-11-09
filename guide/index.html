@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>사용법 — GTD 워크</title>
-<meta name="description" content="GTD 워크 사용법: 시작하기, 담기, 수집함 정리, 오늘 할 일과 하루 쓰기를 실제 앱 화면으로 하나씩 따라 해요.">
+<meta name="description" content="GTD 워크 사용법: 담기, 보내기, 하루 쓰기, 돌아보기를 실제 앱 화면 위에서 직접 움직이며 보여 드려요.">
 <link rel="icon" href="../favicon.ico">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-/* 우리 앱 스타일: Pretendard · 인디고 바이올렛 · 토스풍 카드 · 앰비언트 라이트 */
-:root { --g: #5B5CF6; --g2: #4A4BE0; --gt: #EEEEFF; --t1: #191F28; --t2: #4E5968; --t3: #6B7684; --t4: #A3ACB6; --line: #E9ECEF; --fill: #F2F4F6; --bg: #F4F5F7;
-  --l1: #6D6BFF; --l2: #FF7AC6; --l3: #5FD3F3; --amber: #F2A20C; --expo: cubic-bezier(.16, 1, .3, 1); --spring: cubic-bezier(.34, 1.56, .64, 1); }
+/* 앱과 같은 토큰: Pretendard · 인디고 바이올렛 · 토스풍. 휴대폰 안은 실제 앱 화면(guide/s/*.html, 앱 CSS 그대로) */
+:root { --g: #5B5CF6; --gt: #EEEEFF; --t1: #191F28; --t2: #4E5968; --t3: #6B7684; --t4: #A3ACB6; --bg: #F4F5F7;
+  --l1: #6D6BFF; --l2: #FF7AC6; --l3: #5FD3F3; --expo: cubic-bezier(.16, 1, .3, 1); --spring: cubic-bezier(.34, 1.56, .64, 1); }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body { font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--t1); letter-spacing: -0.02em; -webkit-font-smoothing: antialiased; overflow: hidden; }
@@ -19,98 +19,93 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 :focus-visible { outline: 3px solid #8B8CFF; outline-offset: 3px; border-radius: 8px; }
 .app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; }
 
-/* 위: 제목 · 챕터 진행 */
+/* 위: 브랜드 · 챕터 */
 .top { display: flex; align-items: center; gap: 20px; padding: 18px clamp(16px, 4vw, 48px); }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; text-decoration: none; white-space: nowrap; }
 .brand i { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #7B6BFF, #E06BD8); display: grid; place-items: center; }
 .brand i::after { content: ''; width: 10px; height: 5px; border-left: 2.5px solid #fff; border-bottom: 2.5px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
 .brand small { color: var(--t3); font-weight: 600; font-size: 14px; }
-.chaps { display: flex; gap: 8px; margin-left: auto; list-style: none; padding: 0; }
-.chaps li { display: flex; flex-direction: column; gap: 6px; min-width: 72px; font-size: 13px; font-weight: 700; color: var(--t4); }
-.chaps li i { height: 5px; border-radius: 3px; background: #E3E6EB; overflow: hidden; }
-.chaps li i b { display: block; height: 100%; width: 0; background: var(--g); border-radius: 3px; transition: width .5s var(--expo); }
-.chaps li.on { color: var(--g); }
-.chaps li.done { color: var(--t2); }
+.chaps { display: flex; gap: 6px; margin: 0 0 0 auto; list-style: none; padding: 0; }
+.chaps button { display: flex; flex-direction: column; gap: 7px; min-width: 76px; padding: 4px 2px; font-size: 13px; font-weight: 700; color: var(--t4); text-align: left; width: 100%; }
+.chaps i { height: 4px; border-radius: 2px; background: #E3E6EB; overflow: hidden; }
+.chaps i b { display: block; height: 100%; width: 0; background: var(--g); border-radius: 2px; transition: width .5s var(--expo); }
+.chaps .on { color: var(--g); } .chaps .done { color: var(--t2); }
 
-/* 가운데: 폰 + 설명 */
-.main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: center; gap: clamp(24px, 5vw, 80px); padding: 0 clamp(16px, 5vw, 80px); min-height: 0; max-width: 1240px; margin: 0 auto; width: 100%; }
-.phone-wrap { position: relative; display: flex; justify-content: center; align-items: center; height: 100%; min-height: 0; padding: 12px 0; }
-.amb { position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; background: conic-gradient(from 0deg, var(--l1), var(--l2), var(--l3), #9C8CFF, var(--l1)); filter: blur(70px); opacity: .28; animation: spin 14s linear infinite; }
+/* 가운데: 휴대폰(실제 앱) + 큰 한마디 */
+.main { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); align-items: center; gap: clamp(24px, 5vw, 88px); padding: 0 clamp(16px, 5vw, 80px); min-height: 0; max-width: 1280px; margin: 0 auto; width: 100%; }
+.stagebox { position: relative; display: flex; justify-content: center; align-items: center; height: 100%; min-height: 0; padding: 10px 0; }
+.amb { position: absolute; width: 78%; aspect-ratio: 1; border-radius: 50%; background: conic-gradient(from 0deg, var(--l1), var(--l2), var(--l3), #9C8CFF, var(--l1)); filter: blur(80px); opacity: .26; animation: spin 16s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.phone { position: relative; height: min(76vh, 720px); aspect-ratio: 390 / 844; padding: 4px; border-radius: 36px; background: #0f1015; box-shadow: 0 40px 90px rgba(17, 24, 39, .25), inset 0 0 0 1px #2a2b33; }
-.scr { position: relative; width: 100%; height: 100%; border-radius: 32px; overflow: hidden; background: var(--bg); }
-.scr img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: top; opacity: 0; transition: opacity .45s var(--expo); }
-.scr img.tall { object-fit: cover; }
-.scr img.on { opacity: 1; }
-/* 스포트라이트: 볼 곳만 밝게 */
-.spot { position: absolute; border-radius: 16px; box-shadow: 0 0 0 2000px rgba(17, 18, 40, .5); outline: 2.5px solid rgba(139, 140, 255, .95); outline-offset: 2px; opacity: 0; transition: left .6s var(--expo), top .6s var(--expo), width .6s var(--expo), height .6s var(--expo), opacity .4s; pointer-events: none; }
-.spot.on { opacity: 1; }
-/* 누르는 곳: 커서가 움직여 톡 누른다 */
-.tap { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: rgba(255, 255, 255, .9); box-shadow: 0 6px 18px rgba(17, 18, 40, .35), inset 0 0 0 3px var(--g); opacity: 0; pointer-events: none; transition: left .9s var(--expo), top .9s var(--expo), opacity .3s; }
-.tap.on { opacity: 1; animation: press 1.8s ease-in-out .9s infinite; }
-.tap::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid var(--g); opacity: 0; animation: ripple 1.8s ease-out .9s infinite; }
-@keyframes press { 0%, 35%, 100% { transform: scale(1); } 45% { transform: scale(.78); } 60% { transform: scale(1); } }
-@keyframes ripple { 0%, 40% { transform: scale(.6); opacity: 0; } 48% { opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
+.phone { position: relative; height: min(78vh, 760px); aspect-ratio: 390 / 844; padding: 5px; border-radius: 44px; background: #0f1015; box-shadow: 0 50px 100px rgba(17, 24, 39, .28), inset 0 0 0 1px #2a2b33; }
+.scr { position: relative; width: 100%; height: 100%; border-radius: 39px; overflow: hidden; background: #F2F4F6; isolation: isolate; }
+.scr iframe { position: absolute; left: 0; top: 0; width: 390px; height: 844px; border: 0; transform-origin: 0 0; opacity: 0; transition: opacity .35s ease; pointer-events: none; background: #F2F4F6; }
+.scr iframe.on { opacity: 1; }
+/* 손가락: 실제로 누르는 것처럼 */
+.finger { position: absolute; left: 50%; top: 110%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgba(255, 255, 255, .55); box-shadow: 0 8px 22px rgba(17, 18, 40, .28), inset 0 0 0 2.5px rgba(91, 92, 246, .9); backdrop-filter: blur(2px); z-index: 5; opacity: 0; pointer-events: none; transition: left .7s var(--expo), top .7s var(--expo), opacity .3s, transform .14s; }
+.finger.on { opacity: 1; }
+.finger.down { transform: scale(.78); }
+.finger::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 3px solid rgba(91, 92, 246, .8); opacity: 0; }
+.finger.ping::after { animation: ping .7s ease-out; }
+.finger.drag { transition: left .05s linear, top .05s linear, opacity .3s, transform .14s; }
+@keyframes ping { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2); opacity: 0; } }
 
 .side { min-width: 0; }
-.eb { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border-radius: 999px; background: var(--gt); color: var(--g); font-size: 14px; font-weight: 800; }
-.ttl { margin: 16px 0 0; font-size: clamp(30px, 3.6vw, 52px); font-weight: 800; letter-spacing: -0.045em; line-height: 1.12; word-break: keep-all; }
-.ttl .w { display: inline-block; white-space: nowrap; }
-.ttl .c { display: inline-block; transform: translateY(.5em); opacity: 0; transition: transform .7s var(--expo), opacity .5s; transition-delay: calc(var(--i) * 20ms); }
-.ttl.on .c { transform: none; opacity: 1; }
-.ttl em { font-style: normal; color: var(--g); }
-.desc { margin: 14px 0 0; font-size: clamp(16px, 1.35vw, 19px); color: var(--t2); line-height: 1.6; word-break: keep-all; }
-.acts { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 10px; counter-reset: a; }
-.acts li { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .04), 0 2px 10px rgba(17, 24, 39, .05); font-size: 16px; line-height: 1.5; word-break: keep-all; opacity: 0; transform: translateY(12px); transition: opacity .5s var(--expo), transform .6s var(--expo); transition-delay: calc(.25s + var(--i) * .1s); }
-.acts li::before { counter-increment: a; content: counter(a); flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--g); color: #fff; font-size: 14px; font-weight: 800; display: grid; place-items: center; margin-top: 1px; }
-.acts li b { color: var(--t1); }
-.acts.on li { opacity: 1; transform: none; }
-.tip { margin: 14px 0 0; padding: 12px 16px; border-radius: 14px; background: #FFF8E6; color: #8A5A00; font-size: 14.5px; line-height: 1.55; word-break: keep-all; }
-.tip:empty { display: none; }
-/* 해 봤어요 확인 */
-.did { display: inline-flex; align-items: center; gap: 12px; margin-top: 20px; padding: 12px 18px 12px 12px; border-radius: 16px; border: 1.5px dashed #C9CBFF; color: var(--g); font-weight: 800; font-size: 15px; transition: background .3s, border-color .3s; }
-.did i { width: 28px; height: 28px; border-radius: 9px; border: 2px solid var(--g); display: grid; place-items: center; background: #fff; transition: background .3s; }
-.did svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 30; stroke-dashoffset: 30; transition: stroke-dashoffset .4s var(--expo) .05s; }
-.did.on { background: var(--gt); border-style: solid; }
-.did.on i { background: var(--g); }
-.did.on svg { stroke-dashoffset: 0; }
-
-/* 표지·마무리 */
-.cover { text-align: left; }
-.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
-.ccard { display: flex; gap: 14px; align-items: center; padding: 18px; border-radius: 20px; background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .04), 0 2px 10px rgba(17, 24, 39, .05); text-align: left; opacity: 0; transform: translateY(14px) scale(.97); transition: opacity .5s var(--expo), transform .7s var(--spring); transition-delay: calc(.2s + var(--i) * .08s); }
-.on .ccard { opacity: 1; transform: none; }
-.ccard b { flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--gt); color: var(--g); font-size: 16px; display: grid; place-items: center; }
-.ccard span { font-weight: 800; font-size: 17px; } .ccard small { display: block; color: var(--t3); font-weight: 600; font-size: 13.5px; margin-top: 2px; }
-.links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 22px; border-radius: 16px; font-weight: 800; font-size: 16px; text-decoration: none; transition: transform .2s var(--spring), box-shadow .2s; }
+.eb { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; color: var(--g); }
+.eb b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--gt); font-size: 13px; }
+.kw { margin: 18px 0 0; font-size: clamp(46px, 6.2vw, 96px); font-weight: 800; letter-spacing: -0.055em; line-height: 1.06; word-break: keep-all; }
+.kw .w { display: inline-block; white-space: nowrap; }
+.kw .c { display: inline-block; transform: translateY(.45em); opacity: 0; filter: blur(6px); transition: transform .8s var(--expo), opacity .5s, filter .6s; transition-delay: calc(var(--i) * 28ms); }
+.kw.on .c { transform: none; opacity: 1; filter: none; }
+.kw .c.e { background: linear-gradient(100deg, #5B5CF6, #A35BF6 70%, #E06BD8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { margin: 22px 0 0; max-width: 30em; font-size: clamp(17px, 1.45vw, 21px); color: var(--t2); line-height: 1.55; word-break: keep-all; opacity: 0; transform: translateY(10px); transition: opacity .6s var(--expo) .35s, transform .7s var(--expo) .35s; }
+.sub b { color: var(--t1); }
+.side.on .sub { opacity: 1; transform: none; }
+/* 순서가 있는 동작은 큰 단어 칩으로 */
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 26px 0 0; padding: 0; list-style: none; }
+.flow li { display: inline-flex; align-items: center; gap: 10px; font-size: clamp(16px, 1.4vw, 20px); font-weight: 800; color: var(--t3); opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .6s var(--expo), color .3s; transition-delay: calc(.45s + var(--i) * .12s); }
+.flow li span { padding: 10px 16px; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .05), 0 4px 14px rgba(17, 24, 39, .06); transition: background .3s, color .3s, box-shadow .3s; }
+.flow li + li::before { content: '→'; color: var(--t4); font-weight: 700; }
+.flow li.now span { background: var(--g); color: #fff; box-shadow: 0 10px 26px rgba(91, 92, 246, .35); }
+.side.on .flow li { opacity: 1; transform: none; }
+.links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; opacity: 0; transition: opacity .6s .5s; }
+.side.on .links { opacity: 1; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; padding: 0 24px; border-radius: 16px; font-weight: 800; font-size: 16.5px; text-decoration: none; transition: transform .2s var(--spring), box-shadow .2s; }
 .btn:hover { transform: translateY(-2px); }
-.btn.pri { background: var(--g); color: #fff; box-shadow: 0 12px 30px rgba(91, 92, 246, .35); }
+.btn.pri { background: var(--g); color: #fff; box-shadow: 0 14px 32px rgba(91, 92, 246, .35); }
 .btn.talk { background: #FEE500; color: #191919; }
-.btn.sub { background: #fff; color: var(--t1); box-shadow: 0 1px 2px rgba(17, 24, 39, .06), 0 2px 10px rgba(17, 24, 39, .06); }
+.btn.sub2 { background: #fff; color: var(--t1); box-shadow: 0 1px 2px rgba(17, 24, 39, .06), 0 2px 10px rgba(17, 24, 39, .06); }
 
 /* 아래: 이동 */
 .bottom { display: flex; align-items: center; gap: 12px; padding: 14px clamp(16px, 4vw, 48px) 20px; }
-.nav { min-height: 48px; padding: 0 20px; border-radius: 14px; font-weight: 800; font-size: 15px; }
+.nav { min-height: 50px; padding: 0 22px; border-radius: 15px; font-weight: 800; font-size: 15.5px; }
 .prev { background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .06); color: var(--t2); }
-.next { background: var(--g); color: #fff; box-shadow: 0 10px 26px rgba(91, 92, 246, .3); margin-left: 12px; }
-.nav:disabled { opacity: .35; cursor: default; }
-.count { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--t3); font-variant-numeric: tabular-nums; }
-.keys { font-size: 13px; color: var(--t4); font-weight: 600; }
+.next { background: var(--t1); color: #fff; }
+.nav:disabled { opacity: .3; cursor: default; }
+.replay { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 12px; font-size: 14px; font-weight: 700; color: var(--t3); }
+.replay:hover { background: #fff; }
+.count { font-size: 14px; font-weight: 700; color: var(--t4); font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
 
 @media (max-width: 860px), (max-aspect-ratio: 1/1) {
   body { overflow: auto; }
   .app { position: static; min-height: 100svh; }
-  .top { flex-wrap: wrap; gap: 10px; padding-bottom: 6px; }
-  .chaps { margin-left: 0; width: 100%; } .chaps li { flex: 1; min-width: 0; font-size: 12px; }
-  .main { grid-template-columns: 1fr; gap: 12px; padding-bottom: 8px; }
-  .phone { height: min(52svh, 480px); border-radius: 28px; padding: 3px; } .scr { border-radius: 25px; }
-  .side { text-align: left; }
-  .ttl { font-size: 28px; margin-top: 10px; }
-  .acts { margin-top: 16px; } .acts li { font-size: 15px; padding: 12px 14px; }
-  .bottom { position: sticky; bottom: 0; background: linear-gradient(transparent, var(--bg) 30%); }
-  .keys { display: none; }
-  .cards { grid-template-columns: 1fr; }
+  .top { flex-wrap: wrap; gap: 10px; padding: 14px 16px 4px; }
+  .chaps { margin: 0; width: 100%; } .chaps li { flex: 1; min-width: 0; } .chaps button { min-width: 0; font-size: 12px; }
+  .main { grid-template-columns: 1fr; gap: 6px; padding: 0 16px 6px; }
+  .stagebox { padding: 6px 0 0; }
+  .phone { height: min(48svh, 460px); border-radius: 32px; padding: 4px; } .scr { border-radius: 28px; }
+  .main { padding-bottom: 96px; }
+  .side { text-align: center; padding: 6px 0 0; }
+  .kw { font-size: clamp(36px, 10.5vw, 52px); margin-top: 8px; }
+  .sub { margin: 12px auto 0; font-size: 16px; }
+  .flow { justify-content: center; margin-top: 16px; gap: 6px; }
+  .flow li { font-size: 14.5px; gap: 6px; } .flow li span { padding: 8px 11px; }
+  .links { justify-content: center; }
+  .bottom { position: sticky; bottom: 0; padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(rgba(244, 245, 247, 0), var(--bg) 35%); }
+  .replay span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .amb { animation: none; }
+  .kw .c, .sub, .flow li { transition: none; }
 }
 </style>
 </head>
@@ -118,13 +113,13 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 <div class="app">
   <header class="top">
     <a class="brand" href="../"><i aria-hidden="true"></i>GTD 워크 <small>사용법</small></a>
-    <ol class="chaps" aria-label="챕터"></ol>
+    <ol class="chaps" id="chaps" aria-label="챕터"></ol>
   </header>
 
   <main class="main">
-    <div class="phone-wrap" aria-hidden="true">
+    <div class="stagebox" aria-hidden="true">
       <div class="amb"></div>
-      <div class="phone"><div class="scr" id="scr"><i class="spot" id="spot"></i><i class="tap" id="tap"></i></div></div>
+      <div class="phone"><div class="scr" id="scr"><iframe id="fa" title="앱 화면" tabindex="-1"></iframe><iframe id="fb" title="앱 화면" tabindex="-1"></iframe><i class="finger" id="finger"></i></div></div>
     </div>
     <section class="side" id="side" aria-live="polite"></section>
   </main>
@@ -132,7 +127,7 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
   <footer class="bottom">
     <button class="nav prev" id="prev" type="button">← 이전</button>
     <button class="nav next" id="next" type="button">다음 →</button>
-    <span class="keys">키보드 ← → 로도 넘겨요</span>
+    <button class="replay" id="replay" type="button" aria-label="이 장면 다시 보기">↻ <span>다시 보기</span></button>
     <span class="count" id="count"></span>
   </footer>
 </div>
@@ -140,119 +135,239 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 <script>
 (function () {
   'use strict';
-  // 링크: 앱 · 커뮤니티 카톡방 · 도움말
-  var APP = '../app/', TALK = 'https://open.kakao.com/o/gmiCVeWi', HELP = '../my-task-kit/help.html';
-  var CH = ['시작하기', '담기', '정리하기', '하루 쓰기'];
-  // spot·tap: 실제 앱 화면(390×844) 위 비율(%). img가 1:2 녹화 화면이면 tall:true
-  var S = [
-    { cover: true, ch: -1 },
-    { ch: 0, img: 'start', eb: '1. 시작하기', t: '메일의 [시작 링크]를 열어요.', d: '신청하면 받은 메일에 시작 링크가 있어요. PC든 휴대폰이든 같은 링크예요.',
-      a: ['메일에서 <b>GTD 워크 시작하기</b> 버튼을 눌러요.', '<b>구글로 시작하기</b>를 눌러요.', '쓸 <b>구글 계정</b>을 골라요.'], spot: [4, 35.8, 92, 7], tap: [50, 39.3] },
-    { ch: 0, img: 'start', eb: '1. 시작하기', t: '경고가 떠도 [괜찮아요].', d: '구글 심사를 받는 중이라 나오는 안내예요. 내 데이터는 내 계정 밖으로 나가지 않아요.',
-      a: ['"확인하지 않은 앱"이 뜨면 <b>고급 ▸ 이동</b>을 눌러요.', '권한 화면에서 <b>모두 선택 ▸ 계속</b>을 눌러요.', '내 구글 드라이브에 <b>내 시트가 저절로</b> 생겨요.'],
-      tip: '앱은 자기가 만든 시트와 내 캘린더만 다뤄요. 다른 드라이브 파일은 볼 수 없어요.', spot: [4, 44.6, 92, 15.2] },
-    { ch: 0, img: 'home', eb: '1. 시작하기', t: '[오늘 화면]이 열리면 준비 끝.', d: '처음에는 예시 할 일이 들어 있어요. 써 보면서 익히고, 필요 없으면 지우면 돼요.',
-      a: ['맨 위 <b>입력칸</b>이 가장 자주 쓰는 곳이에요.', '휴대폰에서는 브라우저 메뉴의 <b>홈 화면에 추가</b>를 누르면 앱처럼 열려요.'], spot: [4, 14.6, 92, 9.6] },
-    { ch: 1, img: 'type', eb: '2. 담기', t: '떠오르면, [한 줄].', d: '판단은 나중에 해요. 지금은 머릿속에서 꺼내 적기만 하면 돼요.',
-      a: ['입력칸을 누르고 떠오른 일을 적어요.', '<b>엔터</b>나 <b>＋</b>를 누르면 담겨요.', '생각나는 대로 계속 적어도 돼요.'], spot: [4, 14.6, 92, 9.6], tap: [86, 19.2] },
-    { ch: 1, img: 'home-added', eb: '2. 담기', t: '담은 일은 [수집함]으로.', d: '입력칸 아래 수집함 숫자가 올라가요. 쌓아 뒀다가 하루 한 번 정리해요.',
-      a: ['<b>수집함</b>을 누르면 정리를 시작해요.', '아래 탭의 수집함으로 가도 같아요.'], spot: [4, 25.4, 30, 4.6], tap: [17, 27.7] },
-    { ch: 2, img: 'drop-ask', eb: '3. 정리하기', t: '한 장씩, [해야 할 일인가요?]', d: '수집함은 카드를 한 장씩 보여 주고 딱 하나만 물어요.',
-      a: ['해야 하면 <b>네, 해야 해요</b>.', '아니면 <b>아니요</b>.', '2분이면 끝나는 일은 <b>바로 끝냄</b>.'], spot: [3, 13.8, 94, 30.2], tap: [70, 29.6] },
-    { ch: 2, img: 'drop-no', eb: '3. 정리하기', t: '아니라면, [어디에 둘까요?]', d: '할 일이 아닌 것도 버리지 말고 제자리에 두면 머릿속이 가벼워져요.',
-      a: ['<b>버리기</b>: 필요 없는 일', '<b>언젠가 할지도</b>: 지금은 아니지만 나중에 볼 일', '<b>참고로 보관</b>: 할 일은 아닌 정보(비밀번호, 메모 등)'], spot: [5, 23.4, 90, 22.4], tap: [29.5, 29.6] },
-    { ch: 2, img: 'ref-ref', eb: '3. 정리하기', t: '2분이면 [그 자리에서] 끝.', d: '문자 한 통, 전화 한 통처럼 금방 끝나는 일은 미루지 말고 바로 해요.',
-      a: ['<b>2분이면 끝나요 · 바로 끝냄</b>을 눌러요.', '완료로 기록되고 다음 카드가 나와요.'], spot: [5, 36.4, 60, 5], tap: [33, 39.3] },
-    { ch: 2, img: 'hero-yes', eb: '3. 정리하기', t: '해야 할 일이면, [어떻게 할까요?]', d: '네 갈래 중 하나만 고르면 정리가 끝나요.',
-      a: ['<b>내가 할 일</b>: 날짜 없이 할 일 목록으로', '<b>날짜 정하기</b>: 오늘·내일·이번 주말 등', '<b>맡기기</b>: 다른 사람에게 부탁한 일', '<b>여러 단계예요</b>: 프로젝트로 묶어요'], spot: [5, 21, 90, 27], tap: [70, 29.6] },
-    { ch: 2, img: 'hero-sched', eb: '3. 정리하기', t: '날짜는 [한 번에] 골라요.', d: '자주 쓰는 날짜가 버튼으로 나와요. 직접 고를 수도 있어요.',
-      a: ['<b>오늘</b>을 누르면 오늘 할 일로 들어가요.', '다른 날은 <b>직접 고르기</b>에서 정해요.'], spot: [4, 71.4, 92, 5.6], tap: [12.5, 74.3] },
-    { ch: 2, img: 'hero-done', eb: '3. 정리하기', t: '[수집함이 비었어요.]', d: '다 정리하면 머릿속이 가벼워져요. 하루 한 번이면 충분해요.',
-      a: ['<b>오늘 할 일 보기</b>를 누르면 오늘 화면으로 가요.'], spot: [10, 9, 80, 28] },
-    { ch: 3, img: 'today-star', eb: '4. 하루 쓰기', t: '오늘은 [★ 이것만].', d: '꼭 할 일에 ★를 달면 맨 위로 올라와요. 3개만 고르는 게 좋아요.',
-      a: ['할 일을 누르고 <b>꼭 하기</b>를 눌러요.', '<b>3개만 고르기</b>로 한 번에 골라도 돼요.'], spot: [3, 43.6, 94, 6.6] },
-    { ch: 3, img: 'swipe', tall: true, eb: '4. 하루 쓰기', t: '끝낸 일은 [옆으로 밀어요].', d: '오른쪽으로 한 번 밀면 완료예요. 실수했으면 아래 되돌리기를 눌러요.',
-      a: ['할 일을 <b>오른쪽으로 밀면</b> 완료.', '<b>왼쪽으로 밀면</b> 내일로 미뤄요.', '동그라미를 눌러도 완료돼요.'], spot: [3, 30, 94, 40] },
-    { ch: 3, img: 'timeline', eb: '4. 하루 쓰기', t: '빈 시간에 [알아서] 놓여요.', d: '시간표를 켜면 구글 캘린더 일정 사이 빈 시간에 오늘 할 일이 놓여요.',
-      a: ['오늘 화면의 <b>시간표</b>를 눌러요.', '할 일을 <b>끌어다 넣으면</b> 내 캘린더에 들어가요.'], spot: [3, 32.8, 94, 58], tap: [91, 23.8] },
-    { ch: 3, img: 'focus', eb: '4. 하루 쓰기', t: '하나에만, [25분 집중].', d: '할 일을 누르고 집중을 시작하면 타이머가 돌아요. 끝나면 완료로 기록돼요.',
-      a: ['할 일을 누르고 <b>집중</b>을 눌러요.', '다 하면 <b>완료</b>, 잠깐 쉬려면 <b>멈춤</b>.'], spot: [8, 60, 84, 10], tap: [50, 65] },
-    { ch: 3, img: 'remind', tall: true, eb: '4. 하루 쓰기', t: '맡긴 일도 [놓치지 않게].', d: '누구에게 맡겼는지, 며칠째인지 보여요. 확인할 날이 되면 위로 올라와요.',
-      a: ['맡긴 일을 누르고 <b>리마인드 문구 복사</b>를 눌러요.', '카톡에 붙여 넣어 보내면 돼요.', '받았으면 <b>받았어요</b>로 끝내요.'], spot: [3, 66, 94, 8.5], tap: [40, 70.5] },
-    { ch: 3, img: 'weekly', tall: true, eb: '4. 하루 쓰기', t: '금요일엔 [한 주 돌아보기].', d: '주간 검토가 질문을 하나씩 던져요. 답하면서 머릿속에 남은 일을 꺼내요.',
-      a: ['더보기 ▸ <b>주간 검토</b>를 눌러요.', '질문에 떠오르는 대로 적고 <b>다음</b>.', '10분이면 다음 주가 가벼워져요.'], spot: [3, 18, 94, 30] },
-    { end: true, ch: 3 }
-  ];
-  var scr = document.getElementById('scr'), spot = document.getElementById('spot'), tap = document.getElementById('tap'), side = document.getElementById('side');
-  var chaps = document.querySelector('.chaps'), count = document.getElementById('count'), prev = document.getElementById('prev'), next = document.getElementById('next');
-  var imgs = {};
-  S.forEach(function (s) { if (s.img && !imgs[s.img]) { var im = document.createElement('img'); im.src = 'img/' + s.img + '.webp'; im.alt = ''; if (s.tall) im.className = 'tall'; scr.insertBefore(im, spot); imgs[s.img] = im; } });
-  CH.forEach(function (c) { var li = document.createElement('li'); li.innerHTML = c + '<i><b></b></i>'; chaps.appendChild(li); });
-  var chEls = [].slice.call(chaps.children);
+  var APP = '../app/', TALK = 'https://open.kakao.com/o/gmiCVeWi';
+  var CH = ['시작', '담기', '보내기', '하루 쓰기', '돌아보기'];
+  var NEXT = '세무사님께 부가세 자료 일정 전화로 확인', NEXT2 = '분기 보고서 초안 목차 쓰기';
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function title(t) { // [강조]는 보라색, 단어 단위로 줄바꿈
-    var out = '', i = 0;
-    t.split(/(\[[^\]]+\])/).forEach(function (part) {
-      if (!part) return;
-      var em = part.charAt(0) === '[', body = em ? part.slice(1, -1) : part;
-      var words = body.split(' ').map(function (w) { return '<span class="w">' + Array.from(w).map(function (ch) { return '<span class="c" style="--i:' + (i++) + '">' + ch + '</span>'; }).join('') + '</span>'; }).join(' ');
-      out += em ? '<em>' + words + '</em>' : words;
+  // 장면: 휴대폰 안은 실제 앱 화면(guide/s/*.html — GTD 레포 tools/guide-scenes.js로 생성). play = 그 위에서 재생할 동작.
+  // kw = 크게 보일 한마디([ ]는 강조), sub = 한 줄 설명, flow = 순서가 있으면 큰 단어 칩
+  var S = [
+    { ch: -1, scene: 'home', eb: '사용법', kw: '머릿속은 [비우고], 오늘은 가볍게.', sub: '실제 앱 화면 위에서 하나씩 보여 드릴게요. <b>3분</b>이면 다 봐요.',
+      play: function (a) { return a.wait(900).then(function () { return a.type('#capInput', '내일 회의 자료 뽑기'); }).then(function () { return a.wait(1400); }).then(function () { a.clear('#capInput'); }); } },
+    { ch: 0, scene: 'home', eb: '시작', kw: '링크 하나로 [시작].', sub: '메일의 <b>시작하기</b>를 누르고 구글 계정을 고르면 끝. 내 드라이브에 내 시트가 생겨요.',
+      flow: ['구글 계정 고르기', '고급 ▸ 이동', '모두 선택 ▸ 계속'],
+      play: function (a) { return a.flowStep(0, 1200).then(function () { return a.flowStep(1, 1200); }).then(function () { return a.flowStep(2, 1200); }).then(function () { a.flowStep(-1, 0); return a.pulse('.hero'); }); } },
+    { ch: 1, scene: 'home', eb: '담기', kw: '떠오르면, [한 줄].', sub: '맨 위 입력칸에 적고 <b>엔터</b>. 오늘 할 일에 바로 들어가요.',
+      play: function (a) {
+        return a.tap('#capInput').then(function () { return a.type('#capInput', '은행 서류 떼기'); })
+          .then(function () { return a.tap('#capBtn'); }).then(function () { return a.show('capture-added'); })
+          .then(function () { return a.pulse(a.row('은행 서류 떼기')); });
+      } },
+    { ch: 2, scene: 'home', eb: '보내기', kw: '누르면, [어디로?]', sub: '할 일을 누르면 보낼 곳이 한 번에 나와요. 날짜, 맡기기, 나중에.',
+      play: function (a) {
+        return a.tap(a.row(NEXT)).then(function () { return a.show('send', { sheet: true }); })
+          .then(function () { return a.pulse('#sheetBody [data-a="s-day"] .tile, #sheetBody [data-a="s-who"] .tile, #sheetBody [data-a="s-later"] .tile'); });
+      } },
+    { ch: 2, scene: 'send', eb: '보내기', kw: '날짜는 [한 번에].', sub: '<b>날짜</b>를 누르면 오늘·내일·이번 주가 버튼으로 나와요.',
+      play: function (a) {
+        return a.tap('#sheetBody [data-a="s-day"]').then(function () { return a.show('send-day'); })
+          .then(function () { return a.tap('#sheetBody [data-sday]:nth-child(2)'); });
+      } },
+    { ch: 2, scene: 'send', eb: '보내기', kw: '맡기고, [잊기].', sub: '누구에게 맡겼는지 적어 두면, 확인할 날에 다시 올라와요.',
+      play: function (a) {
+        return a.tap('#sheetBody [data-a="s-who"]').then(function () { return a.show('send-who'); })
+          .then(function () { return a.tap('#sWhoIn'); }).then(function () { return a.type('#sWhoIn', '박주임'); }).then(function () { return a.tap('#sWhoOk'); });
+      } },
+    { ch: 3, scene: 'home', eb: '하루 쓰기', kw: '★ 오늘은 [이것만].', sub: '꼭 할 일에 ★. 맨 위로 올라와요. <b>3개</b>면 충분해요.',
+      play: function (a) {
+        return a.tap(a.row(NEXT2)).then(function () { return a.show('star-sheet', { sheet: true }); })
+          .then(function () { return a.tap('#sheetBody [data-a="star"]'); }).then(function () { return a.show('star-done'); })
+          .then(function () { return a.pulse(a.row(NEXT2)); });
+      } },
+    { ch: 3, scene: 'home', eb: '하루 쓰기', kw: '밀면, [끝].', sub: '끝낸 일은 오른쪽으로 한 번. 실수했으면 <b>되돌리기</b>.',
+      play: function (a) { return a.swipe(a.row(NEXT)).then(function () { return a.show('swipe-done'); }).then(function () { return a.pulse('#toast button'); }); } },
+    { ch: 3, scene: 'home', eb: '하루 쓰기', kw: '빈 시간에, [쏙].', sub: '<b>시간표</b>를 누르고 할 일을 끌어다 놓으면 구글 캘린더에 들어가요.',
+      play: function (a) { return a.tap('[data-timeview]').then(function () { return a.show('timeline'); }).then(function () { return a.pulse('.dchip'); }); } },
+    { ch: 3, scene: 'send', eb: '하루 쓰기', kw: '25분, [하나만].', sub: '<b>집중</b>을 누르면 타이머가 돌아요. 끝나면 완료.',
+      play: function (a) { return a.tap('#sheetBody [data-a="focus"]').then(function () { return a.show('focus'); }).then(function () { return a.countdown('#fmClock', 24 * 60 + 59, 6); }); } },
+    { ch: 3, scene: 'home', eb: '하루 쓰기', kw: '남은 일은 [내일로].', sub: '하루 끝에 <b>오늘 마무리</b>. 못 한 일은 골라서 내일로 넘겨요.',
+      play: function (a) { return a.tap('[data-shutdown]').then(function () { return a.show('shutdown', { sheet: true }); }); } },
+    { ch: 4, scene: 'home', eb: '돌아보기', kw: '맡긴 일, [며칠째?]', sub: '<b>맡긴 일 확인</b>에서 누가, 며칠째인지 한눈에. 문구를 복사해 카톡으로.',
+      play: function (a) { return a.tap('[data-goto=waiting]').then(function () { return a.show('waiting'); }).then(function () { return a.pulse('[data-wid]'); }); } },
+    { ch: 4, scene: 'weekly', eb: '돌아보기', kw: '금요일엔, [비우기].', sub: '<b>주간 검토</b>가 질문을 하나씩 물어요. 답하다 보면 머리가 가벼워져요.',
+      play: function (a) { return a.pulse('#moreBody .card').then(function () { return a.tap('[data-wks=next]'); }); } },
+    { ch: 5, scene: 'home', end: true, eb: '다 봤어요', kw: '이제 [직접] 해 봐요.', sub: '모르는 건 카톡방에 물어보세요. 바라는 기능도 들려주세요.', play: null }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var scr = $('scr'), fin = $('finger'), side = $('side'), chaps = $('chaps');
+  var frames = [$('fa'), $('fb')], front = 0, cur = 0, token = 0;
+
+  // ── 챕터 ──
+  CH.forEach(function (c, i) {
+    var li = document.createElement('li'), b = document.createElement('button');
+    b.type = 'button'; b.innerHTML = c + '<i><b></b></i>';
+    b.addEventListener('click', function () { for (var j = 0; j < S.length; j++) if (S[j].ch === i) return go(j); });
+    li.appendChild(b); chaps.appendChild(li);
+  });
+  function paintChaps() {
+    var ch = S[cur].ch, end = !!S[cur].end;
+    [].forEach.call(chaps.querySelectorAll('button'), function (b, i) {
+      var idx = []; S.forEach(function (s, j) { if (s.ch === i) idx.push(j); });
+      var done = idx.filter(function (j) { return j <= cur; }).length;
+      b.className = i === ch ? 'on' : (end || ch > i ? 'done' : '');
+      b.querySelector('b').style.width = (end ? 100 : Math.round(done / idx.length * 100)) + '%';
     });
-    return out;
   }
-  var cur = -1, did = {};
-  function show(n) {
-    n = Math.max(0, Math.min(S.length - 1, n)); if (n === cur) return; cur = n;
-    var s = S[n];
-    try { history.replaceState(null, '', '#' + n); } catch (e) {}
-    // 화면
-    Object.keys(imgs).forEach(function (k) { imgs[k].classList.toggle('on', k === (s.img || (s.end ? 'today-star' : 'home'))); });
-    if (s.spot) { spot.style.left = s.spot[0] + '%'; spot.style.top = s.spot[1] + '%'; spot.style.width = s.spot[2] + '%'; spot.style.height = s.spot[3] + '%'; spot.classList.add('on'); } else spot.classList.remove('on');
-    tap.classList.remove('on');
-    if (s.tap) { tap.style.left = s.tap[0] + '%'; tap.style.top = s.tap[1] + '%'; void tap.offsetWidth; tap.classList.add('on'); }
-    // 챕터 진행
-    chEls.forEach(function (li, i) {
-      var inCh = S.filter(function (x) { return x.ch === i && !x.end; }), idx = inCh.indexOf(s), p = s.end || s.ch > i ? 1 : s.ch === i ? (idx + 1) / inCh.length : 0;
-      li.classList.toggle('on', s.ch === i && !s.end); li.classList.toggle('done', p >= 1 && !(s.ch === i && !s.end));
-      li.querySelector('b').style.width = (p * 100) + '%';
+
+  // ── 휴대폰 크기 ──
+  var k = 1;
+  function fit() {
+    k = scr.clientWidth / 390; frames.forEach(function (f) { f.style.transform = 'scale(' + k + ')'; });
+    var fs = Math.round(Math.max(30, Math.min(46, 100 * k))); fin.style.width = fin.style.height = fs + 'px'; fin.style.margin = (-fs / 2) + 'px 0 0 ' + (-fs / 2) + 'px';
+  }
+  addEventListener('resize', fit);
+
+  // ── 장면(두 iframe을 번갈아 띄움) ──
+  var EXTRA = '.g-hl{animation:ghl 1.2s ease-out 1;position:relative;z-index:2}@keyframes ghl{0%{box-shadow:0 0 0 0 rgba(91,92,246,.65)}70%{box-shadow:0 0 0 14px rgba(91,92,246,0)}100%{box-shadow:0 0 0 0 rgba(91,92,246,0)}}' +
+    '.g-press{transform:scale(.95)!important;transition:transform .12s!important}.g-focus{box-shadow:0 0 0 3px rgba(91,92,246,.35),0 10px 30px rgba(91,92,246,.2)!important}';
+  function load(f, id) {
+    return new Promise(function (res) {
+      if (f.dataset.id === id && f.dataset.fresh === '1') return res();
+      f.onload = function () {
+        try {
+          var d = f.contentDocument, st = d.createElement('style'); st.textContent = EXTRA; d.head.appendChild(st);
+          [].forEach.call(d.querySelectorAll('[data-scroll]'), function (e) { e.scrollTop = +e.getAttribute('data-scroll'); });
+        } catch (e) {}
+        f.dataset.id = id; f.dataset.fresh = '1'; res();
+      };
+      f.src = 's/' + id + '.html?v=1';
     });
-    // 설명
-    var h;
-    if (s.cover) {
-      h = '<div class="cover"><span class="eb">사용법 · 5분</span><h1 class="ttl">하나씩 [따라 해 봐요].</h1><p class="desc">실제 앱 화면으로 시작부터 하루 쓰기까지 짚어 드려요. 오른쪽 아래 <b>다음</b>을 누르거나 키보드 → 로 넘겨요.</p><div class="cards">' +
-        CH.map(function (c, i) { var sub = ['구글 계정으로 1분', '떠오르면 한 줄', '하루 한 번, 한 장씩', '★ · 시간표 · 집중 · 주간 검토'][i]; return '<button class="ccard" data-go="' + S.findIndex(function (x) { return x.ch === i; }) + '" style="--i:' + i + '"><b>' + (i + 1) + '</b><div><span>' + c + '</span><small>' + sub + '</small></div></button>'; }).join('') + '</div></div>';
-    } else if (s.end) {
-      h = '<span class="eb">다 봤어요</span><h1 class="ttl">이제 [시작해요].</h1><p class="desc">막히는 곳이 있으면 사용자 커뮤니티 카톡방에 물어보세요. 바라는 기능도 함께 나눠요.</p>' +
-        '<div class="links"><a class="btn pri" href="' + APP + '">앱 열기</a><a class="btn talk" href="' + TALK + '" target="_blank" rel="noopener">💬 사용자 커뮤니티 카톡방</a><a class="btn sub" href="' + HELP + '">도움말</a></div>';
-    } else {
-      h = '<span class="eb">' + s.eb + '</span><h1 class="ttl">' + title(s.t) + '</h1><p class="desc">' + s.d + '</p><ol class="acts">' +
-        s.a.map(function (x, i) { return '<li style="--i:' + i + '">' + x + '</li>'; }).join('') + '</ol><p class="tip">' + (s.tip || '') + '</p>' +
-        '<button class="did' + (did[n] ? ' on' : '') + '" type="button" aria-pressed="' + !!did[n] + '"><i><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i>앱에서 해 봤어요</button>';
+  }
+  function doc() { return frames[front].contentDocument; }
+  function show(id, opt) {
+    var back = frames[1 - front];
+    return load(back, id).then(function () {
+      back.dataset.fresh = '0';
+      var d = back.contentDocument, sh = d.getElementById('sheet'), dm = d.getElementById('dim');
+      if (opt && opt.sheet && sh) { sh.classList.remove('on'); dm && dm.classList.remove('on'); } // 닫힌 채로 보여 주고 앱의 실제 애니메이션으로 연다
+      frames[front].classList.remove('on'); back.classList.add('on'); front = 1 - front;
+      if (opt && opt.sheet && sh) return wait(80).then(function () { sh.classList.add('on'); dm && dm.classList.add('on'); return wait(700); });
+      return wait(400);
+    });
+  }
+
+  // ── 동작 ──
+  function wait(ms) { var t = token; return new Promise(function (res, rej) { setTimeout(function () { t === token ? res() : rej('stop'); }, reduce ? Math.min(ms, 60) : ms); }); }
+  function el(sel) { return typeof sel === 'string' ? doc().querySelector(sel) : sel; }
+  function row(text) {
+    var hit = null;
+    [].forEach.call(doc().querySelectorAll('.swr'), function (w) { var t = w.querySelector('.t'); if (!hit && t && t.textContent.replace(/★/g, '').trim() === text) hit = w.querySelector('.row'); });
+    return hit;
+  }
+  function at(e) { var r = e.getBoundingClientRect(); return { x: (r.left + Math.min(r.width / 2, 120)) * k, y: (r.top + r.height / 2) * k }; }
+  function moveTo(e) { var p = at(e); fin.classList.add('on'); fin.style.left = p.x + 'px'; fin.style.top = p.y + 'px'; return wait(720); }
+  function tap(sel) {
+    var e = el(sel); if (!e) return wait(200);
+    return moveTo(e).then(function () { fin.classList.add('down', 'ping'); e.classList.add('g-press'); return wait(170); })
+      .then(function () { fin.classList.remove('down'); e.classList.remove('g-press'); return wait(380); })
+      .then(function () { fin.classList.remove('ping'); });
+  }
+  function pulse(sel) {
+    var list = typeof sel === 'string' ? [].slice.call(doc().querySelectorAll(sel)) : [sel];
+    fin.classList.remove('on');
+    list.forEach(function (e) { if (e) { e.classList.remove('g-hl'); void e.offsetWidth; e.classList.add('g-hl'); } });
+    return wait(1200);
+  }
+  function type(sel, text) {
+    var e = el(sel); if (!e) return wait(100);
+    var wrap = e.closest('.cap') || e; wrap.classList.add('g-focus'); fin.classList.remove('on');
+    var i = 0;
+    return (function next() { if (i > text.length) return wait(380); e.value = text.slice(0, i++); return wait(80 + Math.random() * 70).then(next); })()
+      .then(function () { wrap.classList.remove('g-focus'); });
+  }
+  function clear(sel) { var e = el(sel); if (e) e.value = ''; }
+  function swipe(e) {
+    if (!e) return wait(100);
+    var w = e.closest('.swr'), p0;
+    return moveTo(e).then(function () {
+      p0 = at(e); fin.classList.add('down', 'drag'); w.classList.add('goR'); e.classList.add('drag');
+      var dx = 0;
+      return (function step() {
+        if (dx >= 250) return wait(150);
+        dx += 14; e.style.transform = 'translateX(' + dx + 'px)'; fin.style.left = (p0.x + dx * k) + 'px';
+        return wait(16).then(step);
+      })();
+    }).then(function () { fin.classList.remove('down', 'drag', 'on'); return wait(200); });
+  }
+  function countdown(sel, from, n) {
+    var e = el(sel), s = from, i = 0; fin.classList.remove('on');
+    return (function tick() {
+      if (!e || i++ >= n) return wait(300);
+      e.textContent = Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); s--;
+      return wait(1000).then(tick);
+    })();
+  }
+  function flowStep(i, ms) {
+    [].forEach.call(side.querySelectorAll('.flow li'), function (li, j) { li.classList.toggle('now', j === i); });
+    return ms ? wait(ms) : Promise.resolve();
+  }
+  var A = { wait: wait, tap: tap, pulse: pulse, type: type, clear: clear, swipe: swipe, show: show, row: row, countdown: countdown, flowStep: flowStep };
+
+  // ── 글 ──
+  // [ ]는 강조. 강조 묶음 안의 띄어쓰기와 바로 뒤 문장부호는 줄바꿈되지 않게 한 덩어리로
+  function kwHtml(s) {
+    var n = 0, words = [], w = [], em = false;
+    for (var x = 0; x < s.length; x++) {
+      var ch = s[x];
+      if (ch === '[') { em = true; continue; }
+      if (ch === ']') { em = false; continue; }
+      if (ch === ' ' && !em) { if (w.length) words.push(w); w = []; continue; }
+      w.push({ c: ch === ' ' ? '\u00a0' : ch, e: em });
     }
-    side.innerHTML = s.cover ? h.replace('<h1 class="ttl">하나씩 [따라 해 봐요].</h1>', '<h1 class="ttl">' + title('하나씩 [따라 해 봐요].') + '</h1>') : s.end ? h.replace('<h1 class="ttl">이제 [시작해요].</h1>', '<h1 class="ttl">' + title('이제 [시작해요].') + '</h1>') : h;
-    requestAnimationFrame(function () { requestAnimationFrame(function () { $$('.ttl, .acts, .cover, .side > *').forEach(function (e) { e.classList.add('on'); }); }); });
-    prev.disabled = n === 0; next.textContent = s.end ? '처음으로' : n === 0 ? '시작 →' : '다음 →';
-    count.textContent = (n + 1) + ' / ' + S.length;
+    if (w.length) words.push(w);
+    return words.map(function (wd) {
+      return '<span class="w">' + wd.map(function (o) { return '<span class="c' + (o.e ? ' e' : '') + '" style="--i:' + (n++) + '">' + o.c + '</span>'; }).join('') + '</span>';
+    }).join(' ');
   }
-  function $$(q) { return [].slice.call(side.querySelectorAll(q)); }
-  side.addEventListener('click', function (e) {
-    var go = e.target.closest('[data-go]'); if (go) return show(+go.dataset.go);
-    var d = e.target.closest('.did'); if (!d) return;
-    did[cur] = !did[cur]; d.classList.toggle('on', did[cur]); d.setAttribute('aria-pressed', did[cur]);
-    // 해 봤다고 체크하면 잠시 뒤 다음 장면으로
-    if (did[cur]) { var at = cur; setTimeout(function () { if (cur === at && did[at]) show(at + 1); }, 650); }
-  });
-  prev.addEventListener('click', function () { show(cur - 1); });
-  next.addEventListener('click', function () { show(S[cur].end ? 0 : cur + 1); });
+  function paintSide(s) {
+    var h = '<div class="eb">' + (s.ch >= 0 && !s.end ? '<b>' + (s.ch + 1) + '</b>' : '') + s.eb + '</div>' +
+      '<h1 class="kw" aria-label="' + s.kw.replace(/[\[\]]/g, '') + '">' + kwHtml(s.kw) + '</h1><p class="sub">' + s.sub + '</p>';
+    if (s.flow) h += '<ol class="flow">' + s.flow.map(function (f, i) { return '<li style="--i:' + i + '"><span>' + f + '</span></li>'; }).join('') + '</ol>';
+    if (s.ch === -1) h += '<div class="links"><button class="btn pri" type="button" id="startBtn">시작하기 →</button></div>';
+    if (s.end) h += '<div class="links"><a class="btn pri" href="' + APP + '">GTD 워크 열기</a><a class="btn talk" href="' + TALK + '" target="_blank" rel="noopener">💬 카톡방</a><button class="btn sub2" type="button" id="againBtn">처음부터 다시</button></div>';
+    side.className = 'side'; side.innerHTML = h;
+    var kw = side.querySelector('.kw');
+    requestAnimationFrame(function () { requestAnimationFrame(function () { side.classList.add('on'); kw.classList.add('on'); }); });
+    var sb = $('startBtn'); if (sb) sb.addEventListener('click', function () { go(1); });
+    var ab = $('againBtn'); if (ab) ab.addEventListener('click', function () { go(0); });
+  }
+
+  // ── 재생: 처음 모습 → 동작 → 잠깐 쉬고 반복 ──
+  function run() {
+    var s = S[cur], my = ++token;
+    fin.classList.remove('on', 'down', 'drag', 'ping');
+    frames[1 - front].dataset.fresh = '0';
+    return show(s.scene).then(function () {
+      if (!s.play || my !== token) return;
+      return wait(500).then(function () { return s.play(A); }).then(function () { fin.classList.remove('on'); return wait(2800); })
+        .then(function () { if (my === token && !reduce) run(); });
+    }).catch(function () {});
+  }
+  function go(i) {
+    cur = Math.max(0, Math.min(S.length - 1, i));
+    $('prev').disabled = cur === 0; $('next').disabled = cur === S.length - 1;
+    $('count').textContent = (cur + 1) + ' / ' + S.length;
+    paintSide(S[cur]); paintChaps(); run();
+    try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {}
+  }
+  $('prev').addEventListener('click', function () { go(cur - 1); });
+  $('next').addEventListener('click', function () { go(cur + 1); });
+  $('replay').addEventListener('click', function () { run(); });
   addEventListener('keydown', function (e) {
-    if (e.target.closest && e.target.closest('input, textarea')) return;
-    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); show(cur + 1); }
-    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(cur - 1); }
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') go(cur + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(cur - 1);
   });
-  // 휴대폰: 좌우로 밀어 넘기기
-  var x0 = null; addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
-  addEventListener('touchend', function (e) { if (x0 === null) return; var dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 60) show(cur + (dx < 0 ? 1 : -1)); x0 = null; });
-  show(parseInt((location.hash || '#0').slice(1), 10) || 0);
+  // 휴대폰: 글 쪽을 옆으로 밀어 넘기기
+  var sx = null;
+  side.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; }, { passive: true });
+  side.addEventListener('touchend', function (e) { if (sx == null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 50) go(cur + (dx < 0 ? 1 : -1)); sx = null; });
+
+  addEventListener('hashchange', function () { var n = parseInt((location.hash || '').slice(1), 10); if (n > 0 && n - 1 !== cur) go(n - 1); });
+  fit();
+  var start = parseInt((location.hash || '').slice(1), 10);
+  go(start > 0 ? start - 1 : 0);
 })();
 </script>
 </body>
