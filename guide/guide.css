@@ -203,7 +203,7 @@ a { color: inherit; }
 .bin.today .n { background: var(--g); color: #fff; }
 .bin.pop { animation: pop .45s var(--spring); }
 @keyframes pop { 40% { transform: var(--t) scale(1.06); } }
-.ring { position: absolute; left: 52%; top: 50%; width: min(96vh, 70vw); height: min(96vh, 70vw); transform: translate(-50%, -50%) rotate(-90deg); z-index: 2; overflow: visible; opacity: 0; pointer-events: none; }
+.ring { position: absolute; left: 52%; top: 50%; width: min(88vh, 46vw); height: min(88vh, 46vw); transform: translate(-50%, -50%) rotate(-90deg); z-index: 2; overflow: visible; opacity: 0; pointer-events: none; }
 .ring circle { fill: none; }
 .ring .trk { stroke: rgba(91, 92, 246, .08); stroke-width: 2; }
 .ring .arc { stroke: url(#gg); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 578; stroke-dashoffset: 578; filter: drop-shadow(0 0 14px rgba(140, 120, 255, .45)); }
@@ -229,3 +229,34 @@ a { color: inherit; }
 }
 .story .stage:not(.dk) .th { color: var(--t1); background: #fff; border-color: #E6E8EC; box-shadow: 0 14px 40px rgba(30, 34, 80, .14); backdrop-filter: none; }
 .story .stage:not(.dk) .th.warn { color: #C2304A; background: #FFF1F3; border-color: #FFD2D9; }
+/* 3·4 배치·타임어택: 하루 시간표 */
+.story .track { position: absolute; left: 0; top: 0; right: auto; height: auto; z-index: 3; box-sizing: border-box; background: #fff; border-radius: 26px; box-shadow: 0 30px 80px rgba(30, 40, 90, .18); padding: 18px 18px 22px 64px; opacity: 0; visibility: hidden; will-change: transform, opacity; }
+.story .track .thd { display: flex; align-items: center; gap: 8px; margin: 0 0 14px -46px; font-size: 15px; font-weight: 800; color: var(--t1); }
+.story .track .gc { width: 12px; height: 12px; border-radius: 4px; background: #3182F6; }
+.story .track .grid { position: relative; height: calc(100% - 36px); }
+.story .track .hr span { left: -46px; }
+.story .track .ev { box-sizing: border-box; background: rgba(49, 130, 246, .1); padding: 6px 10px; font-size: 13px; overflow: hidden; border-radius: 12px; }
+.story .track .ev small, .story .track .blk small { font-size: 11.5px; }
+.story .track .blk { position: absolute; left: 0; right: 0; box-sizing: border-box; border-radius: 12px; background: #EEEEFF; border-left: 4px solid #5B5CF6; padding: 6px 10px 6px 34px; font-size: 13.5px; font-weight: 800; color: #3B3CC8; opacity: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: background .35s, color .35s, box-shadow .35s; }
+.story .track .blk small { display: block; font-weight: 600; color: rgba(59, 60, 200, .65); }
+.story .track .blk .ck { position: absolute; left: 10px; top: 8px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #5B5CF6; box-sizing: border-box; }
+.story .track .blk.on { background: #5B5CF6; color: #fff; box-shadow: 0 12px 30px rgba(91, 92, 246, .45); }
+.story .track .blk.on small { color: rgba(255, 255, 255, .8); }
+.story .track .blk.on .ck { border-color: #fff; }
+.story .track .blk.done { text-decoration: line-through; }
+.story .track .blk.done .ck { background: #5B5CF6 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat; }
+.story .track .nowl { position: absolute; left: -6px; right: 0; height: 0; border-top: 2px solid #E5484D; z-index: 2; opacity: 0; }
+.story .track .nowl::before { content: ''; position: absolute; left: -5px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: #E5484D; }
+.story .track .nowl b { position: absolute; right: 0; top: -24px; padding: 2px 8px; border-radius: 8px; background: #E5484D; color: #fff; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+@media (max-aspect-ratio: 1/1), (max-width: 860px) {
+  .story .track { padding: 12px 12px 14px 52px; border-radius: 20px; }
+  .story .track .thd { margin: 0 0 8px -40px; font-size: 13px; }
+  .story .track .grid { height: calc(100% - 28px); }
+  .story .track .hr span { left: -40px; font-size: 11px; }
+  .story .track .ev, .story .track .blk { padding-top: 3px; padding-bottom: 3px; font-size: 12px; }
+  .story .track .ev small, .story .track .blk small { display: none; }
+  .story .track .blk .ck { top: 50%; margin-top: -8px; }
+}
+/* 단계 표시는 모두 같은 자리(흐름에서 빼서 서로 밀지 않게) */
+.story .copy .eb2 { position: absolute; top: 0; left: 0; }
+@media (max-aspect-ratio: 1/1), (max-width: 860px) { .story .copy .eb2 { right: 0; display: flex; justify-content: center; } }
