@@ -2574,13 +2574,11 @@
     var grp = function (name, tiles) { return '<div class="mgroup"><div class="mgh">' + name + '</div><div class="mgrid">' + tiles.join('') + '</div></div>'; };
     var lnk = function (icon, cls, title, href, id) { return '<a class="mt" ' + (id ? 'id="' + id + '" ' : '') + 'href="' + href + '"' + (href === '#' ? '' : ' target="_blank" rel="noopener"') + '>' + tile(icon, cls) + '<span class="mtt">' + title + '</span></a>'; };
     $('moreBody').innerHTML = '<div class="h1" style="margin-bottom:18px">더보기</div>' +
+      // PC가 기준: 사이드바에 있는 검색·AI 연결·구글 시트·카톡방·버그 제보는 여기 두지 않는다(운영자 결정, 2026-11-09)
       grp('할 일', [ti('user', 'blue', '맡긴 일', m('waiting'), (d.delegated || []).length), ti('folder', 'purple', '프로젝트', m('projects'), (d.projects || []).filter(function (p) { return !p.finished; }).length),
-        ti('archive', 'gray', '나중에 할 일', m('someday'), d.someday || ''), ti('list', 'gray', '모든 할 일', m('all'))]) +
-      grp('도구', [ti('search', 'gray', '검색', m('search')), ti('calcheck', 'purple', '주간 검토', m('weekly')),
-        ti('sparkle', 'purple', 'AI 연결', m('ai')), lnk('file', 'green', '구글 시트', esc(d.sheetUrl || '#'))]) +
-      grp('설정', [ti('calendar', 'blue', '캘린더', m('cals')), ti('sun', 'amber', '화면', m('display'))].concat(window.KIT_AUTH ? [ti('user', 'gray', '계정 · 로그아웃', m('account'))] : []).concat(window.KIT_ENGINE ? [] : [ti('mail', 'purple', '알림 메일', m('notify'))])) +
-      grp('도움', [ti('keyboard', 'gray', '담는 법', m('keys')), lnk('file', 'gray', '도움말', d.pageUrl ? (window.KIT_ENGINE ? '../#c12' : esc(d.pageUrl) + 'help.html') : '#'),
-        lnk('chat', 'amber', '카톡방', 'https://open.kakao.com/o/gmiCVeWi'), lnk('bug', 'red', '버그 제보', '#', 'report')]) +
+        ti('archive', 'gray', '나중에 할 일', m('someday'), d.someday || ''), ti('list', 'gray', '모든 할 일', m('all')), ti('calcheck', 'purple', '주간 검토', m('weekly'))]) +
+      grp('설정', [ti('calendar', 'blue', '캘린더', m('cals')), ti('sun', 'amber', '화면', m('display')), ti('user', 'gray', '계정 · 로그아웃', m('account'))].concat(window.KIT_ENGINE ? [] : [ti('mail', 'purple', '알림 메일', m('notify'))])) +
+      grp('도움', [ti('keyboard', 'gray', '담는 법', m('keys')), lnk('file', 'gray', '도움말', d.pageUrl ? (window.KIT_ENGINE ? '../#c12' : esc(d.pageUrl) + 'help.html') : '#')]) +
       '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') +
 
       (window.KIT_ENGINE && window.KIT_ENGINE.startLog && window.KIT_ENGINE.startLog() ? '<br><span id="kitStartLog" style="font-size:11.5px">시작: ' + esc(window.KIT_ENGINE.startLog()) + '</span>' : '') + '</div>';
@@ -2597,6 +2595,12 @@
   }
   // 계정: 지금 로그인한 구글 계정 · 로그아웃(다른 계정으로 바꿀 때)
   function openAccount() {
+    // 예전 앱스크립트 웹앱(v1)은 앱 안 로그인이 없다: 구글 계정 고르기로 바꾼 뒤 그 계정의 앱 링크로 다시 연다
+    if (!window.KIT_AUTH) {
+      openSheet('<div class="st">계정</div><div class="ss" style="margin-top:6px">이 앱은 지금 브라우저에 로그인된 구글 계정으로 열려요. 다른 계정으로 쓰려면 구글 계정을 바꾼 뒤, 그 계정으로 받은 앱 링크를 다시 여세요.</div>' +
+        '<a class="cta" href="https://accounts.google.com/AccountChooser" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none">구글 계정 바꾸기</a>');
+      return;
+    }
     var em = (window.KIT_AUTH && window.KIT_AUTH.email && window.KIT_AUTH.email()) || '구글 계정';
     openSheet('<div class="st">계정</div><div class="card" style="margin-top:12px"><div class="row" style="cursor:default">' + tile('user', 'blue') + '<div class="tx"><div class="t">' + esc(em) + '</div><div class="m">지금 로그인한 구글 계정</div></div></div></div>' +
       '<div class="ss" style="margin-top:12px">로그아웃해도 할 일은 내 구글 시트에 그대로 남아 있어요. 다른 계정으로 쓰려면 로그아웃한 뒤 그 계정으로 다시 시작하세요.</div>' +
