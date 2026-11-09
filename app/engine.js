@@ -1211,6 +1211,20 @@ function undoTask(u) {
   });
 }
 
+/** 완료한 일을 다시 할 일로 (시간표에서 완료 → 계획으로 끌었을 때). 반복 일은 완료하며 생긴 다음 회차를 지운다. */
+function reopenTask(id) {
+  var ctx = taskContext_(), today = todayYmd_(ctx.tz);
+  var all = readAllTasks_(ctx), t = all.filter(function (x) { return x.id === id; })[0];
+  if (!t) throw new Error('항목을 찾지 못했습니다.');
+  var nextId = '';
+  if (t.repeat) {
+    var sib = all.filter(function (x) { return x.id !== t.id && x.title === t.title && x.repeat === t.repeat && !isClosedStatus_(x.status) && x.created === today; })[0];
+    nextId = sib ? sib.id : '';
+  }
+  undoTask({ id: id, status: STATUS.NEXT, focus: today, nextId: nextId });
+  return { ok: true, undo: { id: id, status: STATUS.DONE, focus: t.focus || '' } };
+}
+
 /** 루틴 이번 회차 건너뛰기: 이번 회차는 '버림'으로 남기고 다음 회차를 만든다 */
 function skipTask(id) {
   return clarifyTask(id, { status: STATUS.DROPPED, skip: true });
@@ -2063,6 +2077,7 @@ function webPostpone(k, id, days) { checkKey_(k); var r = postponeFollowUp(id, d
 function webUpdate(k, id, patch) { checkKey_(k); var r = updateTask(id, patch); return withView_(r); }
 function webPlanDay(k, ids) { checkKey_(k); var r = planDay(ids); return withView_(r); }
 function webUndo(k, u) { checkKey_(k); var r = undoTask(u); return withView_(r); }
+function webReopen(k, id) { checkKey_(k); var r = reopenTask(id); return withView_(r); }
 /** 알림 켜고 끄기: kind = 'daily'(아침 브리핑) | 'weekly'(주간 검토 메일) | 'test'(아침 브리핑 지금 받기) */
 function webNotify(k, kind, on) {
   checkKey_(k); appContext_();
@@ -2094,7 +2109,7 @@ function doPost(e) {
     updateTask: webUpdate, planDay: webPlanDay, undoTask: webUndo, notify: webNotify,
     addAction: webAddAction, setProject: webSetProject, focusMany: webFocusMany,
     getCalendars: webCalendars, setCalendars: webSetCalendars, timebox: webTimebox,
-    placeTask: webPlaceTask, unplaceTask: webUnplaceTask
+    placeTask: webPlaceTask, unplaceTask: webUnplaceTask, reopenTask: webReopen
   };
   var out;
   try {
@@ -2410,7 +2425,7 @@ function buildTodayView_(tasks, today) {
     counts: { doneToday: s.done.filter(function (t) { return t.completed === today; }).length, inbox: s.inbox.length, focus: focus.length, now: now.length, routines: routines.length, overdue: s.overdue.length, followUp: s.followUp.length, doneWeek: s.done.length },
     routines: routines.map(pick),
     carry: carry.map(pick),
-    doneToday: tasks.filter(function (t) { return t.status === STATUS.DONE && t.completed === today; }).map(function (t) { return { id: t.id, title: t.title, project: t.project || '' }; }),
+    doneToday: tasks.filter(function (t) { return t.status === STATUS.DONE && t.completed === today; }).map(function (t) { return { id: t.id, title: t.title, project: t.project || '', repeat: t.repeat || '' }; }),
     routineDone: s.routineDone,
     now: now.map(pick),
     followUp: s.followUp.map(pick),
@@ -2567,7 +2582,7 @@ function installFromEditor() {
   // ── 앱 화면이 부르는 함수 (App.html 의 call(fn) 이름과 같다) ────
   var WEB = { getAppData: 'webData', getInbox: 'webInbox', addTasks: 'webAdd', clarifyTask: 'webClarify', completeTask: 'webComplete', postponeFollowUp: 'webPostpone', skipTask: 'webSkip',
     getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', getAll: 'webAll',
-    getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars' };
+    getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen' };
   var queue = Promise.resolve(); // 시트 쓰기는 한 번에 하나씩
   function serial(job) { var p = queue.then(job, job); queue = p.catch(function () {}); return p; }
   function clone(x) { return x === undefined ? null : JSON.parse(JSON.stringify(x)); }
