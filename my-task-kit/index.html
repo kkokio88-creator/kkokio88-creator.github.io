@@ -568,7 +568,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.7.1" };
+  var KIT = { name: "GTD 워크", version: "1.7.2" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -640,7 +640,7 @@
       setTimeout(function () { location.reload(); }, 50);
     });
   }
-  function calPermMsg() { return window.KIT_AUTH ? '캘린더 권한이 없어요. 더보기 ▸ 로그아웃 후 다시 시작하면서 권한 화면에서 모두 선택해 주세요' : '캘린더 권한이 필요해요. 시트 메뉴를 한 번 눌러 승인해 주세요'; }
+  function calPermMsg() { return window.KIT_AUTH ? '캘린더 권한이 없어요. 더보기 ▸ 로그아웃 후 다시 시작하면서 권한 화면에서 모두 선택해 주세요' : '캘린더 권한이 필요해요. 컴퓨터에서 시트를 열고 메뉴 [✅ 내 업무 ▸ ⚙️ 처음 설정 / 업데이트 적용]을 누른 뒤, 권한 화면에서 캘린더도 체크해 주세요 (휴대폰 시트 앱에는 메뉴가 없어요)'; }
   function call0(fn) {
     return callRaw.apply(null, arguments).catch(function (e) {
       if (!(e instanceof Error)) e = new Error(String(e && e.message || e));

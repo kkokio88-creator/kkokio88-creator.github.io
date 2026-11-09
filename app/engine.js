@@ -302,7 +302,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.7.1',       // 코드 버전 (화면 표시용)
+  VERSION: '1.7.2',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 5,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -1878,7 +1878,17 @@ function menuSetup() {
   lines.push('이제 메뉴 [✅ 내 업무 ▸ 📱 휴대폰·웹 화면 링크]로 앱 화면을 열어 시작하세요.');
   if (ui) ui.alert(KIT.NAME + ' v' + KIT.VERSION, lines.join('\n'), ui.ButtonSet.OK);
   else console.log(lines.join('\n'));
+  requireCalendarConsent_();
   return lines.join('\n');
+}
+
+/**
+ * 캘린더 권한을 아직 허용하지 않았으면(권한 화면에서 빼고 넘어갔거나, 캘린더 기능이 나중에 생긴 경우) 권한 화면을 다시 띄운다.
+ * 이미 허용했으면 아무 일도 하지 않는다. 권한 범위(appsscript.json)는 바꾸지 않는다.
+ */
+function requireCalendarConsent_() {
+  if (typeof ScriptApp === 'undefined' || !ScriptApp.requireScopes || !ScriptApp.AuthMode) return;
+  ScriptApp.requireScopes(ScriptApp.AuthMode.FULL, ['https://www.googleapis.com/auth/calendar']);
 }
 
 function menuWeeklyNow() {
@@ -2165,7 +2175,8 @@ function readCalendar_(startYmd, days, tz) {
   var hit = cacheGetJson_(ckey);
   if (hit) return hit;
   var r = readCalendarRaw_(startYmd, days, tz);
-  if (r.ok) cachePutJson_(ckey, r, 600); // 캘린더는 10분 캐시
+  // 캘린더는 10분 캐시. 실패(권한 없음 등)도 1분 캐시: 탭을 열 때마다 다시 실패하느라 느려지지 않게 (제보 #5)
+  cachePutJson_(ckey, r, r.ok ? 600 : 60);
   return r;
 }
 

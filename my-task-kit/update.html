@@ -56,6 +56,7 @@
 <div class="wrap">
   <h1>업데이트 도우미</h1>
   <p class="lead">새 버전 코드를 내 시트에 옮기는 걸 도와드려요. <b>내 시트의 데이터는 그대로예요.</b> 10분이면 충분해요. PC에서 하는 걸 추천해요.</p>
+  <div class="note" id="phoneNote" hidden><b>휴대폰에서는 업데이트할 수 없어요.</b> 구글 시트 앱에는 Apps Script 편집기와 메뉴가 없어요. 아래 버튼으로 이 페이지 주소를 복사해 두었다가 <b>컴퓨터</b>에서 열어 주세요. 업데이트 전에도 앱은 지금처럼 쓸 수 있어요.<br><button class="reset" id="copyLink" type="button">이 페이지 주소 복사</button></div>
 
   <section>
     <h2><span class="num">1</span>Apps Script 열기</h2>
@@ -87,7 +88,7 @@
   <section>
     <h2><span class="num">4</span>시트 새로고침</h2>
     <p><b>시트를 새로고침하면 끝이에요.</b> 필요한 새 열이 맨 오른쪽에 추가되고 "기존 데이터는 그대로입니다" 알림이 떠요.</p>
-    <div class="note">새 버전이 권한을 더 쓰면(예: 구글 캘린더에 일정 넣기) 시트 메뉴 <b>✅ 내 업무</b>를 한 번 눌러 다시 승인해 주세요. 승인 전에는 웹 화면에 "권한" 안내가 떠요.</div>
+    <div class="note">새 버전이 권한을 더 쓰면(예: 구글 캘린더에 일정 넣기) 시트 메뉴 <b>✅ 내 업무 ▸ ⚙️ 처음 설정 / 업데이트 적용</b>을 눌러 권한 화면에서 <b>모두 선택</b>해 주세요. 승인 전에는 웹 화면에 "권한" 안내가 떠요.</div>
     <div class="ok">막히면 <a href="help.html#update">도움말</a>을 보거나, 복사를 처음부터 다시 해도 괜찮아요. 붙여 넣기는 몇 번을 해도 데이터에 영향이 없어요.</div>
   </section>
 
@@ -99,6 +100,14 @@
   var TYPE = { server: '스크립트', html: 'HTML', json: '설정' };
   var data = null, done = {}, storeKey = '';
   function $(id) { return document.getElementById(id); }
+  // 휴대폰: 편집기를 쓸 수 없으니 컴퓨터에서 열도록 안내 (제보 #4)
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')) {
+    $('phoneNote').hidden = false;
+    $('copyLink').addEventListener('click', function () {
+      var url = location.href.split('#')[0];
+      (navigator.clipboard && window.isSecureContext ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { toast('주소를 복사했어요. 컴퓨터에서 열어 주세요'); }, function () { toast(fallbackCopy(url) ? '주소를 복사했어요. 컴퓨터에서 열어 주세요' : url); });
+    });
+  }
   function load() { try { done = JSON.parse(localStorage.getItem(storeKey) || '{}') || {}; } catch (e) { done = {}; } }
   function save() { try { localStorage.setItem(storeKey, JSON.stringify(done)); } catch (e) {} }
   function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('show'); }, 1800); }
