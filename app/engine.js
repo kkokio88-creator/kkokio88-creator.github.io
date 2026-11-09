@@ -1627,9 +1627,11 @@ function projectStats_(tasks) {
   var by = {}, order = [];
   tasks.forEach(function (t) {
     if (!t.project) return;
-    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, nextDue: '', items: [] }; order.push(t.project); }
+    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, someday: 0, nextDue: '', items: [] }; order.push(t.project); }
     var g = by[t.project];
     if (t.status === STATUS.DONE) g.done++;
+    // 나중에(언젠가) 할 일도 프로젝트 안에 보이게 (프로젝트가 '끝남'으로 사라지지 않게)
+    else if (t.status === STATUS.SOMEDAY) { g.someday++; if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: '' }); }
     else if (isActionable_(t.status)) {
       g.open++;
       if (t.priority === '높음') g.important++;
@@ -1639,7 +1641,7 @@ function projectStats_(tasks) {
       if (t.status === STATUS.DELEGATED || t.status === STATUS.SCHEDULED) g.waiting++;
     }
   });
-  return order.map(function (k) { var g = by[k]; g.stalled = g.open > 0 ? g.next === 0 && g.waiting === 0 : false; g.finished = g.open === 0; return g; });
+  return order.map(function (k) { var g = by[k]; g.stalled = g.open > 0 ? g.next === 0 && g.waiting === 0 : false; g.finished = g.open === 0 && !g.someday; return g; });
 }
 
 /** 이번 주 루틴 달성: 반복 업무를 제목별로 완료·건너뜀 횟수 집계 */

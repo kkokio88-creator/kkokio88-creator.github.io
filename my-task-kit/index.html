@@ -117,7 +117,16 @@
   .chk.on { background: var(--g); border-color: var(--g); color: #fff; animation: pop .4s var(--spring); }
   .chk.on path { stroke-dashoffset: 0; }
   @keyframes pop { 0% { transform: scale(.55); } 100% { transform: scale(1); } }
-  .tile { width: 42px; height: 42px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.mgroup { margin-bottom: 22px; }
+  .mgh { font-size: 13.5px; font-weight: 700; color: var(--t3); margin: 0 4px 8px; }
+  .mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mt { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-height: 96px; padding: 14px; border-radius: 18px; background: var(--card); color: var(--t1); text-align: left; text-decoration: none; font: inherit; box-shadow: var(--sh); transition: transform .15s, background .15s; }
+  html[data-theme="dark"] .mt { box-shadow: none; }
+  .mt:hover { background: var(--fill); } .mt:active { transform: scale(.97); }
+  .mt .mtt { font-size: 15.5px; font-weight: 700; line-height: 1.25; }
+  .mt .cnt { position: absolute; top: 14px; right: 14px; }
+  .mlo { color: var(--t3); font: inherit; font-size: 13px; text-decoration: underline; padding: 6px 2px; }
+    .tile { width: 42px; height: 42px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
   .tile.amber { background: var(--ambert); color: #C27C00; } .tile.blue { background: var(--bluet); color: var(--blue); } .tile.green { background: var(--gt); color: var(--g); }
   .tile.purple { background: var(--purplet); color: var(--purple); } .tile.red { background: var(--redt); color: var(--red); } .tile.gray { background: var(--fill); color: var(--t2); }
   .tile.time { width: auto; padding: 0 10px; font-size: 13px; font-weight: 700; }
@@ -1229,7 +1238,13 @@
       var who = where.slice(4), fu = addDays(data.today, 3); addPerson(who); animNext = false; dropLocal(id);
       return unplaceIfPlaced(id).then(function () { return call('clarifyTask', id, { status: STATUS.DELEGATED, delegatee: who, followUp: fu, focus: '' }); }).then(function (r) { toast(who + '님께 맡겼어요 · ' + rel(fu) + ' 확인', r.undo); setView(r.view); }).catch(fail);
     }
-    if (where.indexOf('pj:') === 0) { var pn = where.slice(3); optimistic(id, { project: pn }); return call('updateTask', id, { project: pn }).then(function (r) { toast('\'' + pn + '\' 프로젝트로 묶었어요'); setView(r.view); }).catch(fail); }
+    if (where.indexOf('pj:') === 0) {
+      // 나중에(언젠가)·참고에 있던 일을 프로젝트로 묶으면 그 프로젝트의 할 일(다음 행동)이 된다
+      var pn = where.slice(3), cur = findTask(id), idle = cur && [STATUS.SOMEDAY, STATUS.REFERENCE, STATUS.INBOX].indexOf(cur.status) > -1;
+      optimistic(id, idle ? { project: pn, status: STATUS.NEXT } : { project: pn });
+      return (idle ? call('clarifyTask', id, { status: STATUS.NEXT, project: pn, focus: '' }) : call('updateTask', id, { project: pn }))
+        .then(function (r) { toast('\'' + pn + '\' 프로젝트로 묶었어요'); setView(r.view); }).catch(fail);
+    }
   }
   function newProject(then) {
     openSheet('<div class="st">새 프로젝트</div><div class="ss">두 단계 이상 걸리는 일을 묶는 폴더예요. 할 일은 담기 칸에서 적고 끌어다 놓으세요</div><input class="field" id="npName" placeholder="예) 12월 워크숍" maxlength="40"><button class="cta" id="npOk">만들기</button>');
@@ -1293,13 +1308,13 @@
     var from = 9 * 60, to = 18 * 60;
     bl.forEach(function (x) { from = Math.min(from, Math.floor(x.s / 60) * 60); to = Math.max(to, Math.ceil(x.e / 60) * 60); });
     from = Math.max(from, 6 * 60); to = Math.min(to, 24 * 60);
-    var C = { bg: '#F2F4F6', card: '#FFFFFF', t1: '#191F28', t2: '#4E5968', t3: '#8B95A1', t4: '#C5CCD3', line: '#EEF0F3', half: '#F6F7F9', g: '#5B5CF6', gt: '#EEEEFF',
-      ok: '#E8F7DD', okBar: '#7BC74D', okT: '#3E7D1E', no: '#FFECEC', noBar: '#F26B70', noT: '#C33A40' };
+    var C = { bg0: '#4F46E5', bg1: '#7C3AED', card: '#FFFFFF', t1: '#191F28', t2: '#4E5968', t3: '#8B95A1', t4: '#C5CCD3', line: '#EEF0F3', half: '#F6F7F9', g: '#5B5CF6', gt: '#EEEEFF',
+      ok: '#E4F6D9', okBar: '#5DB83A', okT: '#2F6B14', no: '#FDE9EA', noBar: '#EF5A60', noT: '#B4232A' };
     var font = getComputedStyle(document.body).fontFamily;
-    // 회색 바탕 + 흰 카드 두 장 (왼쪽 시간표 · 오른쪽 프로젝트) — 앱 화면과 같은 모양
-    var W = 860, P = 24, GAP = 14, top = 128, LW = 430, lx0 = P, rx0 = P + LW + GAP, RW = W - P - rx0, HH = 48, CP = 22;
-    var gTop = top + 64, gx = lx0 + 66, gw = LW - 66 - CP;
-    var leftH = 64 + (to - from) / 60 * HH + 26;
+    // 브랜드 색 바탕 + 흰 카드 두 장 (왼쪽 좁은 시간표 · 오른쪽 프로젝트)
+    var W = 820, P = 28, GAP = 16, top = 132, LW = 312, lx0 = P, rx0 = P + LW + GAP, RW = W - P - rx0, HH = 46, CP = 20;
+    var gTop = top + 60, gx = lx0 + 48, gw = LW - 48 - CP;
+    var leftH = 60 + (to - from) / 60 * HH + 24;
     var LH = 26, MAXL = 5;
     var pjRows = pj.map(function (p) {
       var lines = (p.items || []).map(function (it) { return { t: it.title, tag: it.status === STATUS.DELEGATED ? (it.delegatee || '맡김') : it.due ? rel(it.due) : '', done: false }; })
@@ -1312,29 +1327,37 @@
     var cv = document.createElement('canvas'); cv.width = W * sc; cv.height = H * sc; var x = cv.getContext('2d'); x.scale(sc, sc);
     var rr = function (X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); };
     var fit = function (t, w) { if (x.measureText(t).width <= w) return t; while (t.length > 1 && x.measureText(t + '…').width > w) t = t.slice(0, -1); return t + '…'; };
-    var card = function (X, Y, w, h) { x.save(); x.shadowColor = 'rgba(17,24,39,.06)'; x.shadowBlur = 12; x.shadowOffsetY = 2; x.fillStyle = C.card; rr(X, Y, w, h, 22); x.fill(); x.restore(); };
+    var card = function (X, Y, w, h) { x.save(); x.shadowColor = 'rgba(30,20,90,.28)'; x.shadowBlur = 28; x.shadowOffsetY = 10; x.fillStyle = C.card; rr(X, Y, w, h, 20); x.fill(); x.restore(); };
     var check = function (cx, cy, r, color) { x.fillStyle = color; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); x.strokeStyle = '#fff'; x.lineWidth = 1.8; x.lineCap = 'round'; x.lineJoin = 'round'; x.beginPath(); x.moveTo(cx - r * .45, cy); x.lineTo(cx - r * .1, cy + r * .38); x.lineTo(cx + r * .5, cy - r * .35); x.stroke(); };
-    x.fillStyle = C.bg; x.fillRect(0, 0, W, H);
+    var bgG = x.createLinearGradient(0, 0, W, H); bgG.addColorStop(0, C.bg0); bgG.addColorStop(1, C.bg1); x.fillStyle = bgG; x.fillRect(0, 0, W, H);
+    // 은은한 빛 번짐
+    var glow = x.createRadialGradient(W * .85, 0, 0, W * .85, 0, W * .6); glow.addColorStop(0, 'rgba(255,255,255,.22)'); glow.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = glow; x.fillRect(0, 0, W, H);
     // 머리: 날짜 · 이름
     var dt = new Date(d.today + 'T00:00:00');
     x.textBaseline = 'alphabetic';
-    x.fillStyle = C.t1; x.font = '800 30px ' + font; x.fillText((dt.getMonth() + 1) + '월 ' + dt.getDate() + '일 ' + DOW[dt.getDay()] + '요일', P + 4, 64);
+    x.fillStyle = '#fff'; x.font = '800 30px ' + font; x.fillText((dt.getMonth() + 1) + '월 ' + dt.getDate() + '일 ' + DOW[dt.getDay()] + '요일', P + 2, 66);
     if (who) {
-      x.fillStyle = C.g; x.beginPath(); x.arc(P + 16, 94, 12, 0, Math.PI * 2); x.fill();
-      x.fillStyle = '#fff'; x.font = '800 12px ' + font; var ini = who.slice(0, 1), iw = x.measureText(ini).width; x.fillText(ini, P + 16 - iw / 2, 98.5);
-      x.fillStyle = C.t2; x.font = '700 16px ' + font; x.fillText(who, P + 36, 100);
+      x.fillStyle = '#fff'; x.beginPath(); x.arc(P + 14, 98, 12, 0, Math.PI * 2); x.fill();
+      x.fillStyle = C.g; x.font = '800 12px ' + font; var ini = who.slice(0, 1), iw = x.measureText(ini).width; x.fillText(ini, P + 14 - iw / 2, 102.5);
+      x.fillStyle = 'rgba(255,255,255,.92)'; x.font = '700 16px ' + font; x.fillText(who, P + 34, 104);
+    }
+    // 오른쪽 위: 오늘 끝낸 블록 수
+    if (bl.length) {
+      var nd = bl.filter(function (b) { return b.done; }).length, pt = nd + ' / ' + bl.length + ' 끝냄';
+      x.font = '800 14px ' + font; var ptw = x.measureText(pt).width, pw0 = ptw + 44, px0 = W - P - pw0;
+      x.fillStyle = 'rgba(255,255,255,.18)'; rr(px0, 44, pw0, 34, 17); x.fill();
+      check(px0 + 19, 61, 7, '#7BE04F');
+      x.fillStyle = '#fff'; x.fillText(pt, px0 + 32, 66);
     }
     // 왼쪽 카드: 시간표
     card(lx0, top, LW, leftH);
-    x.fillStyle = C.t1; x.font = '800 16px ' + font; x.fillText('오늘 시간표', lx0 + CP, top + 38);
-    x.font = '700 12px ' + font; var lgx = lx0 + LW - CP;
-    [['미완료', C.noBar], ['완료', C.okBar]].forEach(function (l) { var tw = x.measureText(l[0]).width; lgx -= tw; x.fillStyle = C.t3; x.fillText(l[0], lgx, top + 37); lgx -= 13; x.fillStyle = l[1]; x.beginPath(); x.arc(lgx + 4, top + 33, 4, 0, Math.PI * 2); x.fill(); lgx -= 14; });
+    x.fillStyle = C.t1; x.font = '800 16px ' + font; x.fillText('오늘 시간표', lx0 + CP, top + 36);
     var yOf = function (m) { return gTop + (m - from) / 60 * HH; };
     x.lineWidth = 1;
     for (var m = from; m <= to; m += 30) {
       var yy = Math.round(yOf(m)) + .5, full = m % 60 === 0;
       x.strokeStyle = full ? C.line : C.half; x.beginPath(); x.moveTo(gx - (full ? 4 : 0), yy); x.lineTo(gx + gw, yy); x.stroke();
-      if (full) { x.fillStyle = C.t3; x.font = '600 11.5px ' + font; var hl = (m / 60) + '시', hw = x.measureText(hl).width; x.fillText(hl, gx - 12 - hw, yy + 4); }
+      if (full) { x.fillStyle = C.t3; x.font = '600 11px ' + font; var hl = (m / 60) + '시', hw = x.measureText(hl).width; x.fillText(hl, gx - 10 - hw, yy + 4); }
     }
     if (!bl.length) { x.fillStyle = C.t3; x.font = '600 13.5px ' + font; x.fillText('시간표에 넣은 할 일이 없어요', gx + 6, yOf(from) + 34); }
     bl.forEach(function (b) {
@@ -1373,7 +1396,7 @@
       if (r2.more) { x.fillStyle = C.t3; x.font = '600 12px ' + font; x.fillText('외 ' + r2.more + '개', ix + 32, ly + 14); }
       py += r2.h;
     });
-    x.fillStyle = C.t3; x.font = '700 12px ' + font; var brand = 'GTD 워크'; x.fillText(brand, W - P - 4 - x.measureText(brand).width, H - 20);
+    x.fillStyle = 'rgba(255,255,255,.75)'; x.font = '800 12.5px ' + font; var brand = 'GTD 워크'; x.fillText(brand, W - P - x.measureText(brand).width, H - 20);
     var name = '오늘-시간표-' + d.today + '.png';
     var blobP = new Promise(function (res) { cv.toBlob(res, 'image/png'); });
     var fallback = function () {
@@ -2292,28 +2315,43 @@
   function showMore() { document.querySelectorAll('[data-go]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-go') === 'more'); }); document.querySelectorAll('.page').forEach(function (p) { p.classList.toggle('on', p.id === 'p-more'); }); $('main').classList.add('narrow'); closeSheet(); window.scrollTo(0, 0); }
   function renderMore() {
     var d = data || { counts: {} };
-    var row = function (icon, cls, title, key, n) { return '<div class="row" tabindex="0" role="button" data-m="' + key + '">' + tile(icon, cls) + '<div class="tx"><div class="t">' + title + '</div></div>' + (n ? '<span class="cnt">' + n + '</span>' : '') + CHEV + '</div>'; };
-    $('moreBody').innerHTML = '<div class="h1" style="margin-bottom:22px">더보기</div>' +
-      '<div class="card">' + row('search', 'gray', '검색', 'search') + row('keyboard', 'gray', isPC() ? '단축키 · 빠르게 담는 법' : '빠르게 담는 법', 'keys') + '</div><div class="gap"></div>' +
-      '<div class="card">' + row('user', 'blue', '맡긴 일', 'waiting', (d.delegated || []).length) + row('folder', 'purple', '프로젝트', 'projects', (d.projects || []).filter(function (p) { return !p.finished; }).length) + row('calcheck', 'purple', '주간 검토', 'weekly') + '</div><div class="gap"></div>' +
-      '<div class="card">' + row('list', 'gray', '모든 할 일', 'all') + row('archive', 'gray', '나중에 할 일', 'someday', d.someday || '') + row('calendar', 'blue', '캘린더 설정', 'cals') + '</div><div class="gap"></div>' +
-      '<div class="card"><div class="row" tabindex="0" role="button" data-m="ai">' + tile('sparkle', 'purple') + '<div class="tx"><div class="t">AI 연결</div><div class="m">Claude·ChatGPT에게 말로 할 일 담고 고치기</div></div>' + CHEV + '</div></div><div class="gap"></div>' +
-      '<div class="card">' + prefRow('sun', 'amber', '화면 모드', 'theme', [['auto', '자동'], ['light', '라이트'], ['dark', '다크']], window.kitTheme ? window.kitTheme() : 'auto') +
+    // 앱 아이콘처럼 2열 타일. 같은 종류끼리 묶는다. data-m · id는 예전 줄과 같게 둔다(단축키·테스트가 씀)
+    var ti = function (icon, cls, title, attr, n) { return '<button type="button" class="mt" ' + attr + '>' + tile(icon, cls) + '<span class="mtt">' + title + '</span>' + (n ? '<span class="cnt">' + n + '</span>' : '') + '</button>'; };
+    var m = function (key) { return 'data-m="' + key + '"'; };
+    var grp = function (name, tiles) { return '<div class="mgroup"><div class="mgh">' + name + '</div><div class="mgrid">' + tiles.join('') + '</div></div>'; };
+    var lnk = function (icon, cls, title, href, id) { return '<a class="mt" ' + (id ? 'id="' + id + '" ' : '') + 'href="' + href + '"' + (href === '#' ? '' : ' target="_blank" rel="noopener"') + '>' + tile(icon, cls) + '<span class="mtt">' + title + '</span></a>'; };
+    $('moreBody').innerHTML = '<div class="h1" style="margin-bottom:18px">더보기</div>' +
+      grp('할 일', [ti('user', 'blue', '맡긴 일', m('waiting'), (d.delegated || []).length), ti('folder', 'purple', '프로젝트', m('projects'), (d.projects || []).filter(function (p) { return !p.finished; }).length),
+        ti('archive', 'gray', '나중에 할 일', m('someday'), d.someday || ''), ti('list', 'gray', '모든 할 일', m('all'))]) +
+      grp('도구', [ti('search', 'gray', '검색', m('search')), ti('calcheck', 'purple', '주간 검토', m('weekly')),
+        ti('sparkle', 'purple', 'AI 연결', m('ai')), lnk('file', 'green', '구글 시트', esc(d.sheetUrl || '#'))]) +
+      grp('설정', [ti('calendar', 'blue', '캘린더', m('cals')), ti('sun', 'amber', '화면', m('display'))].concat(window.KIT_ENGINE ? [] : [ti('mail', 'purple', '알림 메일', m('notify'))])) +
+      grp('도움', [ti('keyboard', 'gray', '담는 법', m('keys')), lnk('file', 'gray', '도움말', d.pageUrl ? (window.KIT_ENGINE ? '../#c12' : esc(d.pageUrl) + 'help.html') : '#'),
+        lnk('chat', 'amber', '카톡방', 'https://open.kakao.com/o/gmiCVeWi'), lnk('bug', 'red', '버그 제보', '#', 'report')]) +
+      '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') +
+      (window.KIT_AUTH ? ' · <button type="button" id="kitLogout" class="mlo">로그아웃</button>' : '') +
+      (window.KIT_ENGINE && window.KIT_ENGINE.startLog && window.KIT_ENGINE.startLog() ? '<br><span id="kitStartLog" style="font-size:11.5px">시작: ' + esc(window.KIT_ENGINE.startLog()) + '</span>' : '') + '</div>';
+    var lo = $('kitLogout'); if (lo) lo.onclick = function () { if (confirm('로그아웃할까요? ' + (window.KIT_AUTH.email() ? window.KIT_AUTH.email() + ' · ' : '') + '할 일은 내 구글 시트에 그대로 남아 있어요.')) window.KIT_AUTH.logout(); };
+    stagger($('moreBody'));
+  }
+  // 화면: 화면 모드 · 글자 크기 · 움직임 줄이기 · 시간표 캡처에 넣을 이름
+  function openDisplay() {
+    openSheet('<div class="st">화면</div><div class="card" style="margin-top:12px">' +
+      prefRow('sun', 'amber', '화면 모드', 'theme', [['auto', '자동'], ['light', '라이트'], ['dark', '다크']], window.kitTheme ? window.kitTheme() : 'auto') +
       prefRow('file', 'blue', '글자 크기', 'font', [['sm', '작게'], ['', '보통'], ['lg', '크게']], document.documentElement.getAttribute('data-font') || '') +
-      '<label class="row" style="cursor:pointer">' + tile('moon', 'purple') + '<div class="tx"><div class="t">움직임·진동 줄이기</div><div class="m">축하 효과·흔들림 없이 조용하게</div></div><span class="sw"><input type="checkbox" id="calmSw"' + (document.documentElement.classList.contains('calm') ? ' checked' : '') + '><i></i></span></label>' +
-      '</div><div class="gap"></div>' +
-      (window.KIT_ENGINE ? '' : '<div class="h2" style="margin-top:22px">알림</div><div class="card">' +
+      '<label class="row" style="cursor:pointer">' + tile('moon', 'purple') + '<div class="tx"><div class="t">움직임·진동 줄이기</div></div><span class="sw"><input type="checkbox" id="calmSw"' + (document.documentElement.classList.contains('calm') ? ' checked' : '') + '><i></i></span></label>' +
+      '<div class="row" tabindex="0" role="button" id="capNameRow">' + tile('camera', 'purple') + '<div class="tx"><div class="t">캡처에 넣을 이름</div><div class="m">' + esc(capName() || '아직 정하지 않았어요') + '</div></div>' + CHEV + '</div></div>');
+    bindPrefs();
+  }
+  // 알림 메일 (예전 앱스크립트 버전만)
+  function openNotify() {
+    var d = data || {};
+    openSheet('<div class="st">알림 메일</div><div class="card" style="margin-top:12px">' +
       '<label class="row" style="cursor:pointer">' + tile('sun', 'amber') + '<div class="tx"><div class="t">아침 브리핑 메일</div><div class="m">평일 아침 8시 · 오늘 할 일과 일정</div></div><span class="sw"><input type="checkbox" data-nt="daily"' + ((d.notify || {}).daily ? ' checked' : '') + '><i></i></span></label>' +
       '<label class="row" style="cursor:pointer">' + tile('mail', 'purple') + '<div class="tx"><div class="t">주간 검토 메일</div><div class="m">금요일 오후 4시 · 한 주 요약</div></div><span class="sw"><input type="checkbox" data-nt="weekly"' + ((d.notify || {}).weekly ? ' checked' : '') + '><i></i></span></label>' +
-      '</div><button class="txtlink" data-nt-test>아침 브리핑 지금 받아보기</button><div class="gap"></div>') +
-      '<div class="card"><a class="row" href="' + esc(d.sheetUrl || '#') + '" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'green') + '<div class="tx"><div class="t">구글 시트 열기</div></div>' + CHEV + '</a></div>' +
-      (d.pageUrl ? '<div class="gap"></div><div class="card"><a class="row" href="' + (window.KIT_ENGINE ? '../#c12' : esc(d.pageUrl) + 'help.html') + '" target="_blank" style="text-decoration:none;color:inherit">' + tile('file', 'gray') + '<div class="tx"><div class="t">도움말 · 개인정보 안내</div></div>' + CHEV + '</a></div>' : '') +
-      '<div class="gap"></div><div class="card"><a class="row" href="https://open.kakao.com/o/gmiCVeWi" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">' + tile('chat', 'amber') + '<div class="tx"><div class="t">사용자 커뮤니티 카톡방</div><div class="m">쓰는 법·아이디어를 함께 나눠요</div></div>' + CHEV + '</a></div>' +
-      '<div class="gap"></div><div class="card"><a class="row" id="report" href="#" style="text-decoration:none;color:inherit">' + tile('bell', 'red') + '<div class="tx"><div class="t">버그 제보 · 처리 확인</div><div class="m">제보 게시판에서 처리 상태를 볼 수 있어요</div></div>' + CHEV + '</a></div>' +
-      '<div class="gap"></div><div class="card"><div class="row" tabindex="0" role="button" id="capNameRow">' + tile('camera', 'purple') + '<div class="tx"><div class="t">시간표 캡처에 넣을 이름</div><div class="m">' + esc(capName() || '아직 정하지 않았어요') + '</div></div>' + CHEV + '</div></div>' +
-      (window.KIT_AUTH ? '<div class="gap"></div><div class="card"><div class="row" tabindex="0" role="button" id="kitLogout">' + tile('user', 'gray') + '<div class="tx"><div class="t">로그아웃</div><div class="m">' + esc(window.KIT_AUTH.email() || '구글 계정') + ' · 시트는 내 드라이브에 그대로 있어요</div></div>' + CHEV + '</div></div>' : '') +
-      '<div class="sub2" style="text-align:center;margin-top:26px;font-size:13px">' + esc(KIT.name) + ' v' + esc(KIT.version) + (newVer ? ' · <a href="' + esc(d.pageUrl) + 'help.html#update" target="_blank" style="color:var(--g);font-weight:700">새 버전 v' + esc(newVer) + '</a>' : '') +
-      (window.KIT_ENGINE && window.KIT_ENGINE.startLog && window.KIT_ENGINE.startLog() ? '<br><span id="kitStartLog" style="font-size:11.5px">시작: ' + esc(window.KIT_ENGINE.startLog()) + '</span>' : '') + '</div>';
+      '</div><button class="txtlink" data-nt-test>아침 브리핑 지금 받아보기</button>');
+  }
+  function bindPrefs() {
     [].forEach.call(document.querySelectorAll('[data-pref]'), function (b) { b.onclick = function () {
       var k = b.getAttribute('data-pref'), v = b.getAttribute('data-v');
       if (k === 'theme' && window.kitSetTheme) window.kitSetTheme(v);
@@ -2322,8 +2360,6 @@
     }; });
     if ($('calmSw')) $('calmSw').onchange = function () { document.documentElement.classList.toggle('calm', this.checked); try { localStorage.setItem('kitCalm', this.checked ? '1' : ''); } catch (e) {} };
     var cn = $('capNameRow'); if (cn) cn.onclick = function () { askCapName(false); };
-    var lo = $('kitLogout'); if (lo) lo.onclick = function () { if (confirm('로그아웃할까요? 할 일은 내 구글 시트에 그대로 남아 있어요.')) window.KIT_AUTH.logout(); };
-    stagger($('moreBody'));
   }
   function waitInfo(t) {
     if (!t.followUp) return '';
@@ -2508,6 +2544,8 @@
       if (m === 'search') return openSearch();
       if (m === 'keys') return openKeys();
       if (m === 'ai') return openAi();
+      if (m === 'display') return openDisplay();
+      if (m === 'notify') return openNotify();
       return;
     }
     if ((b = e.target.closest('[data-pjid]'))) return openProjectSheet(b.getAttribute('data-pjid'));
@@ -2550,18 +2588,19 @@
     var info = [(window.KIT_ENGINE ? '앱(v2) v' : '시트 코드 v') + ((data && data.kitVersion) || '?'), (isPC() ? 'PC' : '휴대폰'), '보내지 않은 담기 ' + outbox.length + '개'].concat(errLog).join('\n');
     window.open(page + 'board.html?from=app&v=' + encodeURIComponent(KIT.version) + '&err=' + encodeURIComponent(info), '_blank', 'noopener');
  }
-  $('moreBody').addEventListener('change', function (e) {
+  // 알림 스위치는 더보기 ▸ 알림 메일 창(바텀시트)에 있다
+  [$('moreBody'), $('sheetBody')].forEach(function (root) { root.addEventListener('change', function (e) {
     var inp = e.target.closest('[data-nt]'); if (!inp) return;
     var kind = inp.getAttribute('data-nt'), on = inp.checked;
     call('notify', kind, on).then(function (r) { toast((kind === 'daily' ? '아침 브리핑' : '주간 검토 메일') + (on ? '을 켰어요' : '을 껐어요')); data = r.view; saveView(r.view); })
       .catch(function (err) { inp.checked = !on; toast(err.message); });
-  });
-  $('moreBody').addEventListener('click', function (e) {
+  }); });
+  [$('moreBody'), $('sheetBody')].forEach(function (root) { root.addEventListener('click', function (e) {
     var b = e.target.closest('[data-nt-test]'); if (!b) return;
     b.disabled = true; b.textContent = '보내는 중…';
     call('notify', 'test').then(function (r) { toast(r.sent ? '메일을 보냈어요' : r.reason); b.textContent = '아침 브리핑 지금 받아보기'; b.disabled = false; })
       .catch(function (err) { toast(err.message); b.disabled = false; });
-  });
+  }); });
   // 프로젝트 다음 행동 바로 담기 (주간 검토·프로젝트 시트 공용)
   document.addEventListener('keydown', function (e) {
     var inp = e.target.closest && e.target.closest('[data-proj]'); if (!inp || e.key !== 'Enter' || e.isComposing || !inp.value.trim()) return;
@@ -2733,25 +2772,28 @@
     var fb = function () { try { var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); var r = document.execCommand('copy'); ta.remove(); (r ? ok : bad)(); } catch (e) { bad(); } };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, fb); else fb();
   }
+  // 1) 내 AI에 구글 시트 연결(체크) → 2) AI에게 보낼 메시지 복사. 체크는 이 기기에 기억한다
   function openAi() {
-    var t = aiPrompt(), id = sheetIdOf((data || {}).sheetUrl);
+    var linked = false; try { linked = localStorage.getItem('kitAiLinked') === '1'; } catch (e) {}
     var key = isPC() ? (/Mac/.test(navigator.platform) ? '⌘V' : 'Ctrl+V') : '길게 눌러 붙여넣기';
-    var st = function (n, h, m) { return '<div class="row" style="cursor:default"><span class="tile purple" style="font-weight:800">' + n + '</span><div class="tx"><div class="t">' + h + '</div>' + (m ? '<div class="m">' + m + '</div>' : '') + '</div></div>'; };
     var draw = function (copied) {
-      openSheet('<div class="st">' + (copied ? '복사했어요' : '복사하지 못했어요') + '</div>' +
-        '<div class="ss">' + (copied ? 'AI 채팅창에 붙여넣고 보내면 끝이에요.' : '아래 글을 길게 눌러 복사한 뒤 AI 채팅창에 붙여넣으세요.') + '</div>' +
-        (copied ? '<div class="card" style="margin-top:14px">' +
-          st(1, 'AI에 구글 시트 연결', '처음 한 번만 · AI 앱의 커넥터(MCP) 설정') +
-          st(2, '새 대화에 붙여넣기', key) + '</div>'
-          : '<textarea id="aiText" readonly rows="8" style="width:100%;margin-top:12px;font-size:12.5px;line-height:1.5;border-radius:12px;border:1px solid var(--line);background:var(--fill);color:var(--t1);padding:10px;resize:vertical">' + esc(t) + '</textarea>') +
-        '<button class="cta" id="aiOk" type="button">확인</button>' +
-        (copied ? '<button class="txtlink" id="aiCopy" type="button" style="display:block;margin:10px auto 0">다시 복사</button>' : ''));
-      $('aiOk').onclick = closeSheet;
-      if ($('aiCopy')) $('aiCopy').onclick = function () { copyText(aiPrompt(), function () { toast('다시 복사했어요'); }, function () { draw(false); }); };
-      if (!copied && $('aiText')) { $('aiText').focus(); $('aiText').select(); }
+      openSheet('<div class="st">AI 연결</div><div class="ss">내가 쓰는 AI(Claude·ChatGPT 등)에게 말로 할 일을 맡겨요.</div>' +
+        '<div class="card" style="margin-top:14px">' +
+        '<label class="row" style="cursor:pointer;align-items:flex-start"><span class="tile purple" style="font-weight:800">1</span><div class="tx"><div class="t">AI에 구글 시트 연결하기</div><div class="m">AI 앱 설정의 커넥터에서 구글 시트를 켜요 · 처음 한 번만</div></div>' +
+        '<span class="sw"><input type="checkbox" id="aiLinked"' + (linked ? ' checked' : '') + ' aria-label="연결했어요"><i></i></span></label>' +
+        (linked ? '<div class="row" style="cursor:default;align-items:flex-start"><span class="tile purple" style="font-weight:800">2</span><div class="tx"><div class="t">AI에게 메시지 보내기</div><div class="m">' + (copied ? '복사했어요 · AI 채팅창에 붙여넣고(' + key + ') 보내세요' : '아래 버튼으로 복사해서 AI 채팅창에 붙여넣어요') + '</div></div></div>' : '') +
+        '</div>' +
+        (linked ? '<button class="cta' + (copied ? ' ghost' : '') + '" id="aiCopy" type="button" style="display:flex;align-items:center;justify-content:center;gap:8px">' + svg(copied ? 'check' : 'copy', 18) + (copied ? '복사했어요' : '메시지 복사') + '</button>'
+          : '<div class="ss" style="margin-top:12px;text-align:center">연결했으면 위에서 켜 주세요</div>') +
+        '<textarea id="aiText" readonly rows="6" hidden style="width:100%;margin-top:12px;font-size:12.5px;line-height:1.5;border-radius:12px;border:1px solid var(--line);background:var(--fill);color:var(--t1);padding:10px;resize:vertical"></textarea>');
+      $('aiLinked').onchange = function () { linked = this.checked; try { localStorage.setItem('kitAiLinked', linked ? '1' : ''); } catch (e) {} draw(false); };
+      if ($('aiCopy')) $('aiCopy').onclick = function () {
+        var t = aiPrompt();
+        if (!sheetIdOf((data || {}).sheetUrl)) return toast('시트를 여는 중이에요. 잠시 뒤 다시 눌러 주세요');
+        copyText(t, function () { draw(true); toast('복사했어요 · AI 채팅창에 붙여넣으세요'); }, function () { var a = $('aiText'); a.value = t; a.hidden = false; a.focus(); a.select(); toast('자동 복사가 안 돼요. 아래 글을 길게 눌러 복사해 주세요'); });
+      };
     };
-    if (!id) { toast('시트를 여는 중이에요. 잠시 뒤 다시 눌러 주세요'); return; }
-    copyText(t, function () { draw(true); }, function () { draw(false); });
+    draw(false);
   }
   function openKeys() {
     var k = function (key, what) { return '<kbd class="kb">' + key + '</kbd><span>' + what + '</span>'; };
