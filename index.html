@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preload" as="image" href="seq/hero/d/0001.webp" media="(min-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="seq/hero/m/0001.webp" media="(max-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="v3.css?v=154a6e0c">
+<link rel="stylesheet" href="v3.css?v=4f4f1848">
 <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
@@ -76,14 +76,14 @@
   <!-- C3 분해 (시퀀스 ③) -->
   <section class="ch seq dark" id="c3" data-bg="#0B1030" data-theme="dark" data-seq="explode" style="--len: 200">
     <div class="stage">
-      <noscript><picture class="poster"><source media="(max-aspect-ratio: 1/1)" srcset="seq/explode/m/0075.webp"><img src="seq/explode/d/0150.webp" alt="앱 화면이 입력칸·수집함·오늘·시간표·캘린더 다섯 층으로 펼쳐진 모습"></picture></noscript>
+      <noscript><picture class="poster"><source media="(max-aspect-ratio: 1/1)" srcset="seq/explode/m/0075.webp"><img src="seq/explode/d/0150.webp" alt="앱 화면이 입력칸·보내기·오늘·시간표·캘린더 다섯 층으로 펼쳐진 모습"></picture></noscript>
       <svg class="lbl-lines" aria-hidden="true"></svg>
       <ul class="lbls" aria-label="화면의 다섯 겹">
         <li data-id="input"><b>입력칸</b><span>떠오르면 한 줄</span></li>
-        <li data-id="inbox"><b>수집함</b><span>해야 할 일인가요?</span></li>
-        <li data-id="today"><b>오늘</b><span>오늘 할 일과 ★ 3개</span></li>
-        <li data-id="timeline"><b>시간표</b><span>빈 시간에 알아서</span></li>
-        <li data-id="calendar"><b>캘린더</b><span>구글 캘린더 그대로</span></li>
+        <li data-id="send"><b>보내기</b><span>나중에 · 맡기기 · 프로젝트</span></li>
+        <li data-id="today"><b>오늘</b><span>★ 중요 · ↑ 급함</span></li>
+        <li data-id="timeline"><b>시간표</b><span>계획 → 완료</span></li>
+        <li data-id="calendar"><b>캘린더</b><span>내 구글 캘린더와 함께</span></li>
       </ul>
       <div class="copy side-copy">
         <h2 class="big" data-split data-at="0.3">떠오른 일이 하루가 되기까지.</h2>
@@ -93,41 +93,43 @@
   </section>
 
   <!-- C4 떠오른 일이 정리되는 과정 (고정, 실제 앱 화면) -->
-  <section class="ch light sort" id="c4" data-bg="#FFFFFF" data-theme="light" style="--len: 390">
+  <section class="ch light sort" id="c4" data-bg="#FFFFFF" data-theme="light" style="--len: 470">
     <div class="stage">
       <ol class="steps" aria-label="정리 단계">
-        <li data-s="0"><b>1</b>담기</li><li data-s="1"><b>2</b>거르기</li><li data-s="2"><b>3</b>정하기</li><li data-s="3"><b>4</b>오늘 할 일</li>
+        <li data-s="0"><b>1</b>담기</li><li data-s="1"><b>2</b>오늘</li><li data-s="2"><b>3</b>보내기</li><li data-s="3"><b>4</b>시간표</li>
       </ol>
       <div class="sort-phone">
         <div class="scr">
           <img data-k="type" src="assets/v3/flow/type.webp" alt="입력칸에 팀장님께 보고서 초안 보내기를 적는 화면" width="780" height="1688">
-          <img data-k="drop-ask" src="assets/v3/flow/drop-ask.webp" alt="수집함: 광고 메일 확인, 해야 할 일인가요?" width="780" height="1688">
-          <img data-k="drop-no" src="assets/v3/flow/drop-no.webp" alt="그럼 어디에 둘까요? 버리기·언젠가 할지도·참고로 보관" width="780" height="1688" loading="lazy">
-          <img data-k="drop-drop" src="assets/v3/flow/drop-drop.webp" alt="버렸어요. 다음 카드 독서 모임 알아보기" width="780" height="1688" loading="lazy">
-          <img data-k="someday-no" src="assets/v3/flow/someday-no.webp" alt="그럼 어디에 둘까요?" width="780" height="1688" loading="lazy">
-          <img data-k="someday-someday" src="assets/v3/flow/someday-someday.webp" alt="언젠가로 옮겼어요. 다음 카드 회의실 와이파이 비번" width="780" height="1688" loading="lazy">
-          <img data-k="ref-no" src="assets/v3/flow/ref-no.webp" alt="그럼 어디에 둘까요?" width="780" height="1688" loading="lazy">
-          <img data-k="ref-ref" src="assets/v3/flow/ref-ref.webp" alt="참고로 보관했어요. 다음 카드 택배 반품 신청" width="780" height="1688" loading="lazy">
-          <img data-k="now-now" src="assets/v3/flow/now-now.webp" alt="끝! 잘했어요. 다음 카드 팀장님께 보고서 초안 보내기" width="780" height="1688" loading="lazy">
-          <img data-k="hero-yes" src="assets/v3/flow/hero-yes.webp" alt="어떻게 할까요? 내가 할 일·날짜 정하기·맡기기·여러 단계예요" width="780" height="1688" loading="lazy">
-          <img data-k="hero-sched" src="assets/v3/flow/hero-sched.webp" alt="언제 할까요? 오늘·내일·이번 주말" width="780" height="1688" loading="lazy">
-          <img data-k="hero-done" src="assets/v3/flow/hero-done.webp" alt="수집함이 비었어요. 머릿속이 가벼워졌어요" width="780" height="1688" loading="lazy">
-          <img data-k="today-star" src="assets/v3/flow/today-star.webp" alt="오늘 할 일 맨 위에 ★ 팀장님께 보고서 초안 보내기" width="780" height="1688" loading="lazy">
+          <img data-k="added" src="assets/v3/flow/added.webp" alt="담은 일이 바로 오늘 할 일 목록에 들어간 화면" width="780" height="1688">
+          <img data-k="hero-sheet" src="assets/v3/flow/hero-sheet.webp" alt="할 일을 누르면 나오는 어디로 보낼까요 메뉴" width="780" height="1688" loading="lazy">
+          <img data-k="hero-star" src="assets/v3/flow/hero-star.webp" alt="★ 중요한 일이 맨 위로 올라간 오늘 할 일" width="780" height="1688" loading="lazy">
+          <img data-k="later-sheet" src="assets/v3/flow/later-sheet.webp" alt="독서 모임 알아보기를 나중에로 보내는 메뉴" width="780" height="1688" loading="lazy">
+          <img data-k="later-done" src="assets/v3/flow/later-done.webp" alt="나중에로 보낸 뒤의 오늘 할 일" width="780" height="1688" loading="lazy">
+          <img data-k="who-sheet" src="assets/v3/flow/who-sheet.webp" alt="신입 노트북 세팅 요청을 맡기는 메뉴" width="780" height="1688" loading="lazy">
+          <img data-k="who-pick" src="assets/v3/flow/who-pick.webp" alt="누구에게 맡길까요: 김대리" width="780" height="1688" loading="lazy">
+          <img data-k="who-done" src="assets/v3/flow/who-done.webp" alt="맡긴 뒤의 오늘 할 일" width="780" height="1688" loading="lazy">
+          <img data-k="pj-sheet" src="assets/v3/flow/pj-sheet.webp" alt="워크숍 장소 후보 찾기를 프로젝트로 묶는 메뉴" width="780" height="1688" loading="lazy">
+          <img data-k="pj-pick" src="assets/v3/flow/pj-pick.webp" alt="어느 프로젝트에 묶을까요: 12월 워크숍" width="780" height="1688" loading="lazy">
+          <img data-k="pj-done" src="assets/v3/flow/pj-done.webp" alt="프로젝트로 묶인 할 일" width="780" height="1688" loading="lazy">
+          <img data-k="plan-sheet" src="assets/v3/flow/plan-sheet.webp" alt="시간표에 넣기를 고르는 메뉴" width="780" height="1688" loading="lazy">
+          <img data-k="plan-slots" src="assets/v3/flow/plan-slots.webp" alt="언제 할까요: 오늘 빈 시간" width="780" height="1688" loading="lazy">
+          <img data-k="placed" src="assets/v3/flow/placed.webp" alt="오늘 할 일과 시간표 버튼" width="780" height="1688" loading="lazy">
+          <img data-k="timeline" src="assets/v3/flow/timeline.webp" alt="오늘 시간표에 들어간 팀장님께 보고서 초안 보내기" width="780" height="1688" loading="lazy">
           <i class="tapdot" aria-hidden="true"></i>
         </div>
       </div>
       <div class="sort-copy">
-        <div class="sc" data-s="0"><h3>일단 모두 한곳에.</h3><p>떠오른 일은 판단 없이 입력칸에. 수집함에 모여요.</p></div>
-        <div class="sc" data-s="1"><h3>해야 할 일인가요?</h3><p>아니라면 버리거나, 언젠가로, 참고로. 2분이면 그 자리에서 끝내요.</p></div>
-        <div class="sc" data-s="2"><h3>어떻게 할까요?</h3><p>내가 할지, 날짜를 정할지, 맡길지, 여러 단계인지 한 번에 골라요.</p></div>
-        <div class="sc" data-s="3"><h3>오늘 할 일로.</h3><p>수집함은 비고, 꼭 할 일엔 ★. 머릿속이 가벼워져요.</p></div>
+        <div class="sc" data-s="0"><h3>떠오르면, 한 줄.</h3><p>적고 엔터. 담은 일은 바로 오늘 할 일이 돼요.</p></div>
+        <div class="sc" data-s="1"><h3>꼭 할 일엔 ★</h3><p>중요하면 ★, 급하면 ↑. 중요한 일이 맨 위로 올라와요.</p></div>
+        <div class="sc" data-s="2"><h3>오늘이 아니면, 보내요.</h3><p>나중에, 맡기기, 프로젝트로 한 번에. PC에서는 끌어다 놓으면 끝이에요.</p></div>
+        <div class="sc" data-s="3"><h3>빈 시간에 쏙.</h3><p>시간을 골라 넣으면 오늘 시간표에, 내 구글 캘린더에도 들어가요.</p></div>
       </div>
-      <div class="bins" aria-label="정리된 곳">
-        <div class="bin" data-bin="drop"><b>버리기</b><span>필요 없는 일</span><ul></ul></div>
-        <div class="bin" data-bin="someday"><b>언젠가 할지도</b><span>지금은 아닌 일</span><ul></ul></div>
-        <div class="bin" data-bin="ref"><b>참고로 보관</b><span>할 일은 아닌 정보</span><ul></ul></div>
-        <div class="bin" data-bin="now"><b>바로 끝냄</b><span>2분이면 끝나는 일</span><ul></ul></div>
-        <div class="bin today" data-bin="today"><b>오늘 할 일</b><span>날짜를 정한 일</span><ul></ul></div>
+      <div class="bins" aria-label="보낸 곳">
+        <div class="bin today" data-bin="today"><b>오늘 할 일</b><span>★ 중요한 일부터</span><ul></ul></div>
+        <div class="bin" data-bin="later"><b>나중에</b><span>지금은 아닌 일</span><ul></ul></div>
+        <div class="bin" data-bin="who"><b>맡기기</b><span>다른 사람이 할 일</span><ul></ul></div>
+        <div class="bin" data-bin="pj"><b>프로젝트</b><span>여러 단계인 일</span><ul></ul></div>
       </div>
       <div class="flyc" aria-hidden="true"></div>
     </div>
@@ -139,8 +141,8 @@
       <div class="sky" aria-hidden="true"><i class="sun"></i></div>
       <div class="day-copy">
         <p class="clock" aria-hidden="true">09:00</p>
-        <h2 class="big" data-split data-at="0.04">빈 시간에, 알아서.</h2>
-        <p class="sub">구글 캘린더 일정 사이 빈 시간에 오늘 할 일이 들어가요.</p>
+        <h2 class="big" data-split data-at="0.04">빈 시간에, 한 번에.</h2>
+        <p class="sub">끌어다 놓거나 한 번에 배치하면, 구글 캘린더 일정 사이 빈 시간에 들어가요. 끝낸 일은 완료 칸으로.</p>
       </div>
       <div class="dtrack">
         <div class="hours" aria-hidden="true"></div>
@@ -154,23 +156,27 @@
         <div class="slot tk" style="--h:15;--d:.5"><b>세무사님께 부가세 자료 일정 전화로 확인</b><span>30분</span></div>
       </div>
       <div class="tocal">
-        <span class="btn">구글 캘린더에 넣기</span>
+        <span class="btn">빈 시간에 한 번에 배치</span>
         <span class="calic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="4"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><i class="badge">0</i></span>
-        <span class="done">▶ 6개가 캘린더에 들어갔어요</span>
+        <span class="done">6개가 내 구글 캘린더에도 들어갔어요</span>
       </div>
     </div>
   </section>
 
-  <!-- C6 집중 -->
-  <section class="ch dark focus" id="c6" data-bg="#000000" data-theme="dark" style="--len: 150">
+  <!-- C6 오늘 마감: 시간표를 한 장으로 캡처해 공유 -->
+  <section class="ch dark focus capsec" id="c6" data-bg="#000000" data-theme="dark" style="--len: 170">
     <div class="stage">
-      <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="trk" cx="100" cy="100" r="92"/><circle class="arc" cx="100" cy="100" r="92"/></svg>
-      <div class="fcopy">
-        <p class="flabel">집중 중 · 팀장님께 보고서 초안 보내기</p>
-        <p class="timer" aria-hidden="true">25:00</p>
-        <svg class="check" viewBox="0 0 120 120" aria-hidden="true"><path d="M30 62 L52 84 L92 38"/></svg>
-        <h2 class="big f1" data-at="0.04" data-until="0.8">25분 집중.</h2>
-        <h2 class="big f2" data-at="0.86">끝. 체크.</h2>
+      <div class="cap6">
+        <div class="cap6copy">
+          <p class="flabel">오늘 마감</p>
+          <h2 class="big" data-split data-at="0.04">하루 끝, 한 장으로.</h2>
+          <p class="sub" data-at="0.12">오늘 시간표와 프로젝트를 이미지로 복사해 카톡에 바로 붙여요. 끝낸 일은 연두, 못 끝낸 일은 빨강.</p>
+        </div>
+        <div class="cap6img">
+          <img src="assets/v3/capture.webp" alt="11월 9일 월요일 오늘 시간표와 프로젝트를 한 장으로 담은 캡처 이미지" width="1200" height="998" loading="lazy">
+          <i class="flash" aria-hidden="true"></i>
+          <p class="captoast" aria-hidden="true">오늘 시간표를 복사했어요 · 카톡에 붙여 넣으세요</p>
+        </div>
       </div>
     </div>
   </section>
@@ -185,16 +191,16 @@
           <div class="hp-txt"><p class="hp-no">1 / 6</p><h3>담기</h3><p>떠오르면 입력칸에 한 줄, 엔터.</p></div>
         </article>
         <article class="hp-panel">
-          <div class="ph"><video muted loop playsinline preload="none" poster="clips/inbox.webp" aria-label="두 번 누르면 정리 실제 앱 화면 녹화"><source src="clips/inbox.webm" type="video/webm"><source src="clips/inbox.mp4" type="video/mp4"></video></div>
-          <div class="hp-txt"><p class="hp-no">2 / 6</p><h3>두 번 누르면 정리</h3><p>수집함에서 "네" → "내가 할 일".</p></div>
+          <div class="ph"><video muted loop playsinline preload="none" poster="clips/send.webp" aria-label="보내기 실제 앱 화면 녹화"><source src="clips/send.webm" type="video/webm"><source src="clips/send.mp4" type="video/mp4"></video></div>
+          <div class="hp-txt"><p class="hp-no">2 / 6</p><h3>눌러서 보내기</h3><p>나중에, 내일로, 맡기기, 프로젝트로.</p></div>
         </article>
         <article class="hp-panel">
           <div class="ph"><video muted loop playsinline preload="none" poster="clips/swipe.webp" aria-label="밀면 끝 실제 앱 화면 녹화"><source src="clips/swipe.webm" type="video/webm"><source src="clips/swipe.mp4" type="video/mp4"></video></div>
           <div class="hp-txt"><p class="hp-no">3 / 6</p><h3>밀면 끝</h3><p>오른쪽으로 한 번 밀면 완료.</p></div>
         </article>
         <article class="hp-panel">
-          <div class="ph"><video muted loop playsinline preload="none" poster="clips/timeline.webp" aria-label="시간표 → 캘린더 실제 앱 화면 녹화"><source src="clips/timeline.webm" type="video/webm"><source src="clips/timeline.mp4" type="video/mp4"></video></div>
-          <div class="hp-txt"><p class="hp-no">4 / 6</p><h3>시간표 → 캘린더</h3><p>빈 시간에 배치하고, 그대로 구글 캘린더에.</p></div>
+          <div class="ph"><video muted loop playsinline preload="none" poster="clips/timeline.webp" aria-label="빈 시간에 한 번에 실제 앱 화면 녹화"><source src="clips/timeline.webm" type="video/webm"><source src="clips/timeline.mp4" type="video/mp4"></video></div>
+          <div class="hp-txt"><p class="hp-no">4 / 6</p><h3>빈 시간에 한 번에</h3><p>시간표에 배치하면 구글 캘린더에도.</p></div>
         </article>
         <article class="hp-panel">
           <div class="ph"><video muted loop playsinline preload="none" poster="clips/remind.webp" aria-label="맡긴 일 리마인드 실제 앱 화면 녹화"><source src="clips/remind.webm" type="video/webm"><source src="clips/remind.mp4" type="video/mp4"></video></div>
@@ -202,7 +208,7 @@
         </article>
         <article class="hp-panel">
           <div class="ph"><video muted loop playsinline preload="none" poster="clips/weekly.webp" aria-label="주간 검토 실제 앱 화면 녹화"><source src="clips/weekly.webm" type="video/webm"><source src="clips/weekly.mp4" type="video/mp4"></video></div>
-          <div class="hp-txt"><p class="hp-no">6 / 6</p><h3>주간 검토</h3><p>질문에 답하며 머리 비우기.</p></div>
+          <div class="hp-txt"><p class="hp-no">6 / 6</p><h3>주간 검토</h3><p>하나씩 답하며 한 주 정리.</p></div>
         </article>
       </div>
       <div class="hl-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -214,20 +220,20 @@
         <div class="hl-sticky">
           <div class="ph">
             <video class="dv on" muted loop playsinline preload="none" poster="clips/capture.webp" aria-label="담기 실제 앱 화면 녹화"><source src="clips/capture.webm" type="video/webm"><source src="clips/capture.mp4" type="video/mp4"></video>
-            <video class="dv" muted loop playsinline preload="none" poster="clips/inbox.webp" aria-label="두 번 누르면 정리 실제 앱 화면 녹화"><source src="clips/inbox.webm" type="video/webm"><source src="clips/inbox.mp4" type="video/mp4"></video>
+            <video class="dv" muted loop playsinline preload="none" poster="clips/send.webp" aria-label="보내기 실제 앱 화면 녹화"><source src="clips/send.webm" type="video/webm"><source src="clips/send.mp4" type="video/mp4"></video>
             <video class="dv" muted loop playsinline preload="none" poster="clips/swipe.webp" aria-label="밀면 끝 실제 앱 화면 녹화"><source src="clips/swipe.webm" type="video/webm"><source src="clips/swipe.mp4" type="video/mp4"></video>
-            <video class="dv" muted loop playsinline preload="none" poster="clips/timeline.webp" aria-label="시간표 → 캘린더 실제 앱 화면 녹화"><source src="clips/timeline.webm" type="video/webm"><source src="clips/timeline.mp4" type="video/mp4"></video>
+            <video class="dv" muted loop playsinline preload="none" poster="clips/timeline.webp" aria-label="빈 시간에 한 번에 실제 앱 화면 녹화"><source src="clips/timeline.webm" type="video/webm"><source src="clips/timeline.mp4" type="video/mp4"></video>
             <video class="dv" muted loop playsinline preload="none" poster="clips/remind.webp" aria-label="맡긴 일 리마인드 실제 앱 화면 녹화"><source src="clips/remind.webm" type="video/webm"><source src="clips/remind.mp4" type="video/mp4"></video>
             <video class="dv" muted loop playsinline preload="none" poster="clips/weekly.webp" aria-label="주간 검토 실제 앱 화면 녹화"><source src="clips/weekly.webm" type="video/webm"><source src="clips/weekly.mp4" type="video/mp4"></video>
           </div>
           </div>
         <div class="hl-steps">
           <article class="hl-step on" data-i="0"><p class="hp-no">1 / 6</p><h3>담기</h3><p>떠오르면 입력칸에 한 줄, 엔터. 판단은 나중에 해요.</p></article>
-          <article class="hl-step" data-i="1"><p class="hp-no">2 / 6</p><h3>두 번 누르면 정리</h3><p>수집함에서 "네" → "내가 할 일". 두 번이면 끝.</p></article>
-          <article class="hl-step" data-i="2"><p class="hp-no">3 / 6</p><h3>밀면 끝</h3><p>다 한 일은 오른쪽으로 한 번 밀면 완료.</p></article>
-          <article class="hl-step" data-i="3"><p class="hp-no">4 / 6</p><h3>시간표 → 캘린더</h3><p>빈 시간에 알아서 배치하고, 그대로 구글 캘린더에.</p></article>
+          <article class="hl-step" data-i="1"><p class="hp-no">2 / 6</p><h3>눌러서 보내기</h3><p>오늘이 아닌 일은 나중에, 내일로, 맡기기, 프로젝트로. PC에서는 끌어다 놓으면 끝.</p></article>
+          <article class="hl-step" data-i="2"><p class="hp-no">3 / 6</p><h3>밀면 끝</h3><p>다 한 일은 오른쪽으로 한 번 밀면 완료. PC 시간표에서는 완료 칸으로 끌어요.</p></article>
+          <article class="hl-step" data-i="3"><p class="hp-no">4 / 6</p><h3>빈 시간에 한 번에</h3><p>시간표에서 한 번에 배치하면, 내 구글 캘린더에도 들어가요.</p></article>
           <article class="hl-step" data-i="4"><p class="hp-no">5 / 6</p><h3>맡긴 일 리마인드</h3><p>며칠째인지 보이고, 확인 문구는 복사해서 카톡에.</p></article>
-          <article class="hl-step" data-i="5"><p class="hp-no">6 / 6</p><h3>주간 검토</h3><p>금요일 10분, 질문에 답하며 머리를 비워요.</p></article>
+          <article class="hl-step" data-i="5"><p class="hp-no">6 / 6</p><h3>주간 검토</h3><p>금요일 10분, 하나씩 답하며 한 주를 정리해요.</p></article>
         </div>
       </div>
     </div>
@@ -246,7 +252,7 @@
           <i class="e e1">팀 회의</i><i class="e e2">고객사 미팅</i>
           <i class="t t1">보고서 초안</i><i class="t t2">메일함 정리</i><i class="t t3">세무사님 전화</i>
         </div>
-        <p>여러 캘린더를 함께 보고, 빈 시간에 할 일을 배치해요.</p>
+        <p>여러 캘린더를 함께 보고, 끌어서 옮기면 구글 캘린더에도 반영돼요.</p>
       </div>
       <div class="b b-rt" data-tile>
         <h3>루틴은 알아서 다음 회차</h3>
@@ -264,14 +270,14 @@
       <div class="b b-mail" data-tile>
         <h3>금요일엔 한 주 돌아보기</h3>
         <div class="env" aria-hidden="true"><i class="flap"></i><i class="paper">주간 검토</i></div>
-        <p>금요일 주간 검토 메일과 평일 아침 브리핑이 나에게만 와요.</p>
+        <p>금요일엔 주간 검토가 하나씩 물어요. 지난 기간은 인사이트에서 한눈에.</p>
       </div>
     </div>
   </section>
 
   <!-- 마키: 끝없이 흐르는 글자 띠(스크롤 속도에 반응) -->
   <div class="marquee" aria-hidden="true" data-bg-skip>
-    <div class="mq-row"><div class="mq-in">담기 · 거르기 · 정하기 · 오늘 할 일 · 집중 25분 · 시간표 · 맡긴 일 · 주간 검토 · </div></div>
+    <div class="mq-row"><div class="mq-in">담기 · 보내기 · ★ 중요 · ↑ 급함 · 시간표 · 맡긴 일 · 주간 검토 · 인사이트 · </div></div>
     <div class="mq-row rev"><div class="mq-in">평생 무료 · 가입 없음 · 내 구글 시트 · 할 일은 운영자 서버를 거치지 않음 · PC와 휴대폰 · 다크 모드 · </div></div>
   </div>
 
@@ -314,11 +320,11 @@
       <ul class="qas">
         <li class="qa" data-qa>
           <div class="ask"><span class="who">팀장 · 회의가 많은 날</span><p>회의 끝나면 받은 일이 머릿속에만 쌓여요. 뭘 놓쳤는지도 모르겠어요.</p></div>
-          <div class="ans"><span class="who">GTD 워크</span><p>떠오를 때마다 입력칸에 한 줄씩 적어 두세요. 수집함에서 두 번 누르면 정리 끝이에요.</p></div>
+          <div class="ans"><span class="who">GTD 워크</span><p>떠오를 때마다 입력칸에 한 줄씩 적어 두세요. 바로 오늘 할 일이 되고, 아닌 일은 나중에·맡기기로 보내면 끝이에요.</p></div>
         </li>
         <li class="qa" data-qa>
           <div class="ask"><span class="who">1인 사업자 · 일이 여기저기</span><p>카톡, 메일, 메모장… 할 일이 흩어져 있어서 매번 찾게 돼요.</p></div>
-          <div class="ans"><span class="who">GTD 워크</span><p>옮겨 적기만 하면 한곳에 모여요. 오늘 할 일은 캘린더 빈 시간에 알아서 배치돼요.</p></div>
+          <div class="ans"><span class="who">GTD 워크</span><p>옮겨 적기만 하면 한곳에 모여요. 오늘 할 일은 캘린더 빈 시간에 한 번에 배치돼요.</p></div>
         </li>
         <li class="qa" data-qa>
           <div class="ask"><span class="who">직장인 · 투두 앱을 포기한 적 있는</span><p>앱은 설정이 복잡해서 깔아 놓고 결국 안 쓰게 돼요.</p></div>
@@ -413,7 +419,7 @@
       <details><summary>"Google에서 확인하지 않은 앱" 경고가 떠요</summary><p>구글 심사를 받는 중이라 나오는 안내예요. <b>고급 ▸ 이동</b>을 누르고, 권한 화면에서 <b>모두 선택</b> 후 계속을 누르면 돼요. 앱이 쓰는 권한은 "이 앱이 만든 파일"과 "캘린더"뿐이에요.</p></details>
       <details><summary>휴대폰에서도 쓸 수 있나요?</summary><p>네. 휴대폰에서 메일로 받은 <b>시작 링크</b>를 열고 같은 구글 계정으로 로그인하면 PC와 같은 시트를 이어서 써요. 브라우저 메뉴에서 <b>홈 화면에 추가</b>하면 앱처럼 열려요.</p></details>
       <details><summary>업데이트하면 내 데이터는요?</summary><p>그대로예요. 앱은 열 때마다 최신 버전이고, 새 버전은 시트에 열을 추가만 하고 지우지 않아요.</p></details>
-      <details><summary>무엇이 되고, 무엇이 아직 안 되나요?</summary><p>구글 계정 하나면 돼요. 구글 캘린더 일정과 함께 보고, 할 일을 시간표에 끌어다 넣으면 내 캘린더에 들어가요. 메일 알림, 지메일·카톡에서 바로 담기, AI 자동 분류, 팀 공유는 <b>아직 안 돼요.</b></p></details>
+      <details><summary>무엇이 되고, 무엇이 아직 안 되나요?</summary><p>구글 계정 하나면 돼요. 구글 캘린더 일정과 함께 보고, 할 일을 시간표에 끌어다 넣으면 내 캘린더에 들어가요. ★ 중요 · ↑ 급함으로 나누고, 하루 끝엔 시간표를 이미지로 공유하고, 인사이트에서 중요한 일에 쓴 시간과 꾸준함을 돌아봐요. 메일 알림, 지메일·카톡에서 바로 담기, AI 자동 분류, 팀 공유는 <b>아직 안 돼요.</b></p></details>
     </div>
     <footer class="foot">
       <p><b>GTD 워크</b> · 구글 시트로 만든 무료 개인 업무관리 앱</p>
@@ -425,6 +431,6 @@
 <script src="vendor/gsap.min.js" defer></script>
 <script src="vendor/ScrollTrigger.min.js" defer></script>
 <script src="vendor/lenis.min.js" defer></script>
-<script src="v3.js?v=59bb1294" defer></script>
+<script src="v3.js?v=5e2723e3" defer></script>
 </body>
 </html>

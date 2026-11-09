@@ -1,0 +1,143 @@
+[
+ {
+  "img": "type",
+  "step": 0,
+  "tap": [
+   0.862,
+   0.182
+  ]
+ },
+ {
+  "img": "added",
+  "step": 1,
+  "tap": [
+   0.5,
+   0.805
+  ]
+ },
+ {
+  "img": "hero-sheet",
+  "step": 1,
+  "tap": [
+   0.135,
+   0.69
+  ]
+ },
+ {
+  "img": "hero-star",
+  "step": 2,
+  "tap": [
+   0.5,
+   0.648
+  ]
+ },
+ {
+  "img": "later-sheet",
+  "step": 2,
+  "tap": [
+   0.865,
+   0.566
+  ],
+  "fly": {
+   "t": "독서 모임 알아보기",
+   "bin": "later"
+  }
+ },
+ {
+  "img": "later-done",
+  "step": 2,
+  "tap": [
+   0.5,
+   0.661
+  ]
+ },
+ {
+  "img": "who-sheet",
+  "step": 2,
+  "tap": [
+   0.5,
+   0.566
+  ]
+ },
+ {
+  "img": "who-pick",
+  "step": 2,
+  "tap": [
+   0.143,
+   0.748
+  ],
+  "fly": {
+   "t": "신입 노트북 세팅 요청",
+   "bin": "who"
+  }
+ },
+ {
+  "img": "who-done",
+  "step": 2,
+  "tap": [
+   0.5,
+   0.648
+  ]
+ },
+ {
+  "img": "pj-sheet",
+  "step": 2,
+  "tap": [
+   0.683,
+   0.566
+  ]
+ },
+ {
+  "img": "pj-pick",
+  "step": 2,
+  "tap": [
+   0.185,
+   0.748
+  ],
+  "fly": {
+   "t": "워크숍 장소 후보 찾기",
+   "bin": "pj"
+  }
+ },
+ {
+  "img": "pj-done",
+  "step": 3,
+  "tap": [
+   0.5,
+   0.414
+  ]
+ },
+ {
+  "img": "plan-sheet",
+  "step": 3,
+  "tap": [
+   0.135,
+   0.549
+  ]
+ },
+ {
+  "img": "plan-slots",
+  "step": 3,
+  "tap": [
+   0.143,
+   0.892
+  ]
+ },
+ {
+  "img": "placed",
+  "step": 3,
+  "tap": [
+   0.883,
+   0.358
+  ]
+ },
+ {
+  "img": "timeline",
+  "step": 3,
+  "fly": {
+   "t": "팀장님께 보고서 초안 보내기",
+   "bin": "today",
+   "self": true
+  }
+ }
+]

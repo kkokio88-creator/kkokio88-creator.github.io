@@ -260,19 +260,22 @@
     $$('.bin', sec).forEach(function (b) { bins[b.dataset.bin] = b; });
     // tap: 실제 앱 화면(390×844)에서 누르는 버튼 위치(비율). fly: 처리된 카드와 갈 칸, self면 이 화면에서 바로 날아간다
     var B = [
-      { img: 'type', step: 0, tap: [0.86, 0.19] },
-      { img: 'drop-ask', step: 1, tap: [0.70, 0.296] },
-      { img: 'drop-no', step: 1, tap: [0.295, 0.296], fly: { t: '광고 메일 확인', bin: 'drop' } },
-      { img: 'drop-drop', step: 1, tap: [0.70, 0.296] },
-      { img: 'someday-no', step: 1, tap: [0.70, 0.296], fly: { t: '독서 모임 알아보기', bin: 'someday' } },
-      { img: 'someday-someday', step: 1, tap: [0.70, 0.296] },
-      { img: 'ref-no', step: 1, tap: [0.295, 0.423], fly: { t: '회의실 와이파이 비번', bin: 'ref' } },
-      { img: 'ref-ref', step: 1, tap: [0.33, 0.393], fly: { t: '택배 반품 신청', bin: 'now' } },
-      { img: 'now-now', step: 2, tap: [0.295, 0.296] },
-      { img: 'hero-yes', step: 2, tap: [0.70, 0.296] },
-      { img: 'hero-sched', step: 2, tap: [0.125, 0.743] },
-      { img: 'hero-done', step: 3, fly: { t: '팀장님께 보고서 초안 보내기', bin: 'today', self: true } },
-      { img: 'today-star', step: 3 }
+      { img: 'type', step: 0, tap: [0.862, 0.182] },
+      { img: 'added', step: 1, tap: [0.500, 0.805] },
+      { img: 'hero-sheet', step: 1, tap: [0.135, 0.690] },
+      { img: 'hero-star', step: 2, tap: [0.500, 0.648] },
+      { img: 'later-sheet', step: 2, tap: [0.865, 0.566], fly: { t: '독서 모임 알아보기', bin: 'later' } },
+      { img: 'later-done', step: 2, tap: [0.500, 0.661] },
+      { img: 'who-sheet', step: 2, tap: [0.500, 0.566] },
+      { img: 'who-pick', step: 2, tap: [0.143, 0.748], fly: { t: '신입 노트북 세팅 요청', bin: 'who' } },
+      { img: 'who-done', step: 2, tap: [0.500, 0.648] },
+      { img: 'pj-sheet', step: 2, tap: [0.683, 0.566] },
+      { img: 'pj-pick', step: 2, tap: [0.185, 0.748], fly: { t: '워크숍 장소 후보 찾기', bin: 'pj' } },
+      { img: 'pj-done', step: 3, tap: [0.500, 0.414] },
+      { img: 'plan-sheet', step: 3, tap: [0.135, 0.549] },
+      { img: 'plan-slots', step: 3, tap: [0.143, 0.892] },
+      { img: 'placed', step: 3, tap: [0.883, 0.358] },
+      { img: 'timeline', step: 3, fly: { t: '팀장님께 보고서 초안 보내기', bin: 'today', self: true } }
     ];
     var N = B.length, lastKey = '', cur = null;
     function layout() {
@@ -381,18 +384,17 @@
   }
 
   // ── C6 집중 ──
+  // C6 오늘 마감: 캡처 이미지가 올라오고, 찰칵(번쩍) 뒤 '복사했어요'
   function focus() {
-    var sec = $('#c6'), timer = $('.timer', sec), arc = $('.ring .arc', sec), chk = $('.check path', sec), chkSvg = $('.check', sec), label = $('.flabel', sec);
-    var C = 2 * Math.PI * 92, L = chk.getTotalLength ? chk.getTotalLength() : 120, fired = false;
-    arc.style.strokeDasharray = C; chk.style.strokeDasharray = L;
+    var sec = $('#c6'), img = $('.cap6img', sec), flash = $('.flash', sec), toastEl = $('.captoast', sec), fired = false;
     return function (p) {
-      var left = Math.round(1500 * (1 - ease(seg(p, 0.06, 0.8))));
-      timer.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
-      arc.style.strokeDashoffset = C * (1 - left / 1500);
-      var out = seg(p, 0.8, 0.86); timer.style.opacity = 1 - out; label.style.opacity = 1 - out;
-      var ck = seg(p, 0.83, 0.93); chkSvg.style.opacity = ck > 0 ? 1 : 0; chk.style.strokeDashoffset = L * (1 - ease(ck));
-      if (p > 0.88 && !fired) { fired = true; confetti(160); }
-      if (p < 0.78) fired = false;
+      var k = ease(seg(p, 0.05, 0.55));
+      img.style.transform = 'translateY(' + lerp(140, 0, k) + 'px) rotate(' + lerp(-7, -2, k) + 'deg) scale(' + lerp(0.86, 1, k) + ')';
+      img.style.opacity = Math.min(1, seg(p, 0.03, 0.25));
+      var f = seg(p, 0.6, 0.7); flash.style.opacity = f > 0 && f < 1 ? Math.sin(Math.PI * f) * 0.85 : 0;
+      var t = seg(p, 0.66, 0.74); toastEl.style.opacity = t; toastEl.style.transform = 'translate(-50%,' + lerp(16, 0, ease(t)) + 'px)';
+      if (p > 0.7 && !fired) { fired = true; confetti(90); }
+      if (p < 0.55) fired = false;
     };
   }
 
