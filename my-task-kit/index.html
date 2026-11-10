@@ -714,7 +714,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.7.4" };
+  var KIT = { name: "GTD 워크", version: "1.7.5" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -1344,6 +1344,9 @@
         .then(function (r) { toast('\'' + pn + '\' 프로젝트로 묶었어요'); setView(r.view); }).catch(fail);
     }
   }
+  // 프로젝트 이름: 대소문자·띄어쓰기·하이픈·밑줄만 다르면 같은 프로젝트로 보고 이미 있는 이름을 쓴다
+  function pjKey(n) { return String(n || '').toLowerCase().replace(/[\s\-_]+/g, ''); }
+  function pjSame(n) { var k = pjKey(n); if (!k) return ''; var hit = ((data && data.projects) || []).filter(function (p) { return p.name === n; })[0] || ((data && data.projects) || []).filter(function (p) { return pjKey(p.name) === k; })[0]; return hit ? hit.name : ''; }
   function newProject(then) {
     openSheet('<div class="st">새 프로젝트</div><div class="ss">두 단계 이상 걸리는 일을 묶는 폴더예요. 할 일은 담기 칸에서 적고 끌어다 놓으세요</div><input class="field" id="npName" placeholder="예) 12월 워크숍" maxlength="40"><button class="cta" id="npOk">만들기</button>');
     newPjThen = then || null;
@@ -2049,7 +2052,12 @@
     if ((b = e.target.closest('[data-cx]'))) { var was = b.classList.contains('on'); $('msCx').querySelectorAll('.chip').forEach(function (x) { x.classList.remove('on'); }); if (!was) b.classList.add('on'); return; }
     if (e.target.id === 'msOk') {
       var pr = $('msPr').querySelector('.on'), cx = $('msCx').querySelector('.on');
-      var msPatch = { priority: pr && pr.getAttribute('data-pr') !== '보통' ? pr.getAttribute('data-pr') : '', project: $('msPj').value.trim(), context: cx ? cx.getAttribute('data-cx') : '' };
+      var msAll = { priority: pr && pr.getAttribute('data-pr') !== '보통' ? pr.getAttribute('data-pr') : '', project: $('msPj').value.trim(), context: cx ? cx.getAttribute('data-cx') : '' };
+      if (msAll.project && msAll.project !== (t.project || '')) msAll.project = pjSame(msAll.project) || msAll.project;
+      // 바꾼 칸만 보낸다 (프로젝트 창·오른쪽 목록처럼 일부 정보만 가진 할 일을 열었을 때 다른 칸을 빈칸으로 덮지 않게)
+      var was = { priority: t.priority && t.priority !== '보통' ? t.priority : '', project: t.project || '', context: t.context || '' }, msPatch = {};
+      Object.keys(msAll).forEach(function (k) { if (msAll[k] !== was[k]) msPatch[k] = msAll[k]; });
+      if (!Object.keys(msPatch).length) { closeSheet(); return toast('바꾼 것이 없어요'); }
       closeSheet(); optimistic(t.id, msPatch); return call('updateTask', t.id, msPatch).then(ok('저장했어요')).catch(fail);
     }
     if (e.target.closest('#msRef')) { closeSheet(); dropLocal(t.id); toast('참고자료로 보관했어요'); return call('clarifyTask', t.id, { status: STATUS.REFERENCE, focus: '' }).then(ok('참고자료로 보관했어요')).catch(failReload); }
@@ -2065,10 +2073,12 @@
       return ibSave({ status: STATUS.DELEGATED, delegatee: who, followUp: fol }, who + '님께 맡겼어요');
     }
     // 수집함: 여러 단계 → 프로젝트 (이름 · 완료 모습 · 첫 번째 할 일)
+    if ((b = e.target.closest('[data-pjtask]'))) return openTask(b.getAttribute('data-pjtask'));
     if (e.target.id === 'pjOk') {
       var pn = $('pjN').value.trim(), po = $('pjO').value.trim(), pa = $('pjA').value.trim();
       if (!pn) return toast('프로젝트 이름을 적어 주세요');
       if (!pa) return toast('첫 번째 할 일을 적어 주세요');
+      var pnx = pjSame(pn); if (pnx) return ibSave({ status: STATUS.NEXT, title: pa, project: pnx }, '이미 있는 \'' + pnx + '\' 프로젝트에 넣었어요', po ? { name: pnx, outcome: po } : null);
       return ibSave({ status: STATUS.NEXT, title: pa, project: pn }, pn + ' 프로젝트를 만들었어요', { name: pn, outcome: po });
     }
     // 프로젝트 완료 모습 고치기
@@ -2097,9 +2107,12 @@
     if ((b = e.target.closest('[data-swho]')) || e.target.id === 'sWhoOk') { var sw = b ? b.getAttribute('data-swho') : $('sWhoIn').value.trim(); if (!sw) return toast('이름을 적어 주세요'); closeSheet(); return sendTo(t.id, 'who:' + sw); }
     if ((b = e.target.closest('[data-spj]')) || e.target.id === 'sPjOk') {
       var sp = b ? b.getAttribute('data-spj') : $('sPjIn').value.trim(); if (!sp) return toast('프로젝트 이름을 적어 주세요'); closeSheet();
-      return (b ? Promise.resolve() : call('setProject', sp, '').catch(function () {})).then(function () { return sendTo(t.id, 'pj:' + sp); });
+      var spx = b ? sp : pjSame(sp); if (spx) sp = spx;
+      return (spx ? Promise.resolve() : call('setProject', sp, '').catch(function () {})).then(function () { return sendTo(t.id, 'pj:' + sp); });
     }
-    if (e.target.id === 'npOk') { var np = $('npName').value.trim(); if (!np) return toast('프로젝트 이름을 적어 주세요'); closeSheet(); pjSet(true); return call('setProject', np, '').then(function (r) { setView(r.view); toast('\'' + np + '\' 프로젝트를 만들었어요 · 할 일을 끌어다 놓으세요'); }).catch(fail); }
+    if (e.target.id === 'npOk') { var np = $('npName').value.trim(); if (!np) return toast('프로젝트 이름을 적어 주세요');
+      var npx = pjSame(np); if (npx) { toast('\'' + npx + '\' 프로젝트가 이미 있어요'); return openProjectSheet(npx); }
+      closeSheet(); pjSet(true); return call('setProject', np, '').then(function (r) { setView(r.view); toast('\'' + np + '\' 프로젝트를 만들었어요 · 할 일을 끌어다 놓으세요'); }).catch(fail); }
     if ((b = e.target.closest('[data-rmwho]'))) return rmWho(e, b);
     if (e.target.id === 'awOk') { var aw = $('awName').value.trim(); if (!aw) return toast('이름을 적어 주세요'); addPerson(aw); closeSheet(); animNext = false; renderToday(); return toast(aw + '님을 추가했어요 · 할 일을 끌어다 놓으면 맡겨져요'); }
     if (e.target.id === 'capNmOk') { var nm = $('capNm').value.trim(); try { localStorage.setItem('kitCapName', nm); } catch (x) {} closeSheet(); if (capAfterName) return capturePlan(); toast(nm ? '캡처에 \'' + nm + '\'(으)로 넣어요' : '캡처에 이름을 넣지 않아요'); return renderMore(); }
@@ -2736,8 +2749,13 @@
   }
   function openProjectSheet(name) {
     var p = (data.projects || []).filter(function (x) { return x.name === name; })[0] || { name: name, outcome: '' };
+    var its = p.items || [], more = (p.open || 0) + (p.someday || 0) - its.length;
+    var tag = function (it) { return it.status === STATUS.DELEGATED ? (it.delegatee || '맡김') : it.status === STATUS.SOMEDAY ? '나중에' : it.due ? rel(it.due) : ''; };
     openSheet('<div class="st">' + esc(p.name) + '</div><div class="ss">남은 일 ' + (p.open || 0) + '개 · 끝낸 일 ' + (p.done || 0) + '개</div>' +
-      '<div class="lbl">끝나면 어떤 모습인가요?</div><input class="field" id="poIn" value="' + esc(p.outcome || '') + '" placeholder="예) 워크숍이 끝나고 후기가 공유됨">' +
+      '<div class="lbl">끝나면 어떤 모습인가요?' + (p.outcome ? '' : ' <span style="color:#C27C00">· 아직 안 적었어요</span>') + '</div><input class="field" id="poIn" value="' + esc(p.outcome || '') + '" placeholder="예) 워크숍이 끝나고 후기가 공유됨">' +
+      '<div class="lbl" style="margin-top:16px">할 일</div><div class="card" id="pjTasks" style="background:var(--fill);box-shadow:none">' + (its.length ? its.map(function (it) {
+        return '<div class="row" style="background:transparent" tabindex="0" role="button" data-pjtask="' + esc(it.id) + '"><div class="tx"><div class="t">' + esc(it.title) + '</div>' + (tag(it) ? '<div class="m">' + esc(tag(it)) + '</div>' : '') + '</div>' + CHEV + '</div>';
+      }).join('') + (more > 0 ? '<div class="xe" style="padding:10px 14px">외 ' + more + '개</div>' : '') : '<div class="xe" style="padding:14px">아직 할 일이 없어요</div>') + '</div>' +
       '<div class="ss" style="margin:12px 0 0;font-size:13.5px">이 프로젝트의 할 일은 오늘 화면 담기 칸에 적고, 이 폴더로 끌어다 놓거나 할 일 ▸ 프로젝트로 묶어요</div>' +
       '<button class="cta" id="poOk" data-name="' + esc(p.name) + '">저장</button>');
   }
@@ -3085,6 +3103,7 @@
     L.push('- 있는 줄의 ID·머리글·반복·쓴 시간(분)은 바꾸지 마. 시트에 없는 열을 만들지 마.');
     L.push('- 새 줄은 마지막 할 일 바로 아래에, 빈 줄 없이 추가하고 ID를 꼭 채운다: AI-yyyyMMddHHmmss-순번 (예: AI-20261109153000-1).');
     L.push('- 고칠 할 일은 제목으로 찾되, 비슷한 게 여러 개면 고르기 전에 나에게 물어봐.');
+    L.push('- 프로젝트 이름은 이미 있는 이름을 글자 그대로 쓴다. 대소문자·띄어쓰기·하이픈만 다른 프로젝트가 있으면 새로 만들지 말고 그 이름을 쓴다.');
     L.push('- 쓰기 전에 그 줄을 다시 읽어 확인하고, 끝나면 무엇을 바꿨는지 짧게 알려 줘.');
     L.push('');
     L.push('## 이렇게 처리해');

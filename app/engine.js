@@ -305,7 +305,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.7.4',       // 코드 버전 (화면 표시용)
+  VERSION: '1.7.5',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 6,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -1631,11 +1631,11 @@ function projectStats_(tasks) {
     var g = by[t.project];
     if (t.status === STATUS.DONE) g.done++;
     // 나중에(언젠가) 할 일도 프로젝트 안에 보이게 (프로젝트가 '끝남'으로 사라지지 않게)
-    else if (t.status === STATUS.SOMEDAY) { g.someday++; if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: '' }); }
+    else if (t.status === STATUS.SOMEDAY) { g.someday++; if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: '', project: t.project, priority: t.priority || '', context: t.context || '' }); }
     else if (isActionable_(t.status)) {
       g.open++;
       if (t.priority === '높음') g.important++;
-      if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: t.delegatee || '' });
+      if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: t.delegatee || '', project: t.project, priority: t.priority || '', context: t.context || '' });
       if (t.due && (!g.nextDue || t.due < g.nextDue)) g.nextDue = t.due;
       if (t.status === STATUS.NEXT) g.next++;
       if (t.status === STATUS.DELEGATED || t.status === STATUS.SCHEDULED) g.waiting++;
