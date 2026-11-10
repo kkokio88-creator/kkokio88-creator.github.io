@@ -63,7 +63,7 @@
   /* 헤더 + 진행률 링 */
   .hero { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
   .hero > div:first-child { flex: 1; min-width: 0; }
-  .ring { width: 76px; height: 76px; position: relative; flex: none; }
+  .ring { width: 76px; height: 76px; position: relative; flex: none; cursor: pointer; }
   .ring svg { transform: rotate(-90deg); }
   .ring circle { fill: none; stroke-width: 8; }
   .ring .bg { stroke: #E5E8EB; }
@@ -408,6 +408,7 @@
   .blk { position: absolute; left: 4px; right: 4px; border-radius: 10px; padding: 4px 34px 4px 9px; overflow: hidden; line-height: 1.25; z-index: 2; display: flex; flex-direction: column; justify-content: center; }
   .blk b { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .blk small { font-size: 11.5px; opacity: .8; }
+  .blk.pk:not(.short) b, .blk.ev:not(.short) b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
   .blk.short { flex-direction: row; align-items: center; justify-content: flex-start; gap: 6px; }
   .blk.short small { flex: none; }
   .blk.ev { background: var(--bluet); color: var(--blue); padding-right: 9px; }
@@ -649,7 +650,7 @@
         <div class="colA">
           <div class="hero">
             <div><div class="eyebrow" id="date">&nbsp;</div><div class="h1" id="hero">&nbsp;</div><div class="sub2" id="heroSub">&nbsp;</div></div>
-            <div class="ring" id="ring"><svg width="76" height="76" viewBox="0 0 76 76"><circle class="bg" cx="38" cy="38" r="32"/><circle class="fg" id="ringFg" cx="38" cy="38" r="32" stroke-dasharray="201" stroke-dashoffset="201"/></svg><span class="pc" id="ringPc">0%</span></div>
+            <div class="ring" id="ring" role="button" tabindex="0" aria-label="오늘 진행률" title="오늘 진행률"><svg width="76" height="76" viewBox="0 0 76 76"><circle class="bg" cx="38" cy="38" r="32"/><circle class="fg" id="ringFg" cx="38" cy="38" r="32" stroke-dasharray="201" stroke-dashoffset="201"/></svg><span class="pc" id="ringPc">0%</span></div>
           </div>
           <div class="capwrap"><form class="cap" id="capForm" autocomplete="off">
             <span class="spark"><svg class="i" data-i="sparkle" width="20" height="20"></svg></span>
@@ -713,7 +714,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.7.2" };
+  var KIT = { name: "GTD 워크", version: "1.7.3" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -985,7 +986,7 @@
     $('heroSub').textContent = done ? done + '개 끝냈어요' + (list.length ? ', 조금만 더!' : ' 🎉') : list.length ? '하나씩 시작해 볼까요' : '여유로운 하루예요';
     $('ringFg').style.strokeDashoffset = 201 * (1 - pct / 100);
     var pcEl = $('ringPc');
-    if (!done && list.length) { pcEl.textContent = '시작'; pcEl.setAttribute('data-last', 0); }
+    if (!done && list.length) { pcEl.textContent = '0%'; pcEl.setAttribute('data-last', 0); }
     else { pcEl.innerHTML = '<span id="pcN" data-n="' + (pcEl.getAttribute('data-last') || 0) + '"></span>%'; pcEl.setAttribute('data-last', pct); countUp($('pcN'), pct, 900); }
     setBadges();
 
@@ -1000,7 +1001,7 @@
     // 휴대폰: 할 일 | 시간표 알약 토글(처음엔 시간표, 마지막으로 본 쪽을 기억). PC는 시간표가 오른쪽에 따로 있다
     if (isPC()) a += '<div class="h2">할 일</div>';
     else a += '<div class="h2 vtgrow"><span class="vtg" role="tablist" aria-label="오늘 보기"><button role="tab" data-listview aria-selected="' + !showTime + '"' + (showTime ? '' : ' class="on"') + '>' + svg('list', 16) + '할 일' + (list.length ? ' <em>' + list.length + '</em>' : '') + '</button><button role="tab" data-timeview aria-selected="' + showTime + '"' + (showTime ? ' class="on"' : '') + '>' + svg('calendar', 16) + '시간표</button></span><span class="sp"></span>' +
-      (showTime ? '<button class="capb" data-cap>' + svg('camera', 15) + '캡처</button><span class="trashb" id="trashDrop" role="img" aria-label="휴지통">' + svg('trash', 17) + '</span>' : '') + '</div>';
+      (showTime ? '<button class="capb" data-cap title="오늘 시간표를 이미지로 복사">' + svg('camera', 15) + '캡처</button><span class="trashb" id="trashDrop" role="img" aria-label="휴지통">' + svg('trash', 17) + '</span>' : '') + '</div>';
     if (showTime) a += dayPlanHtml(d, list);
     else if (!list.length) a += '<div class="card"><div class="empty" style="padding-top:28px">' + drawOk() + '오늘 할 일을 모두 끝냈어요</div></div>';
     else {
@@ -1024,7 +1025,8 @@
     $('todayA').innerHTML = a;
 
     // 오른쪽(휴대폰: 아래): 이번 주 + (PC) 시간표
-    var b = '<div class="h2">이번 주<span class="sp"></span><span class="wknav"><button data-wk="-1" aria-label="이전 주">' + svg('chevL', 18) + '</button><button data-wk="1" aria-label="다음 주">' + svg('chev', 18) + '</button></span></div><div id="wkBox">' + weekHtml(wkOffset === 0 ? d.week : wkData) + '</div>';
+    var wkName = wkOffset === 0 ? '이번 주' : wkOffset === 1 ? '다음 주' : wkOffset === -1 ? '지난주' : wkOffset > 0 ? wkOffset + '주 뒤' : -wkOffset + '주 전';
+    var b = '<div class="h2">' + wkName + (wkOffset ? '<button class="lnk" data-wk0 style="margin-left:8px;font-size:14px;font-weight:700;color:var(--g)">이번 주로</button>' : '') + '<span class="sp"></span><span class="wknav"><button data-wk="-1" aria-label="이전 주">' + svg('chevL', 18) + '</button><button data-wk="1" aria-label="다음 주">' + svg('chev', 18) + '</button></span></div><div id="wkBox">' + weekHtml(wkOffset === 0 ? d.week : wkData) + '</div>';
     if (isPC()) b += '<div class="h2">오늘 시간표<span class="sp"></span><button class="capb" data-cap title="오늘 시간표를 이미지로 복사">' + svg('camera', 15) + '캡처</button><span class="trashb" id="trashDrop" role="img" aria-label="휴지통: 할 일을 끌어다 놓으면 삭제" title="할 일을 끌어다 놓으면 삭제">' + svg('trash', 17) + '</span></div>' + dayPlanHtml(d, list, true);
     if (isPC()) $('todayC').innerHTML = projRailHtml(d); else { $('todayC').innerHTML = ''; b += projectsHtml(d); }
     $('todayB').innerHTML = b;
@@ -1408,7 +1410,7 @@
       });
     };
     if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem) {
-      try { return navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]).then(function () { toast('오늘 시간표를 복사했어요 · 카톡에 붙여 넣으세요'); }, fallback); } catch (e) {}
+      try { return navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]).then(function () { toast('오늘 시간표 이미지를 복사했어요 · 카톡에 붙여 넣으세요'); }, fallback); } catch (e) {}
     }
     return fallback();
   }
@@ -1747,6 +1749,8 @@
   function todayClick(e) {
     var b;
     if (swipedAt && Date.now() - swipedAt < 400) return;
+    // 끝낸 시간표 블록에도 data-done이 있어 완료 버튼 처리보다 먼저 본다
+    if ((b = e.target.closest('.blk.dn')) && !e.target.closest('.rsz')) return toast('끝낸 일이에요 · 왼쪽 계획 칸으로 끌면 다시 할 일로 돌아가요');
     if ((b = e.target.closest('[data-done]'))) { e.stopPropagation(); return completeRow(b.closest('[data-id]')); }
     if ((b = e.target.closest('[data-goto]'))) { var g = b.getAttribute('data-goto'); return g === 'waiting' ? openWaiting() : g === 'weekly' ? openWeekly() : go(g); }
     if ((b = e.target.closest('[data-timeview]')) || (b = e.target.closest('[data-listview]'))) {
@@ -1756,6 +1760,7 @@
     }
     if ((b = e.target.closest('[data-ctx]'))) { ctxFilter = b.getAttribute('data-ctx'); return renderToday(); }
     if ((b = e.target.closest('[data-wk]'))) { wkOffset += +b.getAttribute('data-wk'); return loadWeek(); }
+    if ((b = e.target.closest('[data-wk0]'))) { wkOffset = 0; return loadWeek(); }
     if ((b = e.target.closest('[data-day]'))) return openDay(wkOffset === 0 ? data.week : wkData, b.getAttribute('data-day'));
     if ((b = e.target.closest('[data-plan]'))) return openPlan();
     if ((b = e.target.closest('[data-unplace]'))) { e.stopPropagation(); return unplaceTask(b.getAttribute('data-unplace')); }
@@ -1763,7 +1768,7 @@
     var mod = e.shiftKey || e.metaKey || e.ctrlKey; // 여러 개 고르기 클릭은 ★·↑보다 먼저
     if (!mod && (b = e.target.closest('[data-timp]'))) { e.stopPropagation(); return toggleImp(b.getAttribute('data-timp')); }
     if (!mod && (b = e.target.closest('[data-turg]'))) { e.stopPropagation(); return toggleUrg(b.getAttribute('data-turg')); }
-    if ((b = e.target.closest('.blk.pk')) && !e.target.closest('.rsz')) { if (e.ctrlKey || e.metaKey || e.shiftKey) return pickBlock(b.getAttribute('data-drag'), e); return clearPick(); }
+    if ((b = e.target.closest('.blk.pk')) && !e.target.closest('.rsz')) { if (e.ctrlKey || e.metaKey || e.shiftKey) return pickBlock(b.getAttribute('data-drag'), e); return clearPick() || openTask(b.getAttribute('data-drag')); }
     if ((b = e.target.closest('[data-cap]'))) return capturePlan();
     if ((b = e.target.closest('[data-rpt]'))) { e.stopPropagation(); var rt = findTask(b.getAttribute('data-rpt')); return rt && openRepeat(rt); }
     if ((b = e.target.closest('[data-cy]'))) return carryAct(b.getAttribute('data-cy'));
@@ -1788,6 +1793,9 @@
     if ((b = e.target.closest('[data-id]'))) return openTaskShared(b);
   }
   $('todayA').addEventListener('click', todayClick); $('todayB').addEventListener('click', todayClick); $('todayC').addEventListener('click', todayClick);
+  // 가운데 링: 오늘 진행률. 누르면 몇 개 중 몇 개 끝냈는지
+  function ringInfo() { var d = data; if (!d || !d.counts) return; var n = todayList(d).length, dn = d.counts.doneToday || 0; toast(n ? '오늘 진행률 · ' + (dn + n) + '개 중 ' + dn + '개 끝냈어요' : dn ? '오늘 할 일을 모두 끝냈어요 🎉' : '오늘 할 일이 없어요'); }
+  $('ring').addEventListener('click', ringInfo); $('ring').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ringInfo(); } });
   function loadWeek() {
     if (wkOffset === 0) { wkData = null; return renderToday(); }
     var box = $('wkBox'); if (box && box.firstChild) box.firstChild.style.opacity = .4;
