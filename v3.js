@@ -363,7 +363,10 @@
     }
     return function (p) {
       var vw = innerWidth, vh = innerHeight, tw = trackEl.offsetWidth, hw = parseFloat(getComputedStyle(trackEl).getPropertyValue('--hw')) / 100 * vw;
-      var x = (0.45 * vw - 8 * hw) * ease(seg(p, 0.03, 0.86)); // 끝에서 17:00 눈금이 화면 85% 자리에 오도록(잘리지 않게)
+      // 모바일: 카드가 몰린 9~15시 구간만 패닝해 mid에서도 카드 ≥1 유지. PC 수식은 그대로.
+      var mobile = (vw / vh < 1) || vw <= 760;
+      var endX = mobile ? (0.58 * vw - 6.2 * hw) : (0.45 * vw - 8 * hw);
+      var x = endX * ease(seg(p, 0.03, 0.86)); // PC: 끝에서 17:00이 화면 85% 자리
       trackEl.style.transform = 'translate3d(' + x + 'px,0,0)';
       var hr = clamp(9 + (vw * 0.5 - (vw * 0.4 + x)) / hw, 9, 17);
       var hh = Math.floor(hr), mm = Math.floor((hr - hh) * 60 / 10) * 10;
@@ -372,8 +375,10 @@
       var k = (hr - 9) / 8; sun.style.transform = 'translate(' + (vw * lerp(0.08, 0.92, k)) + 'px,' + (vh * (0.62 - Math.sin(Math.PI * k) * 0.5)) + 'px)';
       // 할 일 블록: 화면 가운데를 지나기 직전에 빈칸으로 떨어져 맞물린다
       tks.forEach(function (t) {
-        var sx = t.offsetLeft + x + t.offsetWidth / 2, kk = seg(vw * 0.92 - sx, 0, vw * 0.3), b = kk < 1 ? backOut(kk) : 1;
-        t.style.transform = 'translateY(' + ((1 - b) * -vh * 0.42) + 'px) rotate(' + ((1 - kk) * -8) + 'deg)';
+        var sx = t.offsetLeft + x + t.offsetWidth / 2;
+        var kk = mobile ? clamp(seg(vw * 1.05 - sx, -vw * 0.2, vw * 0.55)) : seg(vw * 0.92 - sx, 0, vw * 0.3);
+        var b = kk < 1 ? backOut(Math.min(1, kk)) : 1;
+        t.style.transform = 'translateY(' + ((1 - b) * -vh * 0.42) + 'px) rotate(' + ((1 - Math.min(1, kk)) * -8) + 'deg)';
         t.style.opacity = clamp(kk * 2.5);
       });
       tocal.classList.toggle('on', p > 0.86);

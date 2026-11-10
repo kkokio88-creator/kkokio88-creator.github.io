@@ -808,3 +808,49 @@ html:not(.js) .tray { width: 30vw; }
   /* Footer / legal links */
   footer a, .foot a { min-height: 44px; display: inline-flex; align-items: center; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Mobile polish 1110b — c4 bins / c5 timeline / c11 steps
+   Desktop layout UNCHANGED (rules only inside this media).
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px), (max-aspect-ratio: 1/1) {
+  /* C4: bin chips were 11px in earlier mobile rule — raise + allow wrap */
+  .bin li {
+    font-size: 13px;
+    line-height: 1.3;
+    padding: 6px 8px;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: clip;
+    word-break: keep-all;
+  }
+  .bin b { font-size: 13px; line-height: 1.25; }
+
+  /* C5: denser columns + bottom inset so hour ticks aren't edge-flush */
+  .dtrack { --hw: 52vw; bottom: 14vh; height: 34vh; }
+  .hours i {
+    font-size: 12.5px;
+    bottom: -26px;
+    padding: 2px 6px;
+  }
+  .hours i::before { height: 34vh; bottom: 22px; }
+  .slot { font-size: 13px; }
+  .slot b { font-size: 13px; }
+  .slot span { font-size: 12px; }
+  .tocal { bottom: calc(14vh + 34vh + 14px); }
+
+  /* C11: step labels were 11px — ≥12.5, wrap on narrow */
+  .su-steps {
+    gap: 3px;
+    align-items: stretch;
+  }
+  .su-steps li {
+    font-size: 12.5px;
+    line-height: 1.25;
+    white-space: normal;
+    word-break: keep-all;
+    padding: 8px 1px 0;
+    min-width: 0;
+    hyphens: auto;
+  }
+}
