@@ -1,7 +1,8 @@
 /*
  * v2 로그인: 구글 계정(Google Identity Services)으로 토큰을 받아 엔진에 넘긴다.
  * - 처음: '구글로 시작하기' 한 번 → 권한 허용 → 내 드라이브에 시트가 자동으로 생기고 오늘 화면이 열린다.
- * - 다시 올 때: 토큰이 살아 있으면 바로, 만료됐으면(1시간) 아래쪽 '구글로 계속하기' 한 번.
+ * - 다시 올 때: 토큰이 살아 있으면 바로. 만료(1시간) 5분 전, 창이 다시 보일 때·포커스를 받을 때 조용히 새로 받는다.
+ *   조용한 갱신이 안 될 때만 아래쪽 '구글로 계속하기' 막대를 띄운다. 앱이 열린 뒤에는 전체 화면을 다시 쓰지 않는다.
  * - 토큰은 이 브라우저에만 잠시(만료 시각까지) 둔다. 서버로 보내지 않는다.
  */
 (function () {
@@ -16,23 +17,54 @@
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   };
 
+  var SOON = 5 * 60e3, timer = null, tryAt = 0, failAt = 0, silent = false, silentTimer = null, loginAt = 0, fetching = false;
+  function expiring() { return !tok || !tok.t || tok.exp < Date.now() + SOON; }
+  // 조용한 갱신: 이메일을 알고 로그인 스크립트가 로드됐을 때만. 팝업 없이 새 토큰을 받는다
+  function canSilent() { return !!(tok && tok.email && CFG.clientId && window.google && google.accounts && google.accounts.oauth2); }
+  function refresh() {
+    if (!expiring() || Date.now() - tryAt < 30e3 || Date.now() - failAt < 120e3 || Date.now() - loginAt < 120e3) return;
+    if (!canSilent()) { if (!valid() && started) showGate(true); return; }
+    tryAt = Date.now(); silent = true;
+    // 팝업이 막히면 구글이 아무 응답도 안 줄 수 있다 → 15초 안에 답이 없으면 실패로 보고 막대로 넘긴다
+    clearTimeout(silentTimer); silentTimer = setTimeout(function () { if (silent) silentFail(); }, 15e3);
+    try { getClient().requestAccessToken({ prompt: '', login_hint: tok.email }); } catch (e) { silentFail(); }
+  }
+  function silentFail() {
+    clearTimeout(silentTimer); silent = false;
+    failAt = Date.now();
+    if (valid()) { // 아직 토큰이 살아 있으면 막대를 띄우지 않고, 만료되는 때 확인한다
+      showGate(false); clearTimeout(timer);
+      timer = setTimeout(function () { if (!valid()) showGate(true); else schedule(); }, Math.max(1000, tok.exp - 60e3 - Date.now() + 1000));
+      return;
+    }
+    showGate(true);
+  }
+  function schedule() {
+    clearTimeout(timer);
+    if (!tok || !tok.t) return;
+    timer = setTimeout(refresh, Math.max(0, tok.exp - SOON - Date.now()));
+  }
   function token() {
     if (valid()) return Promise.resolve(tok.t);
-    showGate(true);
+    if (started && canSilent() && Date.now() - failAt >= 120e3) refresh(); else showGate(true);
     return new Promise(function (res) { waiters.push(res); });
   }
   function gotToken(r) {
+    var wasSilent = silent; silent = false; loginAt = 0; clearTimeout(silentTimer);
+    if (wasSilent && (!r || r.error || !r.access_token)) return silentFail();
     if (!r || r.error || !r.access_token) { gateMsg(r && r.error === 'access_denied' ? '권한을 허용해야 내 시트를 만들 수 있어요.' : '로그인하지 못했어요. 다시 눌러 주세요.'); return; }
     var granted = String(r.scope || SCOPES);
     if (granted.indexOf('drive.file') < 0) { gateMsg('권한 화면에서 위쪽 "모두 선택"을 눌러 주세요. 내 시트를 만들고 캘린더를 보려면 필요해요. 버튼을 다시 눌러 주세요.'); return; }
     tok = { t: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000, cal: granted.indexOf('calendar') >= 0, email: tok && tok.email };
-    store.set('kitTok', JSON.stringify(tok));
+    store.set('kitTok', JSON.stringify(tok)); failAt = 0;
+    schedule();
     var w = waiters; waiters = []; w.forEach(function (f) { f(tok.t); });
     afterLogin();
   }
   function afterLogin() {
+    schedule();
     var go = function (email) {
-      if (started) { showGate(false); return; }
+      if (started) { showGate(false); fetchEmail(); return; }
       started = true; document.documentElement.classList.add('kit-signed');
       // 처음 시작(큰 화면)은 시트를 만드는 동안 진행 상황을 보여 준다. 다시 올 때는 저장본 화면을 바로 보인다
       var g = document.getElementById('kitGate'), first = g && !g.hidden && g.className === 'kg-full';
@@ -44,16 +76,28 @@
     if (tok.email) return go(tok.email);
     // 이메일(로그아웃 표시·다음 로그인 힌트용)은 시작과 동시에 받는다 — 시작을 기다리게 하지 않는다
     go('');
+    fetchEmail();
+  }
+  // 이메일을 몰랐다면(시트 기록만 있던 경우 등) 로그인 뒤에 받아 저장하고 엔진에도 알린다
+  function fetchEmail() {
+    if (!tok || tok.email || !tok.t || fetching) return;
+    fetching = true;
     fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + tok.t } }).then(function (r) { return r.json(); })
-      .then(function (u) { tok.email = u.email || ''; store.set('kitTok', JSON.stringify(tok)); }).catch(function () {});
+      .then(function (u) { fetching = false; if (!tok || !u || !u.email) return; tok.email = u.email; store.set('kitTok', JSON.stringify(tok)); try { window.KIT_ENGINE.setEmail(u.email); } catch (e) {} })
+      .catch(function () { fetching = false; });
   }
   function login() {
     if (!window.google || !google.accounts || !google.accounts.oauth2) { gateMsg('구글 로그인을 불러오는 중이에요. 잠시 뒤 다시 눌러 주세요.'); return; }
     if (!CFG.clientId) { gateMsg('아직 준비 중이에요. 곧 열어요!'); return; }
-    if (!client) client = google.accounts.oauth2.initTokenClient({ client_id: CFG.clientId, scope: SCOPES, include_granted_scopes: true, callback: gotToken, error_callback: function (e) { gateMsg(e && e.type === 'popup_closed' ? '로그인 창이 닫혔어요. 다시 눌러 주세요.' : '로그인하지 못했어요.'); } });
-    client.requestAccessToken({ prompt: tok ? '' : 'consent', login_hint: tok && tok.email ? tok.email : undefined });
+    silent = false; clearTimeout(silentTimer); loginAt = Date.now(); // 사람이 누른 로그인: 이 동안 조용한 요청은 보내지 않는다
+    getClient().requestAccessToken({ prompt: tok ? '' : 'consent', login_hint: tok && tok.email ? tok.email : undefined });
+  }
+  function getClient() {
+    if (!client) client = google.accounts.oauth2.initTokenClient({ client_id: CFG.clientId, scope: SCOPES, include_granted_scopes: true, callback: gotToken, error_callback: function (e) { if (silent) return silentFail(); loginAt = 0; gateMsg(e && e.type === 'popup_closed' ? '로그인 창이 닫혔어요. 다시 눌러 주세요.' : e && e.type === 'popup_failed_to_open' ? '로그인 창이 막혔어요. 팝업을 허용하고 다시 눌러 주세요.' : '로그인하지 못했어요.'); } });
+    return client;
   }
   function logout() {
+    clearTimeout(timer); clearTimeout(silentTimer);
     try { if (tok && google.accounts.oauth2.revoke) google.accounts.oauth2.revoke(tok.t, function () {}); } catch (e) {}
     started = false; // 창을 닫을 때 저장본을 다시 쓰지 않게
     tok = null; ['kitTok', 'kitSheetId'].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
@@ -63,9 +107,12 @@
 
   // ── 첫 화면 / 계속하기 막대 ──
   function gate() {
-    var g = document.getElementById('kitGate'); if (g) return g;
+    var g = document.getElementById('kitGate');
+    // 앱이 이미 열렸고 시작 진행 화면이 끝났으면 전체 화면은 버리고 막대로 다시 만든다
+    if (g && g.className === 'kg-full' && started && g.hidden) { g.remove(); g = null; }
+    if (g) return g;
     g = document.createElement('div'); g.id = 'kitGate';
-    var first = !tok;
+    var first = !started && !(tok && tok.email) && !store.get('kitSheetId');
     g.className = first ? 'kg-full' : 'kg-bar';
     var gbtn = '<button class="kg-btn" id="kgBtn" type="button"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.9 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.1-13.4-9.9l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span>' + (first ? '구글로 시작하기' : '구글로 계속하기') + '</span></button>';
     g.innerHTML = first
@@ -111,18 +158,19 @@
   }
   // 앱으로 돌아오면 오래된 시트·캘린더를 미리 새로 받아 둔다 (다음 누름이 기다리지 않게)
   // 다른 앱으로 가거나 창을 닫을 때는 이 기기 저장본을 바로 써 둔다(못 보낸 변경은 다음에 열 때 이어서 보냄)
-  document.addEventListener('visibilitychange', function () { if (!started) return; if (document.visibilityState === 'visible') window.KIT_ENGINE.warm(); else window.KIT_ENGINE.persist(); });
+  document.addEventListener('visibilitychange', function () { if (!started) return; if (document.visibilityState === 'visible') { refresh(); window.KIT_ENGINE.warm(); } else window.KIT_ENGINE.persist(); });
+  window.addEventListener('focus', function () { if (started) refresh(); });
   window.addEventListener('pagehide', function () { if (started) window.KIT_ENGINE.persist(); });
   window.addEventListener('beforeunload', function (e) { if (started) window.KIT_ENGINE.persist(); if (started && window.KIT_ENGINE.saveFailed()) { e.preventDefault(); e.returnValue = ''; } });
   window.KIT_AUTH = { login: login, logout: logout, email: function () { return (tok && tok.email) || ''; } };
 
   // GIS 스크립트
-  var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.defer = true; document.head.appendChild(s);
+  var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.defer = true; s.onload = function () { if (tok && tok.email) { if (expiring()) refresh(); else schedule(); } }; document.head.appendChild(s);
   document.addEventListener('DOMContentLoaded', function () {
     if (valid()) return afterLogin();
     showGate(true);
     // 전에 이 기기에서 쓴 적이 있으면 로그인을 기다리지 않고 저장본으로 바로 연다
     var sid = store.get('kitSheetId');
-    if (tok && tok.email && sid && store.get('kitBook:' + sid)) afterLogin();
+    if ((tok && tok.email || sid) && sid && store.get('kitBook:' + sid)) { if (!tok) tok = {}; afterLogin(); }
   });
 })();
