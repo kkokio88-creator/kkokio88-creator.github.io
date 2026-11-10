@@ -2,7 +2,7 @@
 // 화면(index.html)은 네트워크 먼저 → 안 되면 저장해 둔 것. 아이콘·글꼴은 저장해 둔 것 먼저.
 // 데이터(script.google.com · googleusercontent.com)는 절대 저장하지 않는다.
 // VERSION 줄은 tools/build-web.js가 KIT.VERSION으로 바꿔 쓴다.
-var VERSION = '1.9.0';
+var VERSION = '1.9.1';
 var CACHE = 'my-task-kit-' + VERSION;
 var SHELL = ['./', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 

@@ -784,7 +784,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.9.0" };
+  var KIT = { name: "GTD 워크", version: "1.9.1" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -1155,10 +1155,10 @@
   function planListHtml(d, shown) {
     var placed = {}; ((d.events && d.events.items) || []).forEach(function (e) { if (e.kit) placed[e.kit] = 1; });
     var tray = shown.filter(function (t) { return !placed[t.id]; }), nPlaced = shown.length - tray.length;
-    var hint = '<div class="planhint">' + svg('clock', 14) + '<span>시간표에 끌어다 놓고, 끝나면 <b>완료</b> 칸으로</span>' + (nPlaced ? '<span class="sp"></span><span class="nw">시간표에 ' + nPlaced + '개</span>' : '') + '</div>';
+    var hint = '<div class="planhint">' + svg('clock', 14) + '<span>이미 끝낸 일은 <b>○</b>를 눌러 바로 완료 · 할 일은 시간표로</span>' + (nPlaced ? '<span class="sp"></span><span class="nw">시간표에 ' + nPlaced + '개</span>' : '') + '</div>';
     if (!tray.length) return hint + '<div class="card"><div class="empty" style="padding-top:24px">' + tile('calcheck', 'green', 26) + '<br>오늘 할 일을 모두 시간표에 넣었어요</div></div>';
     return hint + '<div class="card plist" id="listCard">' + byQuad(tray).map(function (t) {
-      return '<div class="swr pw" data-id="' + esc(t.id) + '"><div class="row prow" tabindex="0" role="button" data-drag="' + esc(t.id) + '" data-title="' + esc(t.title) + '" data-dur="' + (t.est || 30) + '" aria-label="' + esc(t.title) + ' 열기 (끌어서 시간표에 넣기)">' +
+      return '<div class="swr pw" data-id="' + esc(t.id) + '"><div class="row prow" tabindex="0" role="button" data-drag="' + esc(t.id) + '" data-title="' + esc(t.title) + '" data-dur="' + (t.est || 30) + '" aria-label="' + esc(t.title) + ' 열기 (끌어서 시간표에 넣기)"><button class="chk" data-done aria-label="' + esc(t.title) + ' 완료">' + svg('check', 15) + '</button>' +
         '<span class="grip" aria-hidden="true">' + svg('dots', 16) + '</span><div class="tx"><div class="t">' + esc(t.title) + '</div>' + metaHtml(t) + '</div>' +
         tagBtns(t) + '<span class="estb">' + minText(t.est || 30) + '</span>' + (t.repeat ? '' : '<button class="rptb" data-rpt="' + esc(t.id) + '" aria-label="' + esc(t.title) + ' 반복 루틴으로" title="반복 루틴으로 등록">' + svg('repeat', 17) + '</button>') + '</div></div>';
     }).join('') + '</div>' + (tray.length > 1 ? '<button class="txtlink" data-autoplan>' + svg('calendar', 15) + ' 빈 시간에 한 번에 배치</button>' : '');
@@ -1235,13 +1235,13 @@
   }
   // 완료: 시간표의 ✓ 또는 오른쪽(완료) 칸으로 옮겼을 때. 화면을 먼저 바꾸고 저장은 뒤에서.
   function completeId(id) {
-    if (!data) return; var t = findTask(id), wasLast = todayList(data).length === 1;
+    if (!data || completing[id]) return; completing[id] = 1; var t = findTask(id), wasLast = todayList(data).length === 1;
     data.doneToday = (data.doneToday || []).filter(function (x) { return x.id !== id; }).concat([{ id: id, title: t ? t.title : '', project: t ? t.project : '' }]);
     if (data.counts) data.counts.doneToday = (data.counts.doneToday || 0) + 1;
     animNext = false; dropLocal(id);
     var ev0 = ((data.events && data.events.items) || []).filter(function (e) { return e.kit === id && e.start && e.end; })[0], spent = ev0 ? Math.max(toMin(ev0.end) - toMin(ev0.start), 0) : 0;
-    return call('completeTask', id).then(function (r) { toast(r.next ? '완료 · 다음 ' + rel(r.next) : '완료했어요', r.undo); setView(r.view); if (wasLast && !todayList(data).length) confetti(); if (spent) call('updateTask', id, { spent: spent }).catch(function () {}); })
-      .catch(function (e) { toast(e.message); load(); });
+    return call('completeTask', id).then(function (r) { delete completing[id]; toast(r.noop ? '이미 완료한 일이에요' : r.next ? '완료 · 다음 ' + rel(r.next) : '완료했어요', r.undo); setView(r.view); if (wasLast && !todayList(data).length) confetti(); if (spent) call('updateTask', id, { spent: spent }).catch(function () {}); })
+      .catch(function (e) { delete completing[id]; toast(e.message); load(); });
   }
 
   // 캘린더 일정 옮기기: 화면 먼저, 구글 캘린더는 뒤에서
@@ -1753,6 +1753,7 @@
         rs.dur = rs.dur0; be.classList.add('resizing'); try { hz.setPointerCapture(e.pointerId); } catch (x) {}
         return;
       }
+      if (e.target.closest('.chk[data-done]')) return; // 완료 동그라미는 끌기를 시작하지 않는다
       var el = e.target.closest('[data-drag]'); if (!el) return;
       if (e.ctrlKey || e.metaKey || e.shiftKey) return; // 고르기 클릭
       var placed = el.hasAttribute('data-placed'), id = el.getAttribute('data-drag'), st0 = +el.getAttribute('data-start') || 0;
@@ -1833,7 +1834,9 @@
     if ((b = e.target.closest('[data-pc]'))) { e.stopPropagation(); return pendAct(b.closest('[data-id]').getAttribute('data-id'), b.getAttribute('data-pc')); }
     if ((b = e.target.closest('[data-got]'))) { e.stopPropagation(); return gotIt(b.getAttribute('data-got')); }
     if ((b = e.target.closest('[data-ckid]'))) { var wt = findTask(b.getAttribute('data-ckid')); if (wt) return waitSheet(wt); }
-    if ((b = e.target.closest('[data-done]'))) { e.stopPropagation(); return completeRow(b.closest('[data-id]')); }
+    // Shift·Ctrl·⌘ 클릭이거나 이미 고르는 중이면 동그라미도 '고르기'로 (아래 toggleSel 줄)
+    var picking = e.shiftKey || e.metaKey || e.ctrlKey || Object.keys(sel).length;
+    if (!picking && (b = e.target.closest('[data-done]'))) { e.stopPropagation(); return completeRow(b.closest('[data-id]')); }
     if ((b = e.target.closest('[data-goto]'))) { var g = b.getAttribute('data-goto'); return g === 'waiting' ? openWaiting() : g === 'weekly' ? openWeekly() : go(g); }
     if ((b = e.target.closest('[data-timeview]')) || (b = e.target.closest('[data-listview]'))) {
       var tv = b.hasAttribute('data-timeview'); if (tv === timeView) return;
@@ -1883,13 +1886,15 @@
     var box = $('wkBox'); if (box && box.firstChild) box.firstChild.style.opacity = .4;
     call('getCalendar', addDays(data.week.start, 7 * wkOffset), 7).then(function (c) { wkData = c; renderToday(); }).catch(function (e) { toast(e.message); });
   }
-  function completeRow(wrap) {
-    if (!wrap) return; var id = wrap.getAttribute('data-id');
-    var c = wrap.querySelector('.chk'); if (c) c.classList.add('on');
-    setTimeout(function () { wrap.classList.add('gone'); }, 220);
+  var completing = {}; // 저장 중인 완료 요청(같은 일을 연타해도 한 번만 보낸다)
+  function completeRow(wrap, idIn) {
+    var id = wrap ? wrap.getAttribute('data-id') : idIn; if (!id || completing[id]) return;
+    completing[id] = 1;
+    var c = wrap && wrap.querySelector('.chk'); if (c) c.classList.add('on');
+    if (wrap) setTimeout(function () { wrap.classList.add('gone'); }, 220);
     var wasLast = todayList(data).length === 1;
-    call('completeTask', id).then(function (r) { toast(r.next ? '완료 · 다음 ' + rel(r.next) : '완료', r.undo); setView(r.view); if (wasLast && !todayList(data).length) confetti(); })
-      .catch(function () { wrap.classList.remove('gone'); if (c) c.classList.remove('on'); toast('저장하지 못했어요', null, function () { completeRow(wrap); }); });
+    call('completeTask', id).then(function (r) { delete completing[id]; toast(r.noop ? '이미 완료한 일이에요' : r.next ? '완료 · 다음 ' + rel(r.next) : '완료', r.undo); setView(r.view); if (wasLast && !todayList(data).length) confetti(); })
+      .catch(function () { delete completing[id]; if (wrap) wrap.classList.remove('gone'); if (c) c.classList.remove('on'); toast('저장하지 못했어요', null, function () { completeRow(wrap, id); }); });
   }
   function moveTomorrow(id) {
     return call('clarifyTask', id, { status: STATUS.SCHEDULED, due: addDays(data.today, 1), focus: '', postpone: true }).then(function (r) { toast('내일 다시 보여 드려요', r.undo); setView(r.view); }).catch(function () { renderToday(); toast('저장하지 못했어요', null, function () { moveTomorrow(id); }); });
@@ -2003,12 +2008,13 @@
     var t = findTask(id); if (!t) return; sheetTask = t;
     var sub = [t.due ? rel(t.due) + ' 마감' : '', t.repeat ? '반복 · ' + t.repeat : '', t.project ? t.project : ''].filter(Boolean).join('  ·  ');
     var pj = t.project ? projOf(t.project) : null, stg = pj && (pj.stages || []).length ? pj.stages : null;
-    var side = '<div class="lbl" style="margin:2px 0 4px">어디로 보낼까요</div><div class="actgrid">' + qa('calendar', 'purple', '시간표', 's-plan') + qa('calcheck', 'blue', '날짜', 's-day') + qa('user', 'blue', '맡기기', 's-who') + qa('folder', 'purple', '프로젝트', 's-pj') + qa('archive', 'gray', '나중에', 's-later') + '</div>' +
+    var closed = t.status === STATUS.DONE || t.status === STATUS.DROPPED; // 이미 끝낸·버린 일(검색에서 열림)에는 '완료'를 두지 않는다
+    var side = (closed ? '' : act('check', 'green', '완료', 's-done')) + '<div class="lbl" style="margin:8px 0 4px">어디로 보낼까요</div><div class="actgrid">' + qa('calendar', 'purple', '시간표', 's-plan') + qa('calcheck', 'blue', '날짜', 's-day') + qa('user', 'blue', '맡기기', 's-who') + qa('folder', 'purple', '프로젝트', 's-pj') + qa('archive', 'gray', '나중에', 's-later') + '</div>' +
       '<div class="actgrid">' + qa('star', 'amber', isImp(t) ? '★ 중요 빼기' : '★ 중요', 'star') + qa('up', 'red', t.urgent ? '↑ 급함 빼기' : '↑ 급함', 'urg') + qa('play', 'green', '집중', 'focus') + qa('clock', 'blue', '시간', 'est') + qa('repeat', 'green', t.repeat ? '반복 바꾸기' : '반복', 'repeat') + '</div>' +
       (t.project ? '<div class="actgrid">' + qa('flag', 'amber', t.nextMark ? '다음 빼기' : '다음으로', 'x-next') + '</div>' : '') +
       (stg ? '<div class="lbl">단계</div><div class="chips">' + stg.map(function (s, i) { return '<button class="chip' + (String(t.stage) === String(i + 1) || t.stage === s ? ' on' : '') + '" data-stg="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' : '') +
       '<div class="lbl">에너지</div><div class="chips">' + ['높음', '보통', '낮음'].map(function (en) { return '<button class="chip' + (t.energy === en ? ' on' : '') + '" data-en="' + en + '">' + en + '</button>'; }).join('') + '</div>' +
-      '<div class="sep"></div>' + (t.repeat ? act('moon', 'purple', '이번 회차 건너뛰기', 'skip') : '') + act('file', 'blue', t.memo ? '메모 보기 · 덧붙이기' : '메모 남기기', 'memo') + act('dots', 'gray', '더 설정하기', 'more') + act('trash', 'red', '삭제', 'drop', true);
+      '<div class="sep"></div>' + (t.repeat ? act('moon', 'purple', '이번 회차 건너뛰기', 'skip') : '') + act('file', 'blue', t.memo ? '메모 보기 · 덧붙이기' : '메모 남기기', 'memo') + act('dots', 'gray', '더 설정하기', 'more') + act('trash', 'red', '삭제(휴지통)', 'drop', true);
     var head = '<div class="st" id="tTitle" contenteditable="true" spellcheck="false" enterkeyhint="done">' + esc(t.title) + '</div><div class="ss">' + esc(sub) + (t.nextMark ? ' ' + nextChip(t) : '') + aiChip(t) + '</div>';
     if (isPC()) { openSheet(head + '<div class="dtl"><div class="dtlmain" id="dtlMain"></div><div class="dtlside">' + side + '</div></div>', true); dtlLoad(t); }
     else openSheet(head + side.replace('<div class="sep"></div>', '<div class="sep"></div>' + act('file', 'blue', t.hasDetail ? '상세 글 보기 · 편집' : '상세 글 쓰기', 'x-detail')));
@@ -2052,6 +2058,7 @@
       if (a === 'urg') { closeSheet(); return toggleUrg(t.id); }
       if (a === 'tomorrow') { closeSheet(); dropLocal(t.id); return moveTomorrow(t.id); }
       if (a === 'skip') { closeSheet(); return call('skipTask', t.id).then(function (r) { toast(r.next ? '건너뛰었어요 · 다음 ' + rel(r.next) : '건너뛰었어요', r.undo); setView(r.view); }).catch(fail); }
+      if (a === 's-done') { closeSheet(); var dw = document.querySelector('.swr[data-id="' + String(t.id).replace(/"/g, '\\"') + '"]'); return completeRow(dw, t.id); }
       if (a === 's-later') { closeSheet(); return sendTo(t.id, 'later'); }
       if (a === 's-plan') {
         var dur0 = t.est || 30, sl = freeSlots(dur0, 6);
@@ -3756,7 +3763,7 @@
       k('내일 · 금요일 · 11/20', '마감 날짜 (오늘·모레·다음주 화요일·3일 뒤·주말·20일)') + k('@전화', '어디서 할지') + k('#워크숍', '프로젝트') + k('!', '중요') + k('30분 · 1시간', '예상 시간') +
       '</div><div class="ss" style="margin-top:6px">예) <b>금요일까지 견적서 보내기 @컴퓨터 #워크숍 !</b></div>' +
       (isPC() ? '<div class="lbl">키보드</div><div class="keys">' +
-        k('n', '담기') + k('/', '검색') + k('t · c · m', '오늘 · 캘린더 · 더보기') + k('j · k', '아래 · 위 할 일로') + k('Enter', '열기') + k('x', '완료') + k('s', '★ 꼭 하기') +
+        k('n', '담기') + k('/', '검색') + k('t · c · m', '오늘 · 캘린더 · 더보기') + k('j · k', '아래 · 위 할 일로') + k('Enter', '열기') + k('x', '완료 (할 일 옆 ○를 눌러도 돼요)') + k('s', '★ 꼭 하기') +
         k('Shift + 클릭', '여러 개 고르기 → 한 번에 완료·★·내일로') + k('[', '사이드바 접기') + k('Esc', '닫기 · 고르기 취소') + k('?', '이 안내') + '</div>' : ''));
   }
   function visibleRows() { return [].slice.call(document.querySelectorAll('.page.on .row[tabindex]')).filter(function (r) { return r.offsetParent; }); }

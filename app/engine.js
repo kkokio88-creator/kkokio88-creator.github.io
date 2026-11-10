@@ -493,7 +493,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.9.0',       // 코드 버전 (화면 표시용)
+  VERSION: '1.9.1',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 8,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다)
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -1319,6 +1319,8 @@ function clarifyTask(id, d) {
     if (!row) throw new Error('항목을 찾지 못했습니다. 시트에서 지워졌을 수 있습니다.');
     var today = todayYmd_(ctx.tz);
     var before = rowToTask_(ctx.sheet.getRange(row, 1, 1, ctx.sheet.getLastColumn()).getValues()[0], ctx.map, ctx.tz, row);
+    // 이미 '완료'인 줄을 또 완료하면(연타·두 기기) 아무것도 쓰지 않는다: 완료일을 덮지 않고 다음 회차도 또 만들지 않는다
+    if (d.onlyIfOpen && before.status === STATUS.DONE) return { ok: true, noop: true, next: '', nextId: '', askNext: null };
     var set = function (key, val) {
       if (ctx.map[key] && val !== undefined) ctx.sheet.getRange(row, ctx.map[key]).setValue(val);
     };
@@ -1361,7 +1363,7 @@ function clarifyTask(id, d) {
 function undoOf_(id, before, nextId, d) {
   var u = { id: id, status: before.status, focus: before.focus, nextId: nextId };
   if (before.nextMark) u.nextMark = '★';
-  if (d && d.triage && !before.triaged) u.untriage = true;
+  if (!before.triaged) u.untriage = true; // 분류 버튼이든 완료든 이 호출이 분류일을 채웠으면, 되돌릴 때 다시 비운다
   return u;
 }
 
@@ -3479,7 +3481,7 @@ function buildTodayView_(tasks, today, ext) {
 function uniq_(list) { var seen = {}; return list.filter(function (x) { if (seen[x]) return false; seen[x] = true; return true; }); }
 
 function completeTask(id) {
-  return clarifyTask(id, { status: STATUS.DONE });
+  return clarifyTask(id, { status: STATUS.DONE, onlyIfOpen: true });
 }
 
 /** 위임 확인일 미루기 */
