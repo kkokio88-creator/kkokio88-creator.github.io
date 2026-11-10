@@ -493,7 +493,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.12.0',       // 코드 버전 (화면 표시용)
+  VERSION: '1.13.0',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 8,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다)
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -1183,6 +1183,8 @@ function addTasks(text, opts) {
       var t = { title: p.title, status: later ? STATUS.SCHEDULED : STATUS.NEXT, created: today, source: source };
       if (!later) t.focus = today;
       ['due', 'context', 'project', 'priority', 'est'].forEach(function (k) { if (p[k]) t[k] = p[k]; });
+      // 날짜·@상황·#프로젝트를 직접 적었으면 사람이 정한 것으로 본다: 분류 대기(정리할 것)를 건너뛴다. '!'·'30분'만 있으면 그대로 정리할 것
+      if (p.due || p.context || p.project) t.triaged = today;
       if (t.project) t.projectId = projectIdForName_(ctx.ss, t.project);
       return t;
     }));
@@ -1373,6 +1375,52 @@ function clarifyTask(id, d) {
   });
 }
 
+/**
+ * 정리 안 한 일(분류일이 빈 줄)을 한 번에 정리한다 ('모두 오늘 할 일로').
+ *  - 수집함·빈칸·나중에: 다음 행동 + 오늘 할 날=오늘
+ *  - 미래 마감 일정(일정·다음 행동): 상태·날짜 그대로(오늘 할 날을 쓰지 않음)
+ *  - 맡긴 일: 상태·날짜 그대로
+ *  - 그 밖: 오늘 할 날=오늘
+ * 모두 분류일=오늘. 분류일이 이미 있는 줄은 건드리지 않는다. 쓴 칸의 원래 값은 undo.triage로 돌려준다.
+ */
+function triageMany(ids) {
+  ids = (Array.isArray(ids) ? ids : []).map(String);
+  if (!ids.length) throw new Error('정리할 일을 골라 주세요.');
+  return withLock_(function () {
+    var ctx = taskContext_();
+    if (!ctx.map.triaged) throw new Error('먼저 업데이트를 적용해 주세요.');
+    var today = todayYmd_(ctx.tz), n = 0, before = [];
+    readAllTasks_(ctx).forEach(function (t) {
+      if (ids.indexOf(t.id) < 0 || t.triaged || isClosedStatus_(t.status)) return;
+      var rec = { id: t.id, status: t.status, focus: t.focus || '' };
+      var set = function (key, val) { if (ctx.map[key]) ctx.sheet.getRange(t.row, ctx.map[key]).setValue(val); };
+      var loose = t.status === STATUS.INBOX || t.status === '' || t.status === STATUS.SOMEDAY;
+      var future = !!t.due && t.due > today && (t.status === STATUS.SCHEDULED || t.status === STATUS.NEXT);
+      if (loose) { set('status', STATUS.NEXT); }
+      if ((loose || (!future && t.status !== STATUS.DELEGATED && t.status !== STATUS.REFERENCE)) && t.focus !== today) set('focus', today);
+      set('triaged', today);
+      before.push(rec); n++;
+    });
+    return { ok: true, count: n, undo: before.length ? { triage: before } : undefined };
+  });
+}
+
+/** '모두 오늘 할 일로' 되돌리기: 상태·오늘 할 날을 원래 값으로, 분류일은 다시 비운다 (그 줄이 아직 이 호출로 정리된 그대로일 때만) */
+function restoreTriage_(list) {
+  return withLock_(function () {
+    var ctx = taskContext_(), n = 0, by = {};
+    (list || []).forEach(function (x) { by[String(x.id)] = x; });
+    readAllTasks_(ctx).forEach(function (t) {
+      var x = by[t.id]; if (!x) return;
+      if (ctx.map.status && x.status !== t.status && !isClosedStatus_(t.status)) ctx.sheet.getRange(t.row, ctx.map.status).setValue(x.status);
+      if (ctx.map.focus && (x.focus || '') !== (t.focus || '')) ctx.sheet.getRange(t.row, ctx.map.focus).setValue(x.focus ? ymd_(x.focus) : '');
+      if (ctx.map.triaged && t.triaged) ctx.sheet.getRange(t.row, ctx.map.triaged).setValue('');
+      n++;
+    });
+    return { ok: true, count: n };
+  });
+}
+
 /** 되돌리기 정보. 분류 버튼으로 정한 것(d.triage)은 되돌리면 다시 '분류 대기'가 되게 untriage를 싣는다 */
 function undoOf_(id, before, nextId, d) {
   var u = { id: id, status: before.status, focus: before.focus, nextId: nextId };
@@ -1485,6 +1533,8 @@ function planDay(ids) {
 function undoTask(u) {
   u = u || {};
   if (u.nudge) return restoreNudge_(u.nudge);
+  if (u.triage) return restoreTriage_(u.triage);
+  if (u.ai) return undoAiApply_(u.ai);
   if (!u.id || STATUS_LIST.indexOf(u.status) === -1) throw new Error('되돌릴 정보가 없어요.');
   return withLock_(function () {
     var ctx = taskContext_();
@@ -2184,7 +2234,11 @@ function buildAiView_(ss, titles, openTitles, projectNames) {
   titles = titles || {}; openTitles = openTitles || {}; projectNames = projectNames || {};
   var cut = function (s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n) + '…' : s; };
   var log = readAiLog_(ss), props = readAiProposals_(ss);
-  var active = log.items.filter(function (x) { return !x.reverted && x.id; });
+  // 내가 직접 [적용]을 누른 제안의 기록은 'AI가 바꾼 것'에 다시 올리지 않는다(되돌리기는 적용 직후 토스트에서).
+  // 근거가 '제안 적용 #줄' 꼴이고, 그 줄이 실제로 '적용' 상태일 때만 그렇게 본다. 옛 기록·근거만 흉내 낸 기록은 계속 보인다.
+  var appliedRow = {}; props.items.forEach(function (x) { if (x.state === '적용') appliedRow[x.row] = 1; });
+  var byMe = function (x) { var m = String(x.why || '').match(/^(?:제안 적용|프로젝트 제안 적용|자료 후보 붙임) #(\d+)/); return !!m && !!appliedRow[Number(m[1])]; };
+  var active = log.items.filter(function (x) { return !x.reverted && x.id && !byMe(x); });
   var lines = {}; active.forEach(function (x) { lines[x.id] = 1; });
   var changes = active.slice(-AI_VIEW_CAP).reverse().map(function (x) {
     return { row: x.row, at: x.at, who: x.who, action: x.action, id: x.id, title: titles[x.id] || '', col: x.col, before: cut(x.before, 120), after: cut(x.after, 120), why: cut(x.why, 160) };
@@ -2209,7 +2263,7 @@ function buildAiView_(ss, titles, openTitles, projectNames) {
     direct: log.items.filter(function (x) { return isRoutineWho_(x.who) && !isAppliedWhy_(x.why); }).length };
   return {
     rulesVersion: KIT.AI_RULES_VERSION,
-    changes: changes, changeLines: Object.keys(lines).length, changeKey: log.maxRow ? 'aichg:' + log.maxRow : '',
+    changes: changes, changeLines: Object.keys(lines).length, changeKey: active.length ? 'aichg:' + active[active.length - 1].row : '',
     proposals: proposals, proposalN: pending.length, proposalKey: props.maxRow ? 'aiprop:' + props.maxRow : '',
     proposalMore: Math.max(0, pending.length - proposals.length), proposalKinds: counts, material: mat, routine: rt
   };
@@ -2224,7 +2278,7 @@ function appendAiLog_(ss, rec) {
   var row = info.sh.getLastRow() + 1, tz = ss.getSpreadsheetTimeZone();
   var put = { '시각': nowStamp_(tz), '주체': textCell_(rec.who || 'AI'), '작업': rec.action, '줄ID': rec.id, '열': rec.col || '', '전': rec.before === undefined ? '' : rec.before, '후': rec.after === undefined ? '' : rec.after, '근거': rec.why || '', '되돌림': '' };
   AI_LOG_HEADERS.forEach(function (h) { if (info.col[h]) info.sh.getRange(row, info.col[h]).setValue(put[h]); });
-  return row;
+  return { row: row, at: put['시각'] };
 }
 
 function aiRowFor_(ss, name, headers, row, stamp) {
@@ -2257,8 +2311,12 @@ function sameCellValue_(cur, want, def, tz) {
  * 되돌리면 [AI기록] '되돌림' 칸에 시각을 적는다(그 칸만 쓴다).
  */
 function revertAiChange(row, stamp) {
-  return withLock_(function () {
-    var ctx = taskContext_(), ss = ctx.ss, tz = ctx.tz;
+  return withLock_(function () { return revertAiChange_(taskContext_(), row, stamp); });
+}
+
+function revertAiChange_(ctx, row, stamp) {
+  {
+    var ss = ctx.ss, tz = ctx.tz;
     var info = aiRowFor_(ss, KIT.AI_LOG_SHEET, AI_LOG_HEADERS, row, stamp);
     var g = function (h) { var v = info.col[h] ? info.sh.getRange(row, info.col[h]).getValue() : ''; return aiCell_(v, tz); };
     if (!info.col['되돌림']) throw new Error('[AI기록]에 "되돌림" 열이 없어요.');
@@ -2285,7 +2343,7 @@ function revertAiChange(row, stamp) {
       return done('');
     }
     return { ok: false, reason: '알 수 없는 작업이에요: ' + action };
-  });
+  }
 }
 
 /**
@@ -2373,28 +2431,52 @@ function pickIndexes_(picks, n) {
  * 적용한 시트 변경은 [AI기록]에도 한 줄 남겨 되돌릴 수 있게 한다.
  */
 function applyAiProposal(row, stamp, picks) {
-  return withLock_(function () {
-    var ctx = taskContext_(), ss = ctx.ss, tz = ctx.tz;
+  return withLock_(function () { return applyAiProposal_(taskContext_(), row, stamp, picks); });
+}
+
+/** 제목 첫 줄에서 @상황, 이미 있는 #프로젝트만 칸으로 옮기고 제목에서 뺀다 (날짜 말은 해석하지 않는다). 다 빼서 비면 원래 줄 그대로 */
+function aiTitleParts_(line, projectNames) {
+  var src = String(line || '').trim(), t = ' ' + src + ' ', out = { context: '', project: '' };
+  var m = t.match(/\s@([^\s@.,]+)(?=\s)/);
+  if (m) { out.context = '@' + m[1]; t = t.slice(0, m.index) + ' ' + t.slice(m.index + m[0].length); }
+  var known = (projectNames || []).slice().sort(function (a, b) { return b.length - a.length; });
+  for (var i = 0; i < known.length; i++) {
+    var at = t.indexOf(' #' + known[i] + ' ');
+    if (at >= 0) { out.project = known[i]; t = t.slice(0, at) + '  ' + t.slice(at + known[i].length + 3); break; }
+  }
+  out.title = t.replace(/\s+/g, ' ').trim() || src;
+  return out;
+}
+
+function applyAiProposal_(ctx, row, stamp, picks) {
+  {
+    var ss = ctx.ss, tz = ctx.tz;
     var info = aiRowFor_(ss, KIT.AI_PROPOSAL_SHEET, AI_PROPOSAL_HEADERS, row, stamp);
     if (!info.col['상태']) throw new Error('[AI제안]에 "상태" 열이 없어요.');
     var g = function (h) { var v = info.col[h] ? info.sh.getRange(row, info.col[h]).getValue() : ''; return aiCell_(v, tz); };
     var state = g('상태').trim() || '대기';
     if (state !== '대기') return { ok: false, reason: '이미 ' + state + '한 제안이에요.' };
     var kind = g('종류').trim(), who = g('주체').trim() || 'AI', target = g('대상ID').trim(), content = g('제안 내용'), why = g('근거·출처').trim();
-    var result = { ok: true, kind: kind };
+    var result = { ok: true, kind: kind }, logs = [], today = todayYmd_(tz), mark = ' #' + row;
     if (kind === '할일') {
       var lines = content.replace(/\r\n?/g, '\n').split('\n'), k = 0;
       while (k < lines.length && !lines[k].trim()) k++;
       var title = (lines[k] || '').replace(/^#+\s*/, '').replace(/^제목\s*[:：]\s*/, '').trim();
       if (!title) return { ok: false, reason: '제안에 제목이 없어요.' };
+      var prows = readProjectRows_(ss), live = prows.filter(function (p) { return !p.dropped && p.state !== '끝남' && p.state !== '보류'; });
+      var parts = aiTitleParts_(title, live.map(function (p) { return p.name; }));
+      title = parts.title;
       var detail = lines.slice(k + 1).join('\n').trim();
       if (detail && !/^##\s/.test(detail)) detail = '## 메모\n' + detail;
       if (detail.length > 40000) return { ok: false, reason: '상세 글이 너무 길어요(4만 자까지).' };
-      var task = { title: title, status: STATUS.NEXT, focus: todayYmd_(tz), created: todayYmd_(tz), source: aiSourceTag_(who), detail: detail, id: newAiTaskId_(ctx) };
-      var pr = target && /^P-/.test(target) ? readProjectRows_(ss).filter(function (p) { return !p.dropped && p.id === target; })[0] : null;
+      // 내가 [적용]을 눌렀으니 사람이 정한 것: 오늘 할 일로 바로 들어가고 정리할 것을 거치지 않는다(분류일=오늘)
+      var task = { title: title, status: STATUS.NEXT, focus: today, created: today, triaged: today, source: aiSourceTag_(who), detail: detail, id: newAiTaskId_(ctx) };
+      if (parts.context) task.context = parts.context;
+      var pr = target && /^P-/.test(target) ? prows.filter(function (p) { return !p.dropped && p.id === target; })[0] : null;
       if (pr) { task.project = pr.name; task.projectId = pr.id; }
+      else if (parts.project) { var hit = live.filter(function (p) { return p.name === parts.project; })[0]; task.project = parts.project; task.projectId = hit ? hit.id : projectIdForName_(ss, parts.project); }
       appendTasks_(ctx, [task]);
-      appendAiLog_(ss, { who: who, action: '추가', id: task.id, why: '제안 적용' + (why ? ': ' + why : '') });
+      logs.push(appendAiLog_(ss, { who: who, action: '추가', id: task.id, why: '제안 적용' + mark + (why ? ': ' + why : '') }));
       result.id = task.id;
     } else if (kind === '자료후보') {
       var r = findRowById_(ctx, target);
@@ -2408,7 +2490,7 @@ function applyAiProposal(row, stamp, picks) {
       if (next.length > 40000) return { ok: false, reason: '상세 글이 너무 길어요(4만 자까지).' };
       if (/^[=+\-@]/.test(next)) next = ' ' + next;
       cell.setValue(next);
-      appendAiLog_(ss, { who: who, action: '수정', id: target, col: '상세', before: old, after: next, why: '자료 후보 붙임' + (why ? ': ' + why : '') });
+      logs.push(appendAiLog_(ss, { who: who, action: '수정', id: target, col: '상세', before: old, after: next, why: '자료 후보 붙임' + mark + (why ? ': ' + why : '') }));
       result.id = target; result.added = links.length;
     } else if (kind === '독촉초안') {
       result.text = content;
@@ -2420,17 +2502,69 @@ function applyAiProposal(row, stamp, picks) {
       if (!chosen.length) return { ok: false, reason: '넣을 할 일을 하나 이상 골라 주세요.' };
       var prj = ensureProjectRow_(ss, pp.name, pp.goal), ids = [];
       chosen.forEach(function (i) {
-        var nt = { title: pp.titles[i], status: STATUS.NEXT, created: todayYmd_(tz), source: aiSourceTag_(who), project: prj.name, projectId: prj.id, id: newAiTaskId_(ctx) };
+        var nt = { title: pp.titles[i], status: STATUS.NEXT, created: today, triaged: today, source: aiSourceTag_(who), project: prj.name, projectId: prj.id, id: newAiTaskId_(ctx) };
         appendTasks_(ctx, [nt]); ids.push(nt.id);
-        appendAiLog_(ss, { who: who, action: '추가', id: nt.id, why: '프로젝트 제안 적용' + (prj.created ? ' · 새 프로젝트 ' + prj.id : '') + ': ' + pp.name });
+        logs.push(appendAiLog_(ss, { who: who, action: '추가', id: nt.id, why: '프로젝트 제안 적용' + mark + (prj.created ? ' · 새 프로젝트 ' + prj.id : '') + ': ' + pp.name }));
       });
       result.id = ids[0]; result.added = ids.length; result.projectId = prj.id; result.skipped = pp.titles.length - ids.length;
     } else {
       return { ok: false, reason: '알 수 없는 제안 종류예요: ' + kind };
     }
     info.sh.getRange(row, info.col['상태']).setValue('적용');
-    if (info.col['처리시각']) info.sh.getRange(row, info.col['처리시각']).setValue(nowStamp_(tz));
+    var doneAt = nowStamp_(tz);
+    if (info.col['처리시각']) info.sh.getRange(row, info.col['처리시각']).setValue(doneAt);
+    // 되돌리기 정보: 시트를 바꾼 제안만 (독촉 글은 시트를 안 바꿔 되돌릴 것이 없다)
+    if (logs.length) result.undo = { ai: [{ row: row, stamp: g('시각').trim(), doneAt: doneAt, logs: logs }] };
     return result;
+  }
+}
+
+/**
+ * 제안 여러 개를 차례로 적용한다 ('모두 적용'). 한 개가 실패해도 나머지는 계속하고, 결과를 모아 돌려준다.
+ * list = [{ row, stamp, picks? }] → { ok, applied, failed:[{row, reason}], ids, undo:{ai:[...]} }
+ */
+function applyAiMany(list) {
+  list = (Array.isArray(list) ? list : []).slice(0, 100);
+  if (!list.length) throw new Error('적용할 제안을 골라 주세요.');
+  return withLock_(function () {
+    var ctx = taskContext_(), applied = 0, failed = [], ids = [], undo = [];
+    list.forEach(function (x) {
+      try {
+        var r = applyAiProposal_(ctx, x && x.row, x && x.stamp, x && x.picks);
+        if (r.ok) { applied++; if (r.id) ids.push(r.id); if (r.undo && r.undo.ai) undo = undo.concat(r.undo.ai); }
+        else failed.push({ row: x.row, reason: r.reason || '적용하지 못했어요.' });
+      } catch (err) { failed.push({ row: x && x.row, reason: String((err && err.message) || err) }); }
+    });
+    return { ok: true, applied: applied, failed: failed, ids: ids, undo: undo.length ? { ai: undo } : undefined };
+  });
+}
+
+/**
+ * 적용 되돌리기. list = [{ row(제안 줄), stamp(제안 시각), doneAt, logs:[{row, at}] }]
+ * 새로 들어온 줄은 지우지 않고 '버림'(이미 끝낸 일은 그대로), 상세에 붙인 링크는 값이 그대로일 때만 원래대로.
+ * 그 제안이 아직 '적용' 상태이고 시각이 같을 때만 '대기'로 돌리고 처리시각을 비운다.
+ */
+function undoAiApply_(list) {
+  return withLock_(function () {
+    var ctx = taskContext_(), ss = ctx.ss, tz = ctx.tz, undone = 0, kept = 0;
+    (list || []).forEach(function (x) {
+      var info = aiSheetInfo_(ss, KIT.AI_PROPOSAL_SHEET, AI_PROPOSAL_HEADERS);
+      var row = Math.round(Number(x && x.row) || 0);
+      if (!info || !info.col['상태'] || row < 2 || row > info.sh.getLastRow()) return;
+      var cur = aiCell_(info.sh.getRange(row, info.col['시각']).getValue(), tz).trim();
+      var state = aiCell_(info.sh.getRange(row, info.col['상태']).getValue(), tz).trim();
+      var at = info.col['처리시각'] ? aiCell_(info.sh.getRange(row, info.col['처리시각']).getValue(), tz).trim() : '';
+      if (cur !== String(x.stamp || '').trim() || state !== '적용' || (x.doneAt && at !== String(x.doneAt).trim())) return;
+      var allOk = true;
+      (x.logs || []).forEach(function (l) {
+        try { var r = revertAiChange_(ctx, l.row, l.at); if (!r.ok) { allOk = false; kept++; } } catch (err) { allOk = false; kept++; }
+      });
+      if (!allOk) return; // 일부를 못 돌렸으면(이미 끝낸 일 등) 제안은 '적용'으로 둔다
+      info.sh.getRange(row, info.col['상태']).setValue('대기');
+      if (info.col['처리시각']) info.sh.getRange(row, info.col['처리시각']).setValue('');
+      undone++;
+    });
+    return { ok: true, count: undone, kept: kept };
   });
 }
 
@@ -3287,6 +3421,8 @@ function webNudgeDraft(k, person, ids) { checkKey_(k); appContext_(); return get
 function webMarkNudged(k, ids, days) { checkKey_(k); appContext_(); var r = markNudged(ids, days); return withView_(r); }
 function webCloseDay(k) { checkKey_(k); appContext_(); var r = closeDay(); return withView_(r); }
 function webNowPicks(k, opts) { checkKey_(k); appContext_(); return getNowPicks(opts); }
+function webTriageMany(k, ids) { checkKey_(k); appContext_(); var r = triageMany(ids); return withView_(r); }
+function webApplyAiMany(k, list) { checkKey_(k); appContext_(); var r = applyAiMany(list); return withView_(r); }
 function webRejectAi(k, row, stamp) { checkKey_(k); appContext_(); var r = rejectAiProposal(row, stamp); return withView_(r); }
 /** 알림함 '모두 확인함': 지금 알림 목록(keys)과 시각을 [_설정]에 적는다 (앱 코드가 직접 쓰는 값 — 에이전트는 읽지도 쓰지도 않는다) */
 function webInboxSeen(k, keys) {
@@ -3315,7 +3451,7 @@ function doPost(e) {
     updateTask: webUpdate, planDay: webPlanDay, undoTask: webUndo, notify: webNotify,
     addAction: webAddAction, setProject: webSetProject, mergeProject: webMergeProject, focusMany: webFocusMany,
     getTaskDetail: webTaskDetail, saveDetail: webSaveDetail, setNext: webSetNext, setProjectInfo: webSetProjectInfo, inboxSeen: webInboxSeen, revertAi: webRevertAi, applyAi: webApplyAi, rejectAi: webRejectAi,
-    nudgeDraft: webNudgeDraft, markNudged: webMarkNudged, closeDay: webCloseDay, nowPicks: webNowPicks,
+    nudgeDraft: webNudgeDraft, markNudged: webMarkNudged, closeDay: webCloseDay, nowPicks: webNowPicks, triageMany: webTriageMany, applyAiMany: webApplyAiMany,
     getCalendars: webCalendars, setCalendars: webSetCalendars, timebox: webTimebox,
     placeTask: webPlaceTask, unplaceTask: webUnplaceTask, reopenTask: webReopen, setWriteCalendar: webSetWriteCalendar, moveEvent: webMoveEvent
   };
@@ -3643,6 +3779,7 @@ function buildAppView_(ctx, today) {
   all.forEach(function (t) { if (!isClosedStatus_(t.status) && t.title) openTitles[titleKey_(t.title)] = 1; });
   rows.forEach(function (r) { if (!r.dropped) projNames[r.name] = 1; });
   view.ai = buildAiView_(ctx.ss, titles, openTitles, projNames);
+  view.nowPicks = pickNow_(all, today, {}, rows).picks; // 오늘 화면 맨 위 '지금 할 일' 카드 (규칙은 '지금 뭐 하지?'와 같다)
   view.dayClose = buildCloseView_(ctx.ss, today);
   view.alertSeen = { at: String(st0['알림확인시각'] || ''), keys: String(st0['알림확인목록'] || '').split('\n').filter(String) };
   view.week = calendarRange_(ctx, weekStartYmd_(today), 7, all);
@@ -3893,7 +4030,7 @@ function installFromEditor() {
     getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', getAll: 'webAll',
     getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen', setWriteCalendar: 'webSetWriteCalendar',
     getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen', revertAi: 'webRevertAi', applyAi: 'webApplyAi', rejectAi: 'webRejectAi',
-    nudgeDraft: 'webNudgeDraft', markNudged: 'webMarkNudged', closeDay: 'webCloseDay', nowPicks: 'webNowPicks' };
+    nudgeDraft: 'webNudgeDraft', markNudged: 'webMarkNudged', closeDay: 'webCloseDay', nowPicks: 'webNowPicks', triageMany: 'webTriageMany', applyAiMany: 'webApplyAiMany' };
   var queue = Promise.resolve(); // 시트 쓰기는 한 번에 하나씩
   function serial(job) { var p = queue.then(job, job); queue = p.catch(function () {}); return p; }
   function clone(x) { return x === undefined ? null : JSON.parse(JSON.stringify(x)); }
