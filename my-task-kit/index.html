@@ -637,6 +637,10 @@
   .pcls button:hover { filter: brightness(.96); }
   .srcchip { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; background: var(--fill); color: var(--t2); font-size: 12px; font-weight: 700; vertical-align: 2px; }
   .srcchip.ai { background: #EFE6FF; color: #6B4FBB; }
+  .aib { padding: 12px 16px; } .aib + .aib { border-top: 1px solid var(--line); } .aib .aih { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15.5px; }
+  .aib .aid { margin: 6px 0 0; font-size: 14px; color: var(--t2); overflow-wrap: anywhere; } .aib .aid b { color: var(--t1); } .aib .aid del { color: var(--t3); }
+  .aib .aia { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; } .aib .aia button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--gt); color: var(--g); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; } .aib .aia button.sub { background: var(--fill); color: var(--t2); }
+  .aib .md { margin-top: 8px; padding: 8px 12px; border-radius: 12px; background: var(--fill); max-height: 220px; overflow: auto; font-size: 14px; }
   .nxt { display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 8px; border-radius: 11px; background: #FFF1D6; color: #A25F00; font-size: 12px; font-weight: 800; vertical-align: middle; }
   html[data-theme="dark"] .nxt { background: #4A3410; color: #FFC864; }
   .bulkbar { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -682,7 +686,7 @@
     .ibc { width: 36px; height: 36px; border: 0; border-radius: 18px; background: var(--fill); color: var(--t2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
     .ibi { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 0; border-radius: 14px; background: transparent; text-align: left; font: inherit; color: var(--t1); cursor: pointer; animation: ibin .3s calc(var(--i) * 60ms) both; }
     .ibi:hover { background: var(--fill); } .ibi .tx { display: flex; flex-direction: column; min-width: 0; } .ibi .t { font-size: 15px; font-weight: 700; } .ibi .m { font-size: 13px; color: var(--t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ibi.k-check .tile { background: #FFF1D6; color: #A25F00; } .ibi.k-halt .tile { background: #FDE3E3; color: #C0392B; } .ibi.k-close .tile { background: #EFE6FF; color: #6B4FBB; } .ibi.k-review .tile { background: #E3F0FF; color: #1F6FD0; }
+    .ibi.k-check .tile { background: #FFF1D6; color: #A25F00; } .ibi.k-halt .tile { background: #FDE3E3; color: #C0392B; } .ibi.k-close .tile { background: #EFE6FF; color: #6B4FBB; } .ibi.k-review .tile { background: #E3F0FF; color: #1F6FD0; } .ibi.k-aichg .tile { background: #EFE6FF; color: #6B4FBB; } .ibi.k-aiprop .tile { background: #E3F0FF; color: #1F6FD0; }
     .ibf { padding: 8px 12px 6px; font-size: 12.5px; color: var(--t3); }
   }
   @media (max-width: 1023px) { #sideAi, #sideReport, #sideCommunity { display: none !important; } .pcls { padding-left: 16px; } }
@@ -780,7 +784,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.8.2" };
+  var KIT = { name: "GTD 워크", version: "1.9.0" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -873,7 +877,7 @@
         .then(function (j) { if (!j.ok) throw new Error(j.error === '알 수 없는 요청입니다.' ? '이 기능은 새 버전에서 쓸 수 있어요. 시트의 코드를 업데이트해 주세요' : j.error || '알 수 없는 오류'); return j.result; });
     }
     var WEB = { getAppData: 'webData', getInbox: 'webInbox', addTasks: 'webAdd', clarifyTask: 'webClarify', completeTask: 'webComplete', postponeFollowUp: 'webPostpone', skipTask: 'webSkip',
-      getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', notify: 'webNotify', getAll: 'webAll', getWeekly: 'webWeekly', sendWeekly: 'webSendWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', getCalendars: 'webCalendars', setCalendars: 'webSetCalendars', timebox: 'webTimebox', placeTask: 'webPlaceTask', unplaceTask: 'webUnplaceTask', getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen' };
+      getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', notify: 'webNotify', getAll: 'webAll', getWeekly: 'webWeekly', sendWeekly: 'webSendWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', getCalendars: 'webCalendars', setCalendars: 'webSetCalendars', timebox: 'webTimebox', placeTask: 'webPlaceTask', unplaceTask: 'webUnplaceTask', getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen', revertAi: 'webRevertAi', applyAi: 'webApplyAi', rejectAi: 'webRejectAi' };
     return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(ok).withFailureHandler(no); r[WEB[fn]].apply(r, [KEY].concat(args)); });
   }
   function addDays(ymd, n) { var p = ymd.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10); }
@@ -1038,7 +1042,7 @@
   function taskRow(t) {
     return '<div class="swr" data-id="' + esc(t.id) + '"><div class="swbg"><span class="l">' + svg('check', 18) + '완료</span><span class="r">내일로' + svg('moon', 18) + '</span></div>' +
       '<div class="row" tabindex="0" role="button" aria-label="' + esc(t.title) + ' 열기"><button class="chk" data-done aria-label="' + esc(t.title) + ' 완료">' + svg('check', 15) + '</button>' +
-      '<div class="tx"><div class="t">' + esc(t.title) + '</div>' + metaHtml(t) + '</div>' + tagBtns(t) +
+      '<div class="tx"><div class="t">' + esc(t.title) + aiChip(t) + '</div>' + metaHtml(t) + '</div>' + tagBtns(t) +
       (t.repeat ? '' : '<button class="rptb" data-rpt="' + esc(t.id) + '" aria-label="' + esc(t.title) + ' 반복 루틴으로" title="반복 루틴으로 등록">' + svg('repeat', 17) + '</button>') + '</div></div>';
   }
   function renderToday() {
@@ -2005,7 +2009,7 @@
       (stg ? '<div class="lbl">단계</div><div class="chips">' + stg.map(function (s, i) { return '<button class="chip' + (String(t.stage) === String(i + 1) || t.stage === s ? ' on' : '') + '" data-stg="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' : '') +
       '<div class="lbl">에너지</div><div class="chips">' + ['높음', '보통', '낮음'].map(function (en) { return '<button class="chip' + (t.energy === en ? ' on' : '') + '" data-en="' + en + '">' + en + '</button>'; }).join('') + '</div>' +
       '<div class="sep"></div>' + (t.repeat ? act('moon', 'purple', '이번 회차 건너뛰기', 'skip') : '') + act('file', 'blue', t.memo ? '메모 보기 · 덧붙이기' : '메모 남기기', 'memo') + act('dots', 'gray', '더 설정하기', 'more') + act('trash', 'red', '삭제', 'drop', true);
-    var head = '<div class="st" id="tTitle" contenteditable="true" spellcheck="false" enterkeyhint="done">' + esc(t.title) + '</div><div class="ss">' + esc(sub) + (t.nextMark ? ' ' + nextChip(t) : '') + '</div>';
+    var head = '<div class="st" id="tTitle" contenteditable="true" spellcheck="false" enterkeyhint="done">' + esc(t.title) + '</div><div class="ss">' + esc(sub) + (t.nextMark ? ' ' + nextChip(t) : '') + aiChip(t) + '</div>';
     if (isPC()) { openSheet(head + '<div class="dtl"><div class="dtlmain" id="dtlMain"></div><div class="dtlside">' + side + '</div></div>', true); dtlLoad(t); }
     else openSheet(head + side.replace('<div class="sep"></div>', '<div class="sep"></div>' + act('file', 'blue', t.hasDetail ? '상세 글 보기 · 편집' : '상세 글 쓰기', 'x-detail')));
   }
@@ -3252,6 +3256,9 @@
   /* md:end */
   // ════════ v1.8 오늘: 확인할 것 · 분류 대기 ════════
   var SRC_LABEL = function (s) { s = String(s || ''); return /^AI/.test(s) ? 'AI' : /^머리비우기/.test(s) ? '머리 비우기' : ''; };
+  // AI(에이전트)가 넣은 줄: ID가 AI-로 시작하거나 출처가 AI:…
+  function isAiTask(t) { return !!t && (/^AI-/.test(String(t.id || '')) || /^AI/.test(String(t.source || ''))); }
+  function aiChip(t) { return isAiTask(t) ? ' <span class="srcchip ai" title="AI가 넣은 줄이에요">AI</span>' : ''; }
   function nextChip(t) { return t && t.nextMark ? '<span class="nxt" title="이 프로젝트의 다음 행동">' + svg('flag', 12) + '다음</span>' : ''; }
   // 확인일이 된 맡긴 일: 오늘에는 '확인할 것' 한 줄만 보인다 (새 할 일을 만들지 않는다 — 맡긴 일 줄 하나가 그대로 원본)
   function checkInHtml(d) {
@@ -3263,7 +3270,7 @@
   }
   var PC_BTNS = [['today', '오늘 할래요', true], ['project', '프로젝트로'], ['who', '맡기기'], ['day', '날짜 정하기'], ['later', '나중에'], ['drop', '버리기']];
   function pendRow(t) {
-    var sl = SRC_LABEL(t.source), area = /^머리비우기:/.test(t.source || '') ? t.source.slice(6) : '';
+    var sl = isAiTask(t) ? 'AI' : SRC_LABEL(t.source), area = /^머리비우기:/.test(t.source || '') ? t.source.slice(6) : '';
     return '<div class="swr pendr" data-id="' + esc(t.id) + '"><div class="swbg"><span class="l">' + svg('check', 18) + '완료</span><span class="r">내일로' + svg('moon', 18) + '</span></div>' +
       '<div class="row" tabindex="0" role="button" aria-label="' + esc(t.title) + ' 열기"><button class="chk" data-done aria-label="' + esc(t.title) + ' 완료">' + svg('check', 15) + '</button>' +
       '<div class="tx"><div class="t">' + esc(t.title) + (sl ? ' <span class="srcchip' + (sl === 'AI' ? ' ai' : '') + '">' + esc(area ? area : sl) + '</span>' : '') + '</div>' + metaHtml(t) + '</div></div>' +
@@ -3428,6 +3435,9 @@
     if (hp.length && d.lastReview && (!d.adoptedOn || d.lastReview >= d.adoptedOn)) out.push({ key: 'halt:' + hp.map(function (p) { return p.name; }).sort().join('+'), kind: 'halt', text: '멈춘 프로젝트 ' + hp.length + '개', sub: hp.slice(0, 3).map(function (p) { return p.name; }).join(' · '), go: 'projects' });
     if (closeMinute() >= 17 * 60 + 30) out.push({ key: 'close:' + d.today, kind: 'close', text: '하루 닫기 시간이에요', sub: '오늘 남은 일을 정리하고 마무리해요', go: 'close' });
     if (d.reviewDue) out.push({ key: 'review:' + (d.lastReview || 'none'), kind: 'review', text: '주간 검토 할 때예요', sub: d.lastReview ? '마지막 검토 ' + rel(d.lastReview) : '아직 한 번도 안 했어요', go: 'review' });
+    var ai = d.ai || {};
+    if (ai.changeLines && ai.changeKey) out.push({ key: ai.changeKey, kind: 'aichg', text: 'AI가 바꾼 것 ' + ai.changeLines + '개', sub: aiTitles(ai.changes, 2) || '되돌릴 수 있어요', go: 'aichg' });
+    if (ai.proposalN && ai.proposalKey) out.push({ key: ai.proposalKey, kind: 'aiprop', text: 'AI 제안 ' + ai.proposalN + '개', sub: (ai.proposals || []).slice(0, 2).map(aiPropTitle).join(' / ') || '적용하거나 거절해요', go: 'aiprop' });
     out.forEach(function (x) { x.unseen = seen.indexOf(x.key) < 0; });
     return out;
   }
@@ -3441,7 +3451,7 @@
     document.title = (n ? '(' + n + ') ' : '') + KIT.name;
     if (ibxOpen) drawInbox(items);
   }
-  var IBX_ICON = { check: 'user', halt: 'folder', close: 'moon', review: 'calcheck' };
+  var IBX_ICON = { check: 'user', halt: 'folder', close: 'moon', review: 'calcheck', aichg: 'sparkle', aiprop: 'sparkle' };
   function drawInbox(items) {
     items = items || inboxItems();
     var el = $('ibx');
@@ -3470,6 +3480,8 @@
       if (g === 'projects') return openProjects();
       if (g === 'close') return openShutdown();
       if (g === 'review') return openWeekly();
+      if (g === 'aichg') return openAiChanges();
+      if (g === 'aiprop') return openAiProps();
     }
   });
   var pollT = null, hiddenTicks = 0;
@@ -3515,24 +3527,20 @@
         : '<div class="card"><div class="empty">' + tile('check', 'green', 26) + '<br>분류할 것이 없어요</div></div>');
   }
 
-  // ════════ AI 연결: 내 시트 ID와 사용법을 안내문 하나로 묶어 복사 → AI에 붙여넣기 (AI는 구글 시트 MCP로 내 시트를 직접 읽고 씀) ════════
+  // ════════ AI 연결 (v1.9): 3단계 화면 = ① 팀 Claude에서 구글 시트 켜기 ② Claude 프로젝트(지침 + 규칙 파일) ③ 요청 팩 ════════
+  // 안내문 글은 한 곳(아래 aiXxxLines)에서 만들어 '전체 안내문'(aiPrompt, 프로젝트 없이 쓰기)과 '규칙 파일'(aiRulesText)이 같이 쓴다.
+  // 열·상태·탭·동작 규칙을 바꾸면 여기와 docs/AI-연결.md 를 같이 고치고, 뜻이 바뀌면 KIT.AI_RULES_VERSION(00_Config.gs)도 올린다.
   function sheetIdOf(u) { var m = String(u || '').match(/\/d\/([A-Za-z0-9_-]+)/); return m ? m[1] : ''; }
-  function aiPrompt() {
-    var d = data || {}, url = d.sheetUrl || '', id = sheetIdOf(url), today = d.today || '';
-    var pj = (d.projects || []).filter(function (p) { return !p.finished; }).map(function (p) { return p.name; }).slice(0, 30);
-    var L = [];
-    L.push('너는 내 할 일 관리 앱 "GTD 워크"의 비서야. 내 할 일은 아래 구글 시트에 있고, 너는 구글 시트 MCP(도구)로 이 시트를 직접 읽고 쓴다.');
-    L.push('구글 시트 도구가 없으면 아무것도 지어내지 말고 "구글 시트 MCP를 먼저 연결해 주세요"라고만 답해.');
-    L.push('');
-    L.push('## 내 시트');
-    L.push('- 시트 ID: ' + id);
-    L.push('- 주소: ' + url);
-    L.push('- 시간대: Asia/Seoul (이 안내를 만든 날: ' + today + '. 오늘 날짜는 대화하는 날 기준으로 다시 계산해)');
+  function aiRv() { return (data && data.ai && data.ai.rulesVersion) || 1; }
+  function aiStructLines() {
+    var d = data || {}, pj = (d.projects || []).filter(function (p) { return !p.finished; }).map(function (p) { return p.name; }).slice(0, 30), L = [];
     if (pj.length) L.push('- 지금 진행 중인 프로젝트: ' + pj.join(', '));
-    L.push('');
+    if (L.length) L.push('');
     L.push('## 탭');
     L.push('- [업무]: 할 일 목록. 1행이 머리글, 2행부터 할 일 1개 = 1줄. 할 일은 여기만 고친다.');
     L.push('- [프로젝트]: 프로젝트(이름) · 완료 모습 · 만든 날 · ID · 상태(진행/보류/끝남) · 기한 · 마지막 검토일 · 단계 · 현재 단계 · 링크. 프로젝트의 목표(완료 모습)·상태·기한을 적을 때만 고친다. ID는 앱이 붙이는 번호(P-로 시작)이니 바꾸지 마. 새 프로젝트 줄은 이름만 적고 ID는 비워 둬(앱이 붙여). 완료 모습이 "[버림]"으로 시작하면 다른 프로젝트로 합쳐서 없앤 프로젝트이니 쓰지 마.');
+    L.push('- [AI기록]: 네가 시트를 바꿀 때마다 한 줄씩 남기는 기록(아래 "기록 남기기"). 줄 추가만 한다.');
+    L.push('- [AI제안]: 네가 "제안만" 올리는 곳(아래 "제안만 올릴 때"). 줄 추가만 한다. 상태·처리시각 칸은 앱이 고친다.');
     L.push('- [오늘], [_설정]: 앱이 쓰는 탭. 읽지도 고치지도 마.');
     L.push('');
     L.push('## [업무] 열 — 열 위치는 반드시 1행 머리글 이름으로 찾아 (순서가 바뀌어 있을 수 있음)');
@@ -3545,60 +3553,201 @@
     L.push('- 예상(분) · 쓴 시간(분) · 미룬 횟수: 숫자');
     L.push('- 반복: 반복 규칙(매일·매주 월 등) — 고치지 마');
     L.push('- ID: 할 일 고유 번호');
-    L.push('- 상세: 할 일의 자세한 글(마크다운). 첫 글자는 반드시 "## "로 시작해(=·+·-·@로 시작하면 시트가 수식으로 읽을 수 있어). 틀: ## 배경 → ## 출처(링크와 한 줄 요약만, 메일 본문은 옮기지 마) → ## 다음 단계(- [ ] 체크리스트) → ## 완료 기준 → ## 메모. 4만 자까지.');
+    L.push('- 상세: 할 일의 자세한 글(마크다운). 규격은 아래 "상세 글 규격".');
     L.push('- 출처: 누가 넣었는지. 내가 새 줄을 넣을 때는 AI:Claude 처럼 "AI:내 이름"으로 적어.');
     L.push('- 분류일: 분류를 마친 날(yyyy-MM-dd). 새 줄을 넣을 때는 비워 둬 → 앱의 "분류 대기"에 나타나 내가 직접 분류해. 이미 있는 줄의 분류일은 바꾸지 마.');
     L.push('- 프로젝트ID: 앱이 채우는 프로젝트 번호. 바꾸지 마(프로젝트 이름만 적어도 앱이 이름으로 찾아). 단계 · ★다음(프로젝트의 "다음" 칩) · 에너지(높음/보통/낮음) · 확인 횟수: 앱이 관리하는 칸이니 사용자가 시킨 경우가 아니면 고치지 마.');
+    return L;
+  }
+  function aiRuleLines() {
+    return [
+      '## 꼭 지킬 것 (규칙 v' + aiRv() + ')',
+      '1. 제안 → 확인 → 쓰기 → 기록: 시트를 바꾸기 전에 변경안 표(줄 · 열 · 전 → 후)를 먼저 보여 주고, 내가 확인한 것만 써. 한 번에 10건까지. 읽기만 시킨 요청에는 아무것도 쓰지 마.',
+      '2. 내가 쓴 줄은 이번 작업에 필요한 열만 고쳐. 제목(할일)·ID·등록일·완료일·반복·쓴 시간(분)·머리글은 내가 시킨 경우가 아니면 바꾸지 마.',
+      '3. 줄은 맨 아래에 추가만 해(마지막 할 일 바로 아래, 빈 줄 없이). 줄 삽입·삭제·정렬·열 추가·서식 변경은 하지 마(앱이 줄 번호와 ID로 줄을 찾아).',
+      '4. 지우지 마. 지울 때는 상태를 "버림"으로 바꿔.',
+      '5. [오늘]·[_설정] 탭은 읽지도 쓰지도 마. 시트에 없는 열·탭을 만들지 마.',
+      '6. 쓰기 전에 중복을 확인해: 진행 중인 줄과 제목·프로젝트가 비슷하면 알리고 건너뛸지 물어봐. 고칠 할 일은 제목으로 찾되 비슷한 게 여러 개면 나에게 물어봐. 프로젝트 이름은 이미 있는 이름을 글자 그대로 써(대소문자·띄어쓰기·하이픈만 다르면 같은 프로젝트).',
+      '7. 쓰기 전에 그 줄을 다시 읽어 확인하고, 쓴 뒤에는 [AI기록]에 한 줄씩 남기고(전·후 값 포함) 무엇을 바꿨는지 짧게 알려 줘.',
+      '8. 메일·채팅 내용은 제목과 링크, 한 줄 요약만 옮겨. 본문은 시트에 옮기지 마. 민감한 내용(주민번호·계좌·비밀번호 등)은 시트에 넣지 말고 시트 밖에 둬.',
+      '9. 독촉·회신 같은 메시지는 초안만 써. 보내기는 내가 해.',
+      '10. 규칙 버전이 요청에 적힌 버전과 다르거나 규칙 파일이 없으면 아무것도 하지 말고 "규칙 파일을 다시 올려 주세요"라고만 답해.',
+      '- 새 줄 ID는 반드시 채워: AI-yyyyMMddHHmmss-순번 (예: AI-20261109153000-1).'
+    ];
+  }
+  function aiLogLines() {
+    return [
+      '## 기록 남기기 — [AI기록] 탭 (맨 아래에 추가만)',
+      '- 머리글: 시각 · 주체 · 작업 · 줄ID · 열 · 전 · 후 · 근거 · 되돌림',
+      '- 시각: yyyy-MM-dd HH:mm (Asia/Seoul) · 주체: AI:Claude 처럼 "AI:내 이름" · 작업: 추가 또는 수정 · 근거: 이유 한 줄',
+      '- 새 줄을 넣으면: 작업=추가 · 줄ID=새 ID, 한 줄 (열·전·후는 비움).',
+      '- 있는 줄의 칸을 고치면: 바꾼 칸마다 한 줄 · 작업=수정 · 줄ID · 열=머리글 이름 · 전=바꾸기 전 값 · 후=바꾼 값 (날짜는 yyyy-MM-dd 글자, 빈 칸은 빈 글자).',
+      '- 되돌림 칸은 앱이 쓴다. 비워 둬. 앱의 되돌리기는 "후" 값이 지금 값과 같을 때만 "전" 값으로 돌려.',
+      '',
+      '## 제안만 올릴 때 — [AI제안] 탭 (맨 아래에 추가만)',
+      '- 정기 작업(무인)이거나 내가 대화에서 확인할 수 없을 때는 [업무]를 고치지 말고 여기에만 추가해. 내가 앱의 알림함에서 적용·거절해.',
+      '- 머리글: 시각 · 주체 · 종류 · 대상ID · 제안 내용 · 근거·출처 · 상태 · 처리시각. 상태는 "대기"로 적고 처리시각은 비워 둬.',
+      '- 종류=할일: 제안 내용의 첫 줄이 제목, 둘째 줄부터 상세 글(## 로 시작). 대상ID는 프로젝트 ID(P-…, 있으면).',
+      '- 종류=자료후보: 대상ID=할 일 ID · 제안 내용=줄마다 "제목 | https://주소".',
+      '- 종류=독촉초안: 대상ID=할 일 ID · 제안 내용=보낼 글 초안(보내지는 마).',
+      '- 종류=프로젝트: 제안 내용의 첫 줄이 프로젝트 이름, 둘째 줄이 완료 모습, 그다음은 "- 할 일 제목" 줄들(첫 줄이 "다음" 칩이 돼).',
+      '- 근거·출처: 이유와 출처 링크 한 줄(메일 본문은 옮기지 마).'
+    ];
+  }
+  function aiDetailLines() {
+    return [
+      '## 상세 글 규격 — [업무]의 "상세" 칸',
+      '- 마크다운 글이고 첫 글자는 반드시 "## "로 시작해(=·+·-·@로 시작하면 시트가 수식으로 읽을 수 있어). 4만 자까지. 값은 글자 그대로(RAW) 넣어.',
+      '- 틀: ## 배경 → ## 출처 → ## 다음 단계 → ## 완료 기준 → ## 메모',
+      '- ## 출처: 링크와 한 줄 요약 목록만. 예) - [제목](https://주소) — 한 줄 요약. 링크는 http·https만, HTML은 쓰지 마(앱이 걸러서 글자로 보여 줘).',
+      '- ## 다음 단계: 체크리스트. 예) - [ ] 견적서 보내기 (앱 상세 창에서 내가 체크하면 [x]로 바뀌어).',
+      '- 기존 "메모" 칸은 그대로 두고, 상세 글의 ## 메모 구역에는 덧붙일 내용만 적어.'
+    ];
+  }
+  function aiActionLines() {
+    return [
+      '## 이렇게 처리해',
+      '- 담기: 새 줄 · 할일=제목 · 상태=다음 행동 · 오늘 할 날=오늘 · 등록일=오늘 · 출처=AI:내 이름 · 분류일=비움. 날짜가 미래인 일이면 상태=일정 · 마감일=그날 · 오늘 할 날은 비움. 중요하면 우선순위=높음, 급하면 긴급=급함. 프로젝트·상황·예상(분)·메모는 알면 채움.',
+      '- 오늘 할 일 보기: 상태가 완료·버림·참고·언젠가가 아니면서 (오늘 할 날 ≤ 오늘) 또는 (마감일 ≤ 오늘)인 줄. 오늘 할 날이 지난 것은 "어제 못 끝낸 일". 위임은 확인일 ≤ 오늘이면 "확인할 맡긴 일".',
+      '- 완료: 상태=완료 · 완료일=오늘. 단, 반복이 있는 할 일은 완료하지 말고 "반복 일은 앱에서 완료해 주세요(다음 회차가 생겨요)"라고 알려.',
+      '- 다른 날로 옮기기: 상태=일정 · 마감일=그날 · 오늘 할 날 비움 · 미룬 횟수 +1. 오늘로 당기기: 상태=다음 행동 · 오늘 할 날=오늘.',
+      '- 맡기기: 상태=위임 · 위임 대상=사람 · 확인일=말한 날(없으면 3일 뒤) · 맡긴 날=오늘 · 오늘 할 날 비움.',
+      '- 나중에: 상태=언젠가 · 오늘 할 날 비움.',
+      '- 지우기: 상태=버림.',
+      '- ★ 중요 / ↑ 급함 표시: 우선순위=높음(풀 때는 빈칸) / 긴급=급함(풀 때는 빈칸).',
+      '- 시간표(몇 시에 할지)·캘린더 배치는 시트로 할 수 없어. 앱의 오늘 시간표에서 하라고 안내해.'
+    ];
+  }
+  // 전체 안내문: 프로젝트 없이 AI 채팅에 바로 붙여넣어 쓰는 방식(호환). 시트 ID·주소가 들어간다
+  function aiPrompt() {
+    var d = data || {}, url = d.sheetUrl || '', id = sheetIdOf(url), today = d.today || '';
+    var L = [];
+    L.push('너는 내 할 일 관리 앱 "GTD 워크"의 비서야. 내 할 일은 아래 구글 시트에 있고, 너는 구글 시트 MCP(도구)로 이 시트를 직접 읽고 쓴다.');
+    L.push('구글 시트 도구가 없으면 아무것도 지어내지 말고 "구글 시트 MCP를 먼저 연결해 주세요"라고만 답해.');
     L.push('');
-    L.push('## 꼭 지킬 것');
-    L.push('- 줄을 지우지 마. 지울 때는 상태를 "버림"으로 바꾼다.');
-    L.push('- 있는 줄의 ID·머리글·반복·쓴 시간(분)은 바꾸지 마. 시트에 없는 열을 만들지 마.');
-    L.push('- 새 줄은 마지막 할 일 바로 아래에, 빈 줄 없이 추가하고 ID를 꼭 채운다: AI-yyyyMMddHHmmss-순번 (예: AI-20261109153000-1). 줄을 중간에 끼워 넣거나 정렬하지 마(앱이 줄 번호와 ID로 줄을 찾아).');
-    L.push('- 고칠 할 일은 제목으로 찾되, 비슷한 게 여러 개면 고르기 전에 나에게 물어봐.');
-    L.push('- 프로젝트 이름은 이미 있는 이름을 글자 그대로 쓴다. 대소문자·띄어쓰기·하이픈만 다른 프로젝트가 있으면 새로 만들지 말고 그 이름을 쓴다.');
-    L.push('- 쓰기 전에 그 줄을 다시 읽어 확인하고, 끝나면 무엇을 바꿨는지 짧게 알려 줘.');
-    L.push('');
-    L.push('## 이렇게 처리해');
-    L.push('- 담기: 새 줄 · 할일=제목 · 상태=다음 행동 · 오늘 할 날=오늘 · 등록일=오늘 · 출처=AI:내 이름 · 분류일=비움. 날짜가 미래인 일이면 상태=일정 · 마감일=그날 · 오늘 할 날은 비움. 중요하면 우선순위=높음, 급하면 긴급=급함. 프로젝트·상황·예상(분)·메모는 알면 채움.');
-    L.push('- 오늘 할 일 보기: 상태가 완료·버림·참고·언젠가가 아니면서 (오늘 할 날 ≤ 오늘) 또는 (마감일 ≤ 오늘)인 줄. 오늘 할 날이 지난 것은 "어제 못 끝낸 일". 위임은 확인일 ≤ 오늘이면 "확인할 맡긴 일".');
-    L.push('- 완료: 상태=완료 · 완료일=오늘. 단, 반복이 있는 할 일은 완료하지 말고 "반복 일은 앱에서 완료해 주세요(다음 회차가 생겨요)"라고 알려.');
-    L.push('- 다른 날로 옮기기: 상태=일정 · 마감일=그날 · 오늘 할 날 비움 · 미룬 횟수 +1. 오늘로 당기기: 상태=다음 행동 · 오늘 할 날=오늘.');
-    L.push('- 맡기기: 상태=위임 · 위임 대상=사람 · 확인일=말한 날(없으면 3일 뒤) · 맡긴 날=오늘 · 오늘 할 날 비움.');
-    L.push('- 나중에: 상태=언젠가 · 오늘 할 날 비움.');
-    L.push('- 지우기: 상태=버림.');
-    L.push('- ★ 중요 / ↑ 급함 표시: 우선순위=높음(풀 때는 빈칸) / 긴급=급함(풀 때는 빈칸).');
-    L.push('- 시간표(몇 시에 할지)·캘린더 배치는 시트로 할 수 없어. 앱의 오늘 시간표에서 하라고 안내해.');
+    L.push('## 내 시트');
+    L.push('- 시트 ID: ' + id);
+    L.push('- 주소: ' + url);
+    L.push('- 시간대: Asia/Seoul (이 안내를 만든 날: ' + today + '. 오늘 날짜는 대화하는 날 기준으로 다시 계산해)');
+    L = L.concat(aiStructLines(), [''], aiRuleLines(), [''], aiLogLines(), [''], aiDetailLines(), [''], aiActionLines());
     L.push('');
     L.push('이 안내를 받으면 먼저 [업무] 탭 1행을 읽어 열을 확인하고, "GTD 워크에 연결됐어요"와 함께 오늘 할 일을 짧게 보여 줘.');
     return L.join('\n');
+  }
+  // 규칙 파일: Claude 프로젝트의 '프로젝트 지식'에 한 번 올린다. 시트 ID는 넣지 않는다(요청 팩이 시트 링크를 들고 온다 → 팀이 프로젝트 하나를 같이 써도 각자 자기 시트)
+  function aiRulesText() {
+    var L = ['# GTD 워크 AI 규칙', '', '규칙 버전: ' + aiRv(), '', '이 파일은 GTD 워크 앱이 만든 규칙 파일이야. 내 구글 시트의 시트 ID·주소는 여기에 없고, 요청마다 따로 와. 요청의 규칙 버전이 위 규칙 버전과 다르면 10번 규칙대로 멈춰.', '', '너는 내 할 일 관리 앱 "GTD 워크"의 비서야. 구글 시트 MCP(도구)로 요청에 적힌 시트를 직접 읽고 쓴다. 구글 시트 도구가 없으면 아무것도 지어내지 말고 "구글 시트 MCP를 먼저 연결해 주세요"라고만 답해.', '', '- 시간대: Asia/Seoul'];
+    var st = aiStructLines(); // 진행 중인 프로젝트 이름은 사람마다 달라 규칙 파일에는 넣지 않는다
+    if (/^- 지금 진행 중인 프로젝트/.test(st[0])) st = st.slice(2);
+    return L.concat([''], st, [''], aiRuleLines(), [''], aiLogLines(), [''], aiDetailLines(), [''], aiActionLines()).join('\n') + '\n';
+  }
+  // 프로젝트 지침: Claude 프로젝트 '지침' 칸에 붙여넣는 짧은 글
+  function aiInstructions() {
+    return ['너는 내 할 일 관리 앱 "GTD 워크"의 비서야.',
+      '- 이 프로젝트의 지식에 있는 "GTD 워크 AI 규칙" 파일(gtd-work-rules.md)을 먼저 읽고 그대로 따라.',
+      '- 내가 요청과 함께 보내는 구글 시트 링크가 내 시트야. 구글 시트 MCP로 그 시트만 읽고 써. 다른 사람의 시트나 [오늘]·[_설정] 탭은 건드리지 마.',
+      '- 요청에 적힌 규칙 버전이 규칙 파일의 버전과 다르거나 규칙 파일이 없으면 "규칙 파일을 다시 올려 주세요"라고만 하고 멈춰.',
+      '- 시트를 바꾸기 전에는 변경안 표를 보여 주고 내가 확인한 것만 써. 지우지 말고, 줄은 맨 아래에 추가만 해.',
+      '- 메일·메시지는 초안만 써. 보내지 마.'].join('\n');
+  }
+  var AI_PACKS = [
+    { k: 'triage', t: '분류 대기 정리', m: '분류일이 빈 줄을 AI가 정리안으로 제안해요',
+      ask: '[업무]에서 분류일이 비어 있고 끝나지 않은 줄(분류 대기)을 찾아, 줄마다 "오늘 할 일 / 프로젝트로 / 맡기기(누구·확인일) / 날짜 정하기 / 나중에 / 버리기" 중 하나를 제안해 줘. 변경안 표(줄 · 열 · 전 → 후)로 먼저 보여 주고, 내가 확인한 것만 시트에 써. 분류일은 비워 둬(앱에서 내가 눌러 마무리해).' },
+    { k: 'project', t: '프로젝트 만들기', m: '완료 모습만 적으면 단계와 첫 행동을 AI가 제안해요',
+      ask: '새 프로젝트를 만들고 싶어.\n완료 모습: (여기에 한 줄로 적어 주세요)\n기한·같이 하는 사람·제약을 한두 가지 먼저 물어봐. 그다음 단계와 할 일 후보를 [AI제안](종류=프로젝트)에 한 줄로 올려 줘. 내 [업무]·[프로젝트] 탭은 직접 고치지 마(앱에서 내가 확인해서 넣을게).' },
+    { k: 'weekly', t: '주간 검토 진행', m: '이번 주를 돌아보고 정리할 것을 알려 줘요',
+      ask: '주간 검토를 같이 해 줘. [업무]·[프로젝트]를 읽고 ① 이번 주 끝낸 일 ② 오래 기다리는 맡긴 일 ③ "다음" 칩(★다음)이 없는 진행 중 프로젝트 ④ 언젠가 목록에서 꺼낼 만한 것을 정리해서 알려 줘. 바꿀 게 있으면 변경안 표로 먼저 보여 줘.' },
+    { k: 'delegated', t: '맡긴 일 점검 · 독촉 초안', m: '확인할 맡긴 일을 사람별로 묶어 독촉 글 초안을 써요',
+      ask: '상태가 위임이고 확인일이 오늘 이전인 줄을 사람별로 묶어 알려 줘. 사람마다 보낼 독촉 메시지 초안을 써 줘(보내지 말고 초안만). 시트에 남기고 싶으면 [AI제안](종류=독촉초안)에 올려 줘.' },
+    { k: 'inbox', t: '메일 · 캘린더 · 드라이브 → 할 일 후보', m: '최근 메일·일정·문서에서 할 일 후보를 제안해요',
+      ask: '최근 메일·캘린더·드라이브에서 내가 해야 할 일 후보를 찾아 [AI제안](종류=할일)에 올려 줘. 내용은 제목·링크·한 줄 요약만(본문은 옮기지 마). 이미 [업무]에 있는 것과 비슷하면 빼고, 내 [업무] 줄은 직접 고치지 마.' }
+  ];
+  // 요청 팩: 내 시트 링크 + 짧은 요청 + 규칙 버전만
+  function aiPack(k) {
+    var d = data || {}, url = d.sheetUrl || '', id = sheetIdOf(url), pk = AI_PACKS.filter(function (x) { return x.k === k; })[0];
+    if (!pk) return '';
+    return ['[GTD 워크 요청 · 규칙 v' + aiRv() + ']', '내 시트: ' + url, '시트 ID: ' + id, '(프로젝트의 규칙 파일이 규칙 v' + aiRv() + '이 아니면 "규칙 파일을 다시 올려 주세요"라고만 하고 멈춰.)', '', '요청: ' + pk.t, pk.ask].join('\n');
   }
   function copyText(t, ok, bad) {
     var fb = function () { try { var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); var r = document.execCommand('copy'); ta.remove(); (r ? ok : bad)(); } catch (e) { bad(); } };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, fb); else fb();
   }
-  // 1) 내 AI에 구글 시트 연결(체크) → 2) AI에게 보낼 메시지 복사. 체크는 이 기기에 기억한다
+  // ════════ v1.9 AI 알림함 묶음: 'AI가 바꾼 것'(되돌리기) · 'AI 제안'(적용·거절) ════════
+  function aiTitles(list, n) { var seen = {}, out = []; (list || []).forEach(function (c) { var k = c.title || c.id; if (!seen[k]) { seen[k] = 1; out.push(k); } }); return out.slice(0, n).join(' / '); }
+  function aiPropTitle(p) { if (p.kind === '할일') return String(p.content || '').split(/\r?\n/).filter(function (x) { return x.trim(); })[0] || '할 일 제안'; if (p.kind === '프로젝트') return '프로젝트 · ' + (String(p.content || '').split(/\r?\n/)[0] || ''); return p.kind + (p.targetTitle ? ' · ' + p.targetTitle : ''); }
+  function aiChangeHtml(c) {
+    var what = c.action === '추가' ? '새 줄을 넣었어요' : '<b>' + esc(c.col) + '</b> ' + (c.before ? '<del>' + esc(c.before) + '</del> ' : '(빈칸) ') + '→ ' + (c.after ? esc(c.after) : '(빈칸)');
+    return '<div class="aib"><div class="aih">' + esc(c.title || '(제목을 찾지 못함)') + '<span class="srcchip ai">' + esc(c.who || 'AI') + '</span></div><div class="aid">' + what + (c.why ? '<br><span class="hint2">' + esc(c.why) + '</span>' : '') + '<br><span class="hint2">' + esc(c.at) + '</span></div>' +
+      '<div class="aia"><button type="button" data-airev="' + c.row + '" data-stamp="' + esc(c.at) + '">' + (c.action === '추가' ? '되돌리기 (버림 처리)' : '되돌리기') + '</button></div></div>';
+  }
+  function openAiChanges() {
+    var ai = (data && data.ai) || {}, list = ai.changes || [];
+    openSheet('<div class="st">AI가 바꾼 것 <em>' + (ai.changeLines || 0) + '개</em></div><div class="ss">AI가 시트를 바꾼 기록이에요. 되돌리면 바꾸기 전 값으로 돌아가요. 그 사이 내가 바꾼 값은 덮어쓰지 않아요.</div>' +
+      (list.length ? '<div class="card" style="margin-top:12px">' + list.map(aiChangeHtml).join('') + '</div>' : '<div class="card" style="margin-top:12px"><div class="empty">되돌릴 것이 없어요</div></div>'), true);
+  }
+  function aiPropHtml(p) {
+    var lines = String(p.content || '').replace(/\r\n?/g, '\n').split('\n'), body;
+    if (p.kind === '할일') { var k = 0; while (k < lines.length && !lines[k].trim()) k++; var rest = lines.slice(k + 1).join('\n').trim(); body = '<div class="aid"><b>' + esc(lines[k] || '') + '</b></div>' + (rest ? '<div class="md">' + mdRender(rest) + '</div>' : ''); }
+    else if (p.kind === '프로젝트') body = '<div class="aid"><b>' + esc(lines[0] || '') + '</b>' + (lines[1] ? '<br>' + esc(lines[1]) : '') + '</div><div class="md">' + mdRender(lines.slice(2).join('\n')) + '</div>';
+    else body = '<div class="aid">' + (p.targetTitle ? '<b>' + esc(p.targetTitle) + '</b><br>' : '') + '</div><div class="md">' + (p.kind === '자료후보' ? mdRender(lines.map(function (l) { return l.trim() ? '- ' + l.replace(/^[-*+]\s+/, '') : ''; }).join('\n')) : '<div style="white-space:pre-wrap">' + esc(p.content) + '</div>') + '</div>';
+    return '<div class="aib"><div class="aih">' + esc(p.kind || '제안') + '<span class="srcchip ai">' + esc(p.who || 'AI') + '</span></div>' + body + (p.why ? '<div class="aid"><span class="hint2">' + esc(p.why) + '</span></div>' : '') +
+      '<div class="aia"><button type="button" data-aiok="' + p.row + '" data-stamp="' + esc(p.at) + '" data-kind="' + esc(p.kind) + '">' + (p.kind === '독촉초안' ? '복사하고 적용' : '적용') + '</button><button type="button" class="sub" data-aino="' + p.row + '" data-stamp="' + esc(p.at) + '">거절</button></div></div>';
+  }
+  function openAiProps() {
+    var ai = (data && data.ai) || {}, list = ai.proposals || [];
+    openSheet('<div class="st">AI 제안 <em>' + (ai.proposalN || 0) + '개</em></div><div class="ss">AI가 올린 제안이에요. 적용을 눌러야만 내 시트에 들어가요.</div>' +
+      (list.length ? '<div class="card" style="margin-top:12px">' + list.map(aiPropHtml).join('') + '</div>' : '<div class="card" style="margin-top:12px"><div class="empty">대기 중인 제안이 없어요</div></div>'), true);
+  }
+  function aiAfter(r, reopen, okMsg) {
+    if (r && r.view) setView(r.view);
+    toast(r && r.ok === false ? (r.reason || '처리하지 못했어요') : okMsg);
+    reopen();
+  }
+  $('sheetBody').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-airev],[data-aiok],[data-aino]'); if (!b) return;
+    var stamp = b.getAttribute('data-stamp'), fail = function (err) { toast(err.message); if (/목록이 바뀌었/.test(err.message)) load().then(function () { if ($('sheet').classList.contains('on')) b.hasAttribute('data-airev') ? openAiChanges() : openAiProps(); }); };
+    b.disabled = true;
+    if (b.hasAttribute('data-airev')) return call('revertAi', +b.getAttribute('data-airev'), stamp).then(function (r) { aiAfter(r, openAiChanges, '되돌렸어요'); }).catch(fail);
+    if (b.hasAttribute('data-aino')) return call('rejectAi', +b.getAttribute('data-aino'), stamp).then(function (r) { aiAfter(r, openAiProps, '거절했어요'); }).catch(fail);
+    var row = +b.getAttribute('data-aiok'), kind = b.getAttribute('data-kind'), p = ((data.ai || {}).proposals || []).filter(function (x) { return x.row === row; })[0];
+    var go = function () { return call('applyAi', row, stamp).then(function (r) { aiAfter(r, openAiProps, kind === '할일' ? '내 시트에 넣었어요 · 분류 대기에서 정리하세요' : kind === '프로젝트' ? '프로젝트를 만들었어요' : '적용했어요'); }).catch(fail); };
+    if (kind === '독촉초안' && p) return copyText(p.content, go, go);
+    go();
+  });
+  function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function downloadText(name, text) {
+    try { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500); return true; } catch (e) { return false; }
+  }
+  // 1) 팀 Claude에서 구글 시트 켜기(체크) → 2) Claude 프로젝트 만들기(지침 복사 · 규칙 파일 받기) → 3) 요청 팩 복사. 체크는 이 기기에 기억한다. 규칙 버전이 올라가면 2번을 다시 하라고 알린다
   function openAi() {
-    var linked = false; try { linked = localStorage.getItem('kitAiLinked') === '1'; } catch (e) {}
-    var key = isPC() ? (/Mac/.test(navigator.platform) ? '⌘V' : 'Ctrl+V') : '길게 눌러 붙여넣기';
-    var draw = function (copied) {
-      openSheet('<div class="st">AI 연결</div><div class="ss">내가 쓰는 AI(Claude·ChatGPT 등)에게 말로 할 일을 맡겨요.</div>' +
+    var key = isPC() ? (/Mac/.test(navigator.platform) ? '⌘V' : 'Ctrl+V') : '길게 눌러 붙여넣기', note = '', adv = false;
+    var num = function (n) { return '<span class="tile purple" style="font-weight:800">' + n + '</span>'; };
+    var draw = function () {
+      var linked = lsGet('kitAiLinked') === '1', proj = lsGet('kitAiProj') === '1', rv = aiRv(), have = Number(lsGet('kitAiRulesV')) || 0, stale = proj && have < rv, ready = proj && !stale;
+      openSheet('<div class="st">AI 연결</div><div class="ss">팀 Claude에게 말로 할 일을 맡겨요. 세 단계만 하면 돼요.</div>' +
         '<div class="card" style="margin-top:14px">' +
-        '<div class="row" style="cursor:default;align-items:flex-start"><span class="tile purple" style="font-weight:800">1</span><div class="tx"><div class="t">AI 앱에서 구글 시트 켜기</div><div class="m">AI 앱(Claude·ChatGPT 등) 설정 ▸ 커넥터에서 구글 시트를 켜요 · 처음 한 번만</div></div></div>' +
-        '<label class="row" style="cursor:pointer;align-items:flex-start"><span class="tile purple" style="font-weight:800">2</span><div class="tx"><div class="t">켰으면 여기 스위치 켜기</div><div class="m">' + (linked ? '켰어요 · 이 기기에 기억해 둘게요' : '1번을 했으면 오른쪽 스위치를 켜 주세요') + '</div></div>' +
-        '<span class="sw"><input type="checkbox" id="aiLinked"' + (linked ? ' checked' : '') + ' aria-label="AI 앱에서 구글 시트를 켰어요"><i></i></span></label>' +
-        (linked ? '<div class="row" style="cursor:default;align-items:flex-start"><span class="tile purple" style="font-weight:800">3</span><div class="tx"><div class="t">AI에게 메시지 보내기</div><div class="m">' + (copied ? '복사했어요 · AI 채팅창에 붙여넣고(' + key + ') 보내세요' : '아래 버튼으로 복사해서 AI 채팅창에 붙여넣어요') + '</div></div></div>' : '') +
+        '<label class="row" style="cursor:pointer;align-items:flex-start">' + num(1) + '<div class="tx"><div class="t">팀 Claude에서 구글 시트 커넥터 켜기</div><div class="m">' + (linked ? '켰어요 · 이 기기에 기억해 둘게요' : 'Claude 설정 ▸ 커넥터에서 구글 시트를 켜요. 팀 소유자가 먼저 허용해 둬야 하고, 구글 워크스페이스 관리자가 Claude를 허용해야 할 수도 있어요 · 처음 한 번만') + '</div></div>' +
+        '<span class="sw"><input type="checkbox" id="aiLinked"' + (linked ? ' checked' : '') + ' aria-label="팀 Claude에서 구글 시트를 켰어요"><i></i></span></label>' +
+        (linked ? '<div class="row" style="cursor:default;align-items:flex-start">' + num(2) + '<div class="tx"><div class="t">Claude 프로젝트 만들기</div><div class="m">' + (stale ? '규칙이 v' + rv + '로 바뀌었어요. 규칙 파일을 다시 받아 프로젝트 지식에 올려 주세요(옛 파일은 지우고).' : '프로젝트를 만들고, 지침 칸에 <b>프로젝트 지침</b>을, 프로젝트 지식에 <b>규칙 파일</b>(규칙 v' + rv + ')을 한 번 넣어요.') + '</div>' +
+          '<div class="actrow2" style="margin-top:10px;flex-wrap:wrap"><button type="button" class="pillbtn" id="aiInst">프로젝트 지침 복사</button><button type="button" class="pillbtn" id="aiRules">규칙 파일 받기 (.md)</button><button type="button" class="pillbtn" id="aiRulesCp" style="background:var(--fill);color:var(--t2);box-shadow:none">규칙 글 복사</button></div>' +
+          '<label class="row" style="cursor:pointer;padding:10px 0 0;min-height:0"><span class="m" style="flex:1">' + (ready ? '프로젝트에 넣었어요' : '넣었으면 오른쪽 스위치를 켜 주세요') + '</span><span class="sw"><input type="checkbox" id="aiProj"' + (ready ? ' checked' : '') + ' aria-label="Claude 프로젝트에 지침과 규칙 파일을 넣었어요"><i></i></span></label></div></div>' : '') +
+        (linked && ready ? '<div class="row" style="cursor:default;align-items:flex-start">' + num(3) + '<div class="tx"><div class="t">요청 팩을 복사해서 프로젝트 대화에 붙여넣기</div><div class="m">' + (note ? esc(note) : '내 시트 링크와 짧은 요청만 들어 있어요. 복사해서 그 Claude 프로젝트 대화창에 붙여넣고(' + key + ') 보내세요') + '</div></div></div>' +
+          AI_PACKS.map(function (p) { return '<button type="button" class="row" data-aipack="' + p.k + '" style="width:100%;border:0;background:transparent;text-align:left;cursor:pointer"><div class="tx"><div class="t">' + esc(p.t) + '</div><div class="m">' + esc(p.m) + '</div></div>' + svg('copy', 18) + '</button>'; }).join('') : '') +
         '</div>' +
-        (linked ? '<button class="cta' + (copied ? ' ghost' : '') + '" id="aiCopy" type="button" style="display:flex;align-items:center;justify-content:center;gap:8px">' + svg(copied ? 'check' : 'copy', 18) + (copied ? '복사했어요' : '메시지 복사') + '</button>'
-          : '') +
+        (linked ? '<div class="lbl" style="margin-top:16px">프로젝트 없이 쓰기 (고급)</div><button class="cta ghost" id="aiAdv" type="button" style="display:flex;align-items:center;justify-content:center;gap:8px">' + svg('copy', 18) + '전체 안내문 복사</button><div class="m" style="margin:6px 4px 0">프로젝트를 만들지 않고, 안내문 전체를 AI 채팅창에 바로 붙여넣어요. 안내문이 길고, 규칙이 바뀌면 다시 복사해야 해요.</div>' : '') +
         '<textarea id="aiText" readonly rows="6" hidden style="width:100%;margin-top:12px;font-size:12.5px;line-height:1.5;border-radius:12px;border:1px solid var(--line);background:var(--fill);color:var(--t1);padding:10px;resize:vertical"></textarea>');
-      $('aiLinked').onchange = function () { linked = this.checked; try { localStorage.setItem('kitAiLinked', linked ? '1' : ''); } catch (e) {} draw(false); };
-      if ($('aiCopy')) $('aiCopy').onclick = function () {
-        var t = aiPrompt();
-        if (!sheetIdOf((data || {}).sheetUrl)) return toast('시트를 여는 중이에요. 잠시 뒤 다시 눌러 주세요');
-        copyText(t, function () { draw(true); toast('복사했어요 · AI 채팅창에 붙여넣으세요'); }, function () { var a = $('aiText'); a.value = t; a.hidden = false; a.focus(); a.select(); toast('자동 복사가 안 돼요. 아래 글을 길게 눌러 복사해 주세요'); });
-      };
+      var noSheet = function () { if (sheetIdOf((data || {}).sheetUrl)) return false; toast('시트를 여는 중이에요. 잠시 뒤 다시 눌러 주세요'); return true; };
+      var cp = function (text, msg, after) { copyText(text, function () { toast(msg); if (after) after(); }, function () { var a = $('aiText'); a.value = text; a.hidden = false; a.focus(); a.select(); toast('자동 복사가 안 돼요. 아래 글을 길게 눌러 복사해 주세요'); if (after) after(); }); };
+      $('aiLinked').onchange = function () { lsSet('kitAiLinked', this.checked ? '1' : ''); note = ''; draw(); };
+      if ($('aiInst')) $('aiInst').onclick = function () { cp(aiInstructions(), '프로젝트 지침을 복사했어요 · Claude 프로젝트의 지침 칸에 붙여넣으세요'); };
+      if ($('aiRules')) $('aiRules').onclick = function () { if (downloadText('gtd-work-rules-v' + rv + '.md', aiRulesText())) { lsSet('kitAiRulesV', String(rv)); toast('규칙 파일을 받았어요 · Claude 프로젝트 지식에 올려 주세요'); draw(); } else toast('파일 받기가 안 돼요. "규칙 글 복사"를 눌러 주세요'); };
+      if ($('aiRulesCp')) $('aiRulesCp').onclick = function () { cp(aiRulesText(), '규칙 글을 복사했어요 · 메모장에 붙여 gtd-work-rules.md로 저장해 올리세요', function () { lsSet('kitAiRulesV', String(rv)); }); };
+      if ($('aiProj')) $('aiProj').onchange = function () { lsSet('kitAiProj', this.checked ? '1' : ''); if (this.checked) lsSet('kitAiRulesV', String(Math.max(Number(lsGet('kitAiRulesV')) || 0, rv))); draw(); };
+      [].forEach.call(document.querySelectorAll('[data-aipack]'), function (b) { b.onclick = function () { if (noSheet()) return; var k = b.getAttribute('data-aipack'); cp(aiPack(k), '복사했어요 · 프로젝트 대화창에 붙여넣으세요'); }; });
+      if ($('aiAdv')) $('aiAdv').onclick = function () { if (noSheet()) return; cp(aiPrompt(), '복사했어요 · AI 채팅창에 붙여넣으세요'); };
     };
-    draw(false);
+    draw();
   }
   function openKeys() {
     var k = function (key, what) { return '<kbd class="kb">' + key + '</kbd><span>' + what + '</span>'; };

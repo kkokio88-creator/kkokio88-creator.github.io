@@ -4,9 +4,9 @@
 // - 새 버전이 올라가면 이 파일의 버전이 바뀌어 새 화면을 미리 받아 두고 옛 저장본을 지운다.
 // - 글꼴(jsDelivr, 버전 고정)은 저장해 둔 것 먼저. 구글 로그인·구글 API(시트·캘린더)는 절대 저장하지 않는다.
 // tools/build-web2.js 가 버전과 미리 받을 파일 목록을 채워 web2/sw.js 를 만든다. 이 파일(sw-src.js)을 고칠 것.
-var V = "1.8.2-b6fccadf01";
+var V = "1.9.0-4378b95c0b";
 var CACHE = 'kit-app-' + V, FONT = 'kit-font-1';
-var SHELL = ["./","engine.js?v=b6fccadf01","auth.js?v=b6fccadf01","manifest.webmanifest","icons/icon-192.png","icons/apple-touch-icon.png"];
+var SHELL = ["./","engine.js?v=4378b95c0b","auth.js?v=4378b95c0b","manifest.webmanifest","icons/icon-192.png","icons/apple-touch-icon.png"];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));

@@ -493,12 +493,15 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.8.2',       // 코드 버전 (화면 표시용)
-  SCHEMA_VERSION: 7,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열
+  VERSION: '1.9.0',       // 코드 버전 (화면 표시용)
+  SCHEMA_VERSION: 8,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다)
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
   SETTINGS_SHEET: '_설정',
   PROJECT_SHEET: '프로젝트', // 프로젝트 이름 · 완료 모습 (처음 적을 때 생긴다)
+  AI_LOG_SHEET: 'AI기록',     // v8: AI가 시트를 바꿀 때마다 한 줄씩 추가(되돌리기용). 앱이 만든다
+  AI_PROPOSAL_SHEET: 'AI제안', // v8: AI가 올리는 제안(적용·거절은 앱에서). 앱이 만든다
+  AI_RULES_VERSION: 1,        // AI 규칙 파일 버전: AI 안내(규칙 파일·요청 팩)를 바꾸면 올린다 (요청 팩이 이 번호와 맞는지 AI에게 확인시킨다)
   RULE_MARK: 'N("kit")=0', // 키트가 만든 조건부 서식을 구분하는 표식
   WEEKLY_HANDLER: 'sendWeeklyReview',
   WEEKLY_HOUR: 16,
@@ -590,7 +593,9 @@ var PRIORITY_ORDER = { '높음': 0, '보통': 1, '': 1, '낮음': 2 };
  */
 var MIGRATIONS = {
   // v7: 프로젝트 ID 부여 · 업무 줄의 프로젝트ID 채움 · 기존 줄은 분류일을 채워 '분류 대기'로 쏟아지지 않게 (35_Projects.gs)
-  7: function (ctx) { migrateToV7_(ctx); }
+  7: function (ctx) { migrateToV7_(ctx); },
+  // v8: [AI기록]·[AI제안] 탭 만들기 (없는 탭만. 기존 탭·열·값은 그대로) (37_Ai.gs)
+  8: function (ctx) { ensureAiSheets_(ctx.ss); }
 };
 
 /* ── 10_Util.gs ── */
@@ -1612,6 +1617,14 @@ var PROJECT_STATES = ['진행', '보류', '끝남'];
 /** 합쳐서 없앤 프로젝트는 행을 지우지 않고 '완료 모습' 칸 앞에 이 표시를 붙인다 (열을 새로 만들지 않기 위해) */
 var PROJECT_DROPPED_TAG = '[버림]';
 function isDroppedOutcome_(v) { return String(v || '').indexOf(PROJECT_DROPPED_TAG) === 0; }
+var PROJECT_MERGED_MARK = '(으)로 합침';
+/** '[버림] 대상(으)로 합침 · 원래 목표' 에서 원래 목표 글만. 대상 이름 안에 ' · '가 있어도 '(으)로 합침' 바로 뒤의 ' · '만 경계로 본다 */
+function droppedOriginalGoal_(outcome) {
+  var s = String(outcome || ''), i = s.indexOf(PROJECT_MERGED_MARK);
+  if (i < 0) return '';
+  var rest = s.slice(i + PROJECT_MERGED_MARK.length);
+  return rest.indexOf(' · ') === 0 ? rest.slice(3) : '';
+}
 
 /**
  * [프로젝트] 시트와 열 번호. create=true면 시트가 없을 때 만들고, 없는 열은 오른쪽 끝에 붙인다.
@@ -1728,8 +1741,8 @@ function ensureProjectRow_(ss, ref, outcome, byId) {
     if (dead) {
       if (!dead.id) { dead.id = newProjectId_(rows); info.sh.getRange(dead.row, info.col['ID']).setValue(dead.id); }
       // 새 목표를 줄 때만 그 글로, 아니면 [버림] 표시 뒤에 남아 있던 원래 목표 글로 되돌린다 (목표를 빈칸으로 덮지 않는다)
-      var kept = String(dead.outcome).match(/ · ([\s\S]*)$/);
-      info.sh.getRange(dead.row, info.col['완료 모습']).setValue(outcome ? outcome : (kept ? kept[1] : ''));
+      var keptGoal = droppedOriginalGoal_(dead.outcome);
+      info.sh.getRange(dead.row, info.col['완료 모습']).setValue(outcome ? outcome : keptGoal);
       return { row: dead.row, id: dead.id, name: dead.name, info: info, created: false };
     }
   }
@@ -1811,7 +1824,10 @@ function setProjectInfo(ref, patch) {
   patch = patch || {};
   if (patch.state !== undefined && PROJECT_STATES.indexOf(patch.state) < 0) throw new Error('프로젝트 상태는 진행·보류·끝남 중 하나예요.');
   return withLock_(function () {
-    var ctx = taskContext_(), hit = ensureProjectRow_(ctx.ss, ref, undefined, true), put = function (h, v) { hit.info.sh.getRange(hit.row, hit.info.col[h]).setValue(v); };
+    var ctx = taskContext_();
+    // 앱은 프로젝트를 이름으로 부른다. 'P-2026Q4' 같은 번호 모양 이름이라도 할 일이나 프로젝트 줄에 그 이름이 있으면 이름이다(번호로 오해해 오류 내지 않음)
+    var asName = readAllTasks_(ctx).some(function (t) { return t.project === String(ref || '').trim(); });
+    var hit = ensureProjectRow_(ctx.ss, ref, undefined, !asName), put = function (h, v) { hit.info.sh.getRange(hit.row, hit.info.col[h]).setValue(v); };
     if (patch.outcome !== undefined) put('완료 모습', String(patch.outcome).trim());
     if (patch.state !== undefined) put('상태', patch.state);
     if (patch.due !== undefined) put('기한', ymd_(patch.due));
@@ -1905,7 +1921,7 @@ function mergeProject(from, to) {
         for (var i = 0; i < names.length; i++) {
           if (String(names[i][0]).trim() !== from) continue;
           var cell = sh.getRange(i + 2, cOut), cur = String(cell.getValue() || '').trim();
-          if (!isDroppedOutcome_(cur)) cell.setValue(PROJECT_DROPPED_TAG + ' ' + to + '(으)로 합침' + (cur ? ' · ' + cur : ''));
+          if (!isDroppedOutcome_(cur)) cell.setValue(PROJECT_DROPPED_TAG + ' ' + to + PROJECT_MERGED_MARK + (cur ? ' · ' + cur : ''));
         }
       }
     }
@@ -1958,6 +1974,320 @@ function migrateToV7_(ctx) {
   });
   if (needPid) sheet.getRange(2, map.projectId, vals.length, 1).setValues(pidCol);
   if (needTr) sheet.getRange(2, map.triaged, vals.length, 1).setValues(trCol);
+}
+
+/* ── 37_Ai.gs ── */
+/**
+ * GTD 워크 — AI 연결 (v1.9.0, 개편 2단계): [AI기록] · [AI제안] 탭, 알림함 묶음, 되돌리기·적용·거절
+ *
+ * - [AI기록]: AI(에이전트)가 시트를 바꿀 때마다 한 줄씩 '추가만' 한다. 앱은 읽어서 알림함 'AI가 바꾼 것'과 되돌리기에 쓴다.
+ * - [AI제안]: 무인 작업·대화에서 AI가 '제안만' 올린다. 앱은 알림함 'AI 제안'에서 적용/거절을 받아 상태 칸만 고친다.
+ * - 두 탭은 앱이 만들어 둔다(에이전트가 탭을 만들지 않는다). 줄은 지우지 않는다(버림 처리). 바뀐 칸만 쓴다.
+ * - 되돌리기는 [AI기록]의 '후' 값이 지금 값과 같을 때만 '전' 값으로 돌린다. 그 사이 사람이 바꿨으면 덮지 않는다.
+ */
+
+var AI_LOG_HEADERS = ['시각', '주체', '작업', '줄ID', '열', '전', '후', '근거', '되돌림'];
+var AI_PROPOSAL_HEADERS = ['시각', '주체', '종류', '대상ID', '제안 내용', '근거·출처', '상태', '처리시각'];
+var AI_ACTIONS = ['추가', '수정'];
+var AI_KINDS = ['할일', '프로젝트', '자료후보', '독촉초안'];
+var AI_STATES = ['대기', '적용', '거절'];
+var AI_VIEW_CAP = 100;
+
+/** 지금 시각 'yyyy-MM-dd HH:mm' (시트 시간대) */
+function nowStamp_(tz) {
+  var now = new Date();
+  return todayYmd_(tz) + ' ' + Utilities.formatDate(now, tz, 'HH:mm');
+}
+
+/** [AI기록]·[AI제안] 탭 만들기. 없는 탭만 만들고, 있는 탭에 빠진 머리글은 오른쪽 끝에 붙인다(기존 열·값은 그대로). 멱등 */
+function ensureAiSheets_(ss) {
+  [[KIT.AI_LOG_SHEET, AI_LOG_HEADERS], [KIT.AI_PROPOSAL_SHEET, AI_PROPOSAL_HEADERS]].forEach(function (p) {
+    var sh = ss.getSheetByName(p[0]);
+    if (!sh) {
+      sh = ss.insertSheet(p[0]);
+      sh.getRange(1, 1, 1, p[1].length).setValues([p[1]]).setFontWeight('bold').setBackground('#EFE6FF');
+      sh.setFrozenRows(1);
+      return;
+    }
+    var width = Math.max(sh.getLastColumn(), 1);
+    var head = sh.getRange(1, 1, 1, width).getValues()[0].map(function (h) { return String(h).trim(); });
+    var blank = head.every(function (h) { return !h; });
+    p[1].forEach(function (h) {
+      if (head.indexOf(h) >= 0) return;
+      var at = blank ? 1 : head.length + 1;
+      sh.getRange(1, at).setValue(h);
+      if (blank) { head = [h]; blank = false; } else head.push(h);
+    });
+  });
+}
+
+function aiSheetInfo_(ss, name, headers) {
+  var sh = ss.getSheetByName(name);
+  if (!sh) return null;
+  var width = Math.max(sh.getLastColumn(), 1);
+  var head = sh.getRange(1, 1, 1, width).getValues()[0].map(function (h) { return String(h).trim(); });
+  var col = {};
+  headers.forEach(function (h) { var i = head.indexOf(h); if (i >= 0) col[h] = i + 1; });
+  return { sh: sh, col: col, width: width };
+}
+
+function aiCell_(v, tz) {
+  if (v === null || v === undefined) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v.getTime()) ? '' : nowStampFrom_(v, tz);
+  return String(v);
+}
+function nowStampFrom_(d, tz) { return ymd_(d, tz) + ' ' + Utilities.formatDate(d, tz, 'HH:mm'); }
+
+function readAiRows_(ss, name, headers) {
+  var info = aiSheetInfo_(ss, name, headers);
+  if (!info || info.sh.getLastRow() < 2) return { info: info, rows: [] };
+  var tz = ss.getSpreadsheetTimeZone();
+  var vals = info.sh.getRange(2, 1, info.sh.getLastRow() - 1, info.width).getValues();
+  var rows = [];
+  vals.forEach(function (r, i) {
+    var o = { row: i + 2 }, any = false;
+    headers.forEach(function (h) { var c = info.col[h]; var v = c ? aiCell_(r[c - 1], tz) : ''; o[h] = v; if (v.trim()) any = true; });
+    if (any) rows.push(o);
+  });
+  return { info: info, rows: rows };
+}
+
+/** [AI기록] 읽기 → { items:[{row,at,who,action,id,col,before,after,why,reverted,revertedAt}], maxRow } (맨 아래가 가장 새것) */
+function readAiLog_(ss) {
+  var got = readAiRows_(ss, KIT.AI_LOG_SHEET, AI_LOG_HEADERS), maxRow = 0;
+  var items = got.rows.map(function (o) {
+    maxRow = Math.max(maxRow, o.row);
+    return { row: o.row, at: o['시각'].trim(), who: o['주체'].trim(), action: o['작업'].trim(), id: o['줄ID'].trim(), col: o['열'].trim(),
+      before: o['전'], after: o['후'], why: o['근거'].trim(), reverted: o['되돌림'].trim() !== '', revertedAt: o['되돌림'].trim() };
+  });
+  return { items: items, maxRow: maxRow };
+}
+
+/** [AI제안] 읽기 → { items:[{row,at,who,kind,target,content,why,state,doneAt}], maxRow } */
+function readAiProposals_(ss) {
+  var got = readAiRows_(ss, KIT.AI_PROPOSAL_SHEET, AI_PROPOSAL_HEADERS), maxRow = 0;
+  var items = got.rows.map(function (o) {
+    maxRow = Math.max(maxRow, o.row);
+    var st = o['상태'].trim();
+    return { row: o.row, at: o['시각'].trim(), who: o['주체'].trim(), kind: o['종류'].trim(), target: o['대상ID'].trim(), content: o['제안 내용'], why: o['근거·출처'].trim(),
+      state: AI_STATES.indexOf(st) >= 0 ? st : '대기', doneAt: o['처리시각'].trim() };
+  });
+  return { items: items, maxRow: maxRow };
+}
+
+/**
+ * 화면용 AI 묶음. 되돌리지 않은 변경(AI가 바꾼 것)과 대기 중인 제안. 긴 글은 화면 데이터가 커지지 않게 잘라 싣는다.
+ * titles = { 줄ID: 할 일 제목 }
+ */
+function buildAiView_(ss, titles) {
+  titles = titles || {};
+  var cut = function (s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n) + '…' : s; };
+  var log = readAiLog_(ss), props = readAiProposals_(ss);
+  var active = log.items.filter(function (x) { return !x.reverted && x.id; });
+  var lines = {}; active.forEach(function (x) { lines[x.id] = 1; });
+  var changes = active.slice(-AI_VIEW_CAP).reverse().map(function (x) {
+    return { row: x.row, at: x.at, who: x.who, action: x.action, id: x.id, title: titles[x.id] || '', col: x.col, before: cut(x.before, 120), after: cut(x.after, 120), why: cut(x.why, 160) };
+  });
+  var pending = props.items.filter(function (x) { return x.state === '대기'; });
+  var proposals = pending.slice(-AI_VIEW_CAP).reverse().map(function (x) {
+    return { row: x.row, at: x.at, who: x.who, kind: x.kind, target: x.target, targetTitle: titles[x.target] || '', content: cut(x.content, 3000), why: cut(x.why, 300), apply: aiApplicable_(x.kind) };
+  });
+  return {
+    rulesVersion: KIT.AI_RULES_VERSION,
+    changes: changes, changeLines: Object.keys(lines).length, changeKey: log.maxRow ? 'aichg:' + log.maxRow : '',
+    proposals: proposals, proposalN: pending.length, proposalKey: props.maxRow ? 'aiprop:' + props.maxRow : ''
+  };
+}
+
+function aiApplicable_(kind) { return AI_KINDS.indexOf(kind) >= 0; }
+
+/** [AI기록]에 한 줄 추가 (앱이 제안을 적용한 것도 같은 기록으로 남긴다) */
+function appendAiLog_(ss, rec) {
+  var info = aiSheetInfo_(ss, KIT.AI_LOG_SHEET, AI_LOG_HEADERS);
+  if (!info) { ensureAiSheets_(ss); info = aiSheetInfo_(ss, KIT.AI_LOG_SHEET, AI_LOG_HEADERS); }
+  var row = info.sh.getLastRow() + 1, tz = ss.getSpreadsheetTimeZone();
+  var put = { '시각': nowStamp_(tz), '주체': rec.who || 'AI', '작업': rec.action, '줄ID': rec.id, '열': rec.col || '', '전': rec.before === undefined ? '' : rec.before, '후': rec.after === undefined ? '' : rec.after, '근거': rec.why || '', '되돌림': '' };
+  AI_LOG_HEADERS.forEach(function (h) { if (info.col[h]) info.sh.getRange(row, info.col[h]).setValue(put[h]); });
+  return row;
+}
+
+function aiRowFor_(ss, name, headers, row, stamp) {
+  var info = aiSheetInfo_(ss, name, headers);
+  if (!info || !info.col['시각']) throw new Error('AI 탭을 찾지 못했어요. 앱을 새로 열어 주세요.');
+  row = Math.round(Number(row) || 0);
+  if (row < 2 || row > info.sh.getLastRow()) throw new Error('목록이 바뀌었어요. 새로 불러올게요.');
+  var cur = aiCell_(info.sh.getRange(row, info.col['시각']).getValue(), ss.getSpreadsheetTimeZone()).trim();
+  if (stamp !== undefined && stamp !== null && String(stamp).trim() !== cur) throw new Error('목록이 바뀌었어요. 새로 불러올게요.');
+  return info;
+}
+
+function colKeyByHeader_(header) {
+  var h = String(header || '').trim(), hit = null;
+  COLUMNS.forEach(function (c) { if (!hit && (c.header === h || (c.aliases || []).indexOf(h) >= 0)) hit = c; });
+  return hit;
+}
+
+function sameCellValue_(cur, want, def, tz) {
+  var a = cur === null || cur === undefined ? '' : cur, b = want === null || want === undefined ? '' : want;
+  if (def && def.type === 'date') return ymd_(a, tz) === ymd_(b, tz);
+  if (def && def.type === 'number') { var x = String(a).trim(), y = String(b).trim(); return x === y || (x !== '' && y !== '' && Number(x) === Number(y)); }
+  return String(a).trim() === String(b).trim();
+}
+
+/**
+ * AI가 바꾼 것 되돌리기. row = [AI기록]의 줄 번호, stamp = 그 줄의 시각(화면이 본 것과 같은지 확인).
+ * - 수정: 지금 값이 '후'와 같을 때만 '전' 값으로 복구. 다르면 덮지 않고 알린다.
+ * - 추가: 새로 들어온 줄은 지우지 않고 상태=버림. 이미 완료한 줄은 건드리지 않는다.
+ * 되돌리면 [AI기록] '되돌림' 칸에 시각을 적는다(그 칸만 쓴다).
+ */
+function revertAiChange(row, stamp) {
+  return withLock_(function () {
+    var ctx = taskContext_(), ss = ctx.ss, tz = ctx.tz;
+    var info = aiRowFor_(ss, KIT.AI_LOG_SHEET, AI_LOG_HEADERS, row, stamp);
+    var g = function (h) { var v = info.col[h] ? info.sh.getRange(row, info.col[h]).getValue() : ''; return aiCell_(v, tz); };
+    if (!info.col['되돌림']) throw new Error('[AI기록]에 "되돌림" 열이 없어요.');
+    if (g('되돌림').trim()) return { ok: false, reason: '이미 되돌렸어요.' };
+    var id = g('줄ID').trim(), action = g('작업').trim(), r = findRowById_(ctx, id);
+    if (!id || !r) return { ok: false, reason: '그 할 일 줄을 찾지 못했어요.' };
+    var done = function (note) { info.sh.getRange(row, info.col['되돌림']).setValue(nowStamp_(tz) + (note ? ' ' + note : '')); return { ok: true, note: note || '' }; };
+    if (action === '추가') {
+      var st = normalizeStatus_(ctx.sheet.getRange(r, ctx.map.status).getValue());
+      if (st === STATUS.DROPPED) return done('이미 버려져 있음');
+      if (st === STATUS.DONE) return { ok: false, reason: '이미 끝낸 일이라 되돌리지 않았어요.' };
+      ctx.sheet.getRange(r, ctx.map.status).setValue(STATUS.DROPPED);
+      return done('버림 처리');
+    }
+    if (action === '수정') {
+      var def = colKeyByHeader_(g('열'));
+      if (!def || def.key === 'id' || !ctx.map[def.key]) return { ok: false, reason: '이 열은 앱에서 되돌릴 수 없어요: ' + g('열') };
+      var cell = ctx.sheet.getRange(r, ctx.map[def.key]), curV = cell.getValue();
+      if (!sameCellValue_(curV, g('후'), def, tz)) return { ok: false, conflict: true, reason: '그 사이 값이 바뀌었어요. 덮어쓰지 않았어요.' };
+      var before = info.col['전'] ? info.sh.getRange(row, info.col['전']).getValue() : '';
+      if (def.type === 'number' && String(before).trim() !== '' && !isNaN(Number(before))) before = Number(before);
+      cell.setValue(before === null || before === undefined ? '' : before);
+      return done('');
+    }
+    return { ok: false, reason: '알 수 없는 작업이에요: ' + action };
+  });
+}
+
+function newAiTaskId_(ctx) {
+  var d = new Date(), base = todayYmd_(ctx.tz).replace(/-/g, '') + Utilities.formatDate(d, ctx.tz, 'HH:mm').replace(':', '') + ('0' + d.getUTCSeconds()).slice(-2);
+  for (var n = 1; n < 1000; n++) { var id = 'AI-' + base + '-' + n; if (!findRowById_(ctx, id)) return id; }
+  return 'AI-' + base + '-' + Date.now();
+}
+
+function aiSourceTag_(who) { who = String(who || '').trim(); return /^AI/.test(who) ? who : 'AI:' + (who || 'AI'); }
+
+/** '제목 | 주소' · '주소' · '[제목](주소)' 줄들 → [{title,url}] (http·https만) */
+function parseLinkLines_(text) {
+  var out = [];
+  String(text || '').split(/\r?\n/).forEach(function (ln) {
+    ln = ln.trim().replace(/^[-*+]\s+/, '');
+    if (!ln) return;
+    var m = ln.match(/^\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/) || ln.match(/^(.*?)\s*\|\s*(https?:\/\/\S+)$/) || ln.match(/^()(https?:\/\/\S+)$/);
+    if (m) out.push({ title: (m[1] || '').trim() || m[2], url: m[2] });
+  });
+  return out;
+}
+
+/** 상세 글의 '## 출처' 구역 끝에 링크 줄을 더한다 (없으면 글 끝에 구역을 만든다) */
+function addSourceLinks_(detail, links) {
+  var lines = links.map(function (l) { return '- [' + String(l.title).replace(/[\[\]]/g, '') + '](' + l.url + ')'; });
+  detail = String(detail || '');
+  if (!detail.trim()) return '## 출처\n' + lines.join('\n');
+  var arr = detail.replace(/\r\n?/g, '\n').split('\n'), at = -1, end = arr.length;
+  for (var i = 0; i < arr.length; i++) if (/^##\s+출처\s*$/.test(arr[i])) { at = i; break; }
+  if (at < 0) return detail.replace(/\s+$/, '') + '\n\n## 출처\n' + lines.join('\n');
+  for (var j = at + 1; j < arr.length; j++) if (/^##\s+/.test(arr[j])) { end = j; break; }
+  while (end > at + 1 && !arr[end - 1].trim()) end--;
+  return arr.slice(0, end).concat(lines, arr.slice(end)).join('\n');
+}
+
+/**
+ * AI 제안 적용. 종류별로 한다:
+ *  - 할일: [업무] 맨 아래에 새 줄(ID=AI-…, 출처=AI:…, 분류일 빈칸 → 분류 대기). 제안 내용 첫 줄=제목, 나머지=상세 마크다운. 대상ID=프로젝트ID(선택)
+ *  - 자료후보: 대상ID의 상세 '## 출처'에 링크 추가
+ *  - 독촉초안: 시트는 바꾸지 않는다(화면이 글을 복사). 적용으로만 표시
+ *  - 프로젝트: [프로젝트] 줄(이름·완료 모습)과 '- 할 일' 줄마다 [업무] 새 줄. 프로젝트에 '다음'이 없으면 첫 줄에 ★다음. (체크로 고르는 화면은 3단계)
+ * 적용한 시트 변경은 [AI기록]에도 한 줄 남겨 되돌릴 수 있게 한다.
+ */
+function applyAiProposal(row, stamp) {
+  return withLock_(function () {
+    var ctx = taskContext_(), ss = ctx.ss, tz = ctx.tz;
+    var info = aiRowFor_(ss, KIT.AI_PROPOSAL_SHEET, AI_PROPOSAL_HEADERS, row, stamp);
+    if (!info.col['상태']) throw new Error('[AI제안]에 "상태" 열이 없어요.');
+    var g = function (h) { var v = info.col[h] ? info.sh.getRange(row, info.col[h]).getValue() : ''; return aiCell_(v, tz); };
+    var state = g('상태').trim() || '대기';
+    if (state !== '대기') return { ok: false, reason: '이미 ' + state + '한 제안이에요.' };
+    var kind = g('종류').trim(), who = g('주체').trim() || 'AI', target = g('대상ID').trim(), content = g('제안 내용'), why = g('근거·출처').trim();
+    var result = { ok: true, kind: kind };
+    if (kind === '할일') {
+      var lines = content.replace(/\r\n?/g, '\n').split('\n'), k = 0;
+      while (k < lines.length && !lines[k].trim()) k++;
+      var title = (lines[k] || '').replace(/^#+\s*/, '').replace(/^제목\s*[:：]\s*/, '').trim();
+      if (!title) return { ok: false, reason: '제안에 제목이 없어요.' };
+      var detail = lines.slice(k + 1).join('\n').trim();
+      if (detail && !/^##\s/.test(detail)) detail = '## 메모\n' + detail;
+      if (detail.length > 40000) return { ok: false, reason: '상세 글이 너무 길어요(4만 자까지).' };
+      var task = { title: title, status: STATUS.NEXT, focus: todayYmd_(tz), created: todayYmd_(tz), source: aiSourceTag_(who), detail: detail, id: newAiTaskId_(ctx) };
+      var pr = target && /^P-/.test(target) ? readProjectRows_(ss).filter(function (p) { return !p.dropped && p.id === target; })[0] : null;
+      if (pr) { task.project = pr.name; task.projectId = pr.id; }
+      appendTasks_(ctx, [task]);
+      appendAiLog_(ss, { who: who, action: '추가', id: task.id, why: '제안 적용' + (why ? ': ' + why : '') });
+      result.id = task.id;
+    } else if (kind === '자료후보') {
+      var r = findRowById_(ctx, target);
+      if (!r || !ctx.map.detail) return { ok: false, reason: '대상 할 일을 찾지 못했어요.' };
+      var links = parseLinkLines_(content);
+      if (!links.length) return { ok: false, reason: '붙일 링크가 없어요(http·https 주소만).' };
+      var cell = ctx.sheet.getRange(r, ctx.map.detail), old = cell.getValue();
+      old = old === null || old === undefined ? '' : String(old);
+      var next = addSourceLinks_(old, links);
+      if (next.length > 40000) return { ok: false, reason: '상세 글이 너무 길어요(4만 자까지).' };
+      if (/^[=+\-@]/.test(next)) next = ' ' + next;
+      cell.setValue(next);
+      appendAiLog_(ss, { who: who, action: '수정', id: target, col: '상세', before: old, after: next, why: '자료 후보 붙임' + (why ? ': ' + why : '') });
+      result.id = target; result.added = links.length;
+    } else if (kind === '독촉초안') {
+      result.text = content;
+    } else if (kind === '프로젝트') {
+      var pl = content.replace(/\r\n?/g, '\n').split('\n').map(function (x) { return x.trim(); });
+      var pname = (pl[0] || '').replace(/^#+\s*/, '').replace(/^(프로젝트|이름)\s*[:：]\s*/, '').trim();
+      if (!pname) return { ok: false, reason: '제안에 프로젝트 이름이 없어요.' };
+      var goal = '', from = 1;
+      if (pl[1] !== undefined && pl[1] && !/^[-*+]\s+/.test(pl[1])) { goal = pl[1].replace(/^(완료 모습|목표)\s*[:：]\s*/, '').trim(); from = 2; }
+      var titles = pl.slice(from).filter(function (x) { return /^[-*+]\s+/.test(x); }).map(function (x) { return x.replace(/^[-*+]\s+(\[[ xX]\]\s*)?/, '').trim(); }).filter(String).slice(0, 30);
+      if (!titles.length) return { ok: false, reason: '제안에 할 일 줄("- 할 일")이 없어요.' };
+      var prj = ensureProjectRow_(ss, pname, goal), hasNext = readAllTasks_(ctx).some(function (x) { return x.nextMark && x.pid === prj.id; }), ids = [];
+      titles.forEach(function (tt, i) {
+        var nt = { title: tt, status: STATUS.NEXT, created: todayYmd_(tz), source: aiSourceTag_(who), project: prj.name, projectId: prj.id, id: newAiTaskId_(ctx) };
+        if (i === 0 && !hasNext && ctx.map.nextMark) nt.nextMark = '★';
+        appendTasks_(ctx, [nt]); ids.push(nt.id);
+        appendAiLog_(ss, { who: who, action: '추가', id: nt.id, why: '프로젝트 제안 적용: ' + pname });
+      });
+      result.id = ids[0]; result.added = ids.length; result.projectId = prj.id;
+    } else {
+      return { ok: false, reason: '알 수 없는 제안 종류예요: ' + kind };
+    }
+    info.sh.getRange(row, info.col['상태']).setValue('적용');
+    if (info.col['처리시각']) info.sh.getRange(row, info.col['처리시각']).setValue(nowStamp_(tz));
+    return result;
+  });
+}
+
+/** AI 제안 거절: 상태 칸·처리시각 칸만 고친다 */
+function rejectAiProposal(row, stamp) {
+  return withLock_(function () {
+    var ctx = taskContext_(), tz = ctx.tz;
+    var info = aiRowFor_(ctx.ss, KIT.AI_PROPOSAL_SHEET, AI_PROPOSAL_HEADERS, row, stamp);
+    if (!info.col['상태']) throw new Error('[AI제안]에 "상태" 열이 없어요.');
+    var state = aiCell_(info.sh.getRange(row, info.col['상태']).getValue(), tz).trim() || '대기';
+    if (state !== '대기') return { ok: false, reason: '이미 ' + state + '한 제안이에요.' };
+    info.sh.getRange(row, info.col['상태']).setValue('거절');
+    if (info.col['처리시각']) info.sh.getRange(row, info.col['처리시각']).setValue(nowStamp_(tz));
+    return { ok: true };
+  });
 }
 
 /* ── 40_Dashboard.gs ── */
@@ -2692,6 +3022,10 @@ function webTaskDetail(k, id) { checkKey_(k); appContext_(); return getTaskDetai
 function webSaveDetail(k, id, text, base) { checkKey_(k); appContext_(); var r = saveDetail(id, text, base); return withView_(r); }
 function webSetNext(k, id, clear) { checkKey_(k); appContext_(); var r = setNextAction(id, clear === true); return withView_(r); }
 function webSetProjectInfo(k, ref, patch) { checkKey_(k); appContext_(); var r = setProjectInfo(ref, patch); return withView_(r); }
+// v1.9: AI가 바꾼 것 되돌리기 · AI 제안 적용·거절 (row = [AI기록]/[AI제안] 줄 번호, stamp = 그 줄의 시각)
+function webRevertAi(k, row, stamp) { checkKey_(k); appContext_(); var r = revertAiChange(row, stamp); return withView_(r); }
+function webApplyAi(k, row, stamp) { checkKey_(k); appContext_(); var r = applyAiProposal(row, stamp); return withView_(r); }
+function webRejectAi(k, row, stamp) { checkKey_(k); appContext_(); var r = rejectAiProposal(row, stamp); return withView_(r); }
 /** 알림함 '모두 확인함': 지금 알림 목록(keys)과 시각을 [_설정]에 적는다 (앱 코드가 직접 쓰는 값 — 에이전트는 읽지도 쓰지도 않는다) */
 function webInboxSeen(k, keys) {
   checkKey_(k);
@@ -2718,7 +3052,7 @@ function doPost(e) {
     getCalendar: webCalendar, addRoutine: webAddRoutine, reviewDone: webReviewDone,
     updateTask: webUpdate, planDay: webPlanDay, undoTask: webUndo, notify: webNotify,
     addAction: webAddAction, setProject: webSetProject, mergeProject: webMergeProject, focusMany: webFocusMany,
-    getTaskDetail: webTaskDetail, saveDetail: webSaveDetail, setNext: webSetNext, setProjectInfo: webSetProjectInfo, inboxSeen: webInboxSeen,
+    getTaskDetail: webTaskDetail, saveDetail: webSaveDetail, setNext: webSetNext, setProjectInfo: webSetProjectInfo, inboxSeen: webInboxSeen, revertAi: webRevertAi, applyAi: webApplyAi, rejectAi: webRejectAi,
     getCalendars: webCalendars, setCalendars: webSetCalendars, timebox: webTimebox,
     placeTask: webPlaceTask, unplaceTask: webUnplaceTask, reopenTask: webReopen, setWriteCalendar: webSetWriteCalendar, moveEvent: webMoveEvent
   };
@@ -3041,6 +3375,8 @@ function buildAppView_(ctx, today) {
   view.pageUrl = KIT.WEB_PAGE_URL ? KIT.WEB_PAGE_URL.replace(/\/?$/, '/') : '';
   view.projects = withOutcomes_(ctx.ss, view.projects, rows);
   view.adoptedOn = ymd_(st0['분류도입일'], ctx.tz);
+  var titles = {}; all.forEach(function (t) { if (t.id) titles[t.id] = t.title; });
+  view.ai = buildAiView_(ctx.ss, titles);
   view.alertSeen = { at: String(st0['알림확인시각'] || ''), keys: String(st0['알림확인목록'] || '').split('\n').filter(String) };
   view.week = calendarRange_(ctx, weekStartYmd_(today), 7, all);
   view.events = { ok: view.week.events.ok, reason: view.week.events.reason,
@@ -3286,7 +3622,7 @@ function installFromEditor() {
   var WEB = { getAppData: 'webData', getInbox: 'webInbox', addTasks: 'webAdd', clarifyTask: 'webClarify', completeTask: 'webComplete', postponeFollowUp: 'webPostpone', skipTask: 'webSkip',
     getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', getAll: 'webAll',
     getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen', setWriteCalendar: 'webSetWriteCalendar',
-    getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen' };
+    getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen', revertAi: 'webRevertAi', applyAi: 'webApplyAi', rejectAi: 'webRejectAi' };
   var queue = Promise.resolve(); // 시트 쓰기는 한 번에 하나씩
   function serial(job) { var p = queue.then(job, job); queue = p.catch(function () {}); return p; }
   function clone(x) { return x === undefined ? null : JSON.parse(JSON.stringify(x)); }
