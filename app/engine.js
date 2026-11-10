@@ -493,7 +493,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.11.0',       // 코드 버전 (화면 표시용)
+  VERSION: '1.12.0',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 8,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다)
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -1175,7 +1175,8 @@ function addTasks(text, opts) {
   return withLock_(function () {
     var ctx = taskContext_();
     var today = todayYmd_(ctx.tz);
-    var parsed = lines.map(function (line) { return parseCapture_(line, today); });
+    var names = readProjectRows_(ctx.ss).filter(function (r) { return !r.dropped && r.state !== '끝남' && r.state !== '보류'; }).map(function (r) { return r.name; });
+    var parsed = lines.map(function (line) { return parseCapture_(line, today, names); });
     appendTasks_(ctx, parsed.map(function (p) {
       // 담은 일은 곧 오늘 할 일(★). 날짜를 적었으면 그날의 일정으로 (따로 '정리하기' 단계 없음)
       var later = p.due && p.due > today;
@@ -1195,7 +1196,7 @@ function addTasks(text, opts) {
  *   @전화 → 상황 · #워크숍 → 프로젝트 · ! → 중요 · 30분 / 1시간 / 1시간 30분 → 예상 시간
  * 아무것도 못 알아들으면 제목만 그대로. 다 빼고 제목이 비면 원래 글을 제목으로 둔다.
  */
-function parseCapture_(text, today) {
+function parseCapture_(text, today, names) {
   var src = String(text || '').trim(), t = ' ' + src + ' ', out = {};
   var take = function (re, fn) {
     var m = t.match(re); if (!m) return false;
@@ -1207,7 +1208,12 @@ function parseCapture_(text, today) {
   var valid = function (y, m, d) { var x = new Date(Date.UTC(y, m - 1, d)); return x.getUTCMonth() === m - 1 && x.getUTCDate() === d ? x.toISOString().slice(0, 10) : null; };
   var DOW = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
   take(/\s@([^\s@.,]+)(?=\s)/, function (m) { out.context = '@' + m[1]; return 1; });
-  take(/\s#([^\s#\d][^\s#]*)(?=\s)/, function (m) { out.project = m[1]; return 1; });
+  // 이미 있는 프로젝트 이름이면 띄어쓰기·숫자로 시작해도 알아듣는다(긴 이름부터). 없는 이름은 아래 일반 규칙만.
+  var known = (names || []).map(function (n) { return String(n || '').trim(); }).filter(String).sort(function (a, b) { return b.length - a.length; });
+  for (var ni = 0; ni < known.length; ni++) {
+    if (t.indexOf(' #' + known[ni] + ' ') >= 0) { out.project = known[ni]; t = t.replace(' #' + known[ni] + ' ', '  '); break; }
+  }
+  if (!out.project) take(/\s#([^\s#\d][^\s#]*)(?=\s)/, function (m) { out.project = m[1]; return 1; });
   take(/\s!{1,3}(?=\s)/, function () { out.priority = '높음'; return 1; });
   take(/\s(\d+(?:\.\d+)?)\s?(시간|분)(?:\s?(\d+)\s?분)?(?=\s)/, function (m) {
     var n = m[2] === '시간' ? Number(m[1]) * 60 + Number(m[3] || 0) : Number(m[1]);
@@ -1478,6 +1484,7 @@ function planDay(ids) {
  */
 function undoTask(u) {
   u = u || {};
+  if (u.nudge) return restoreNudge_(u.nudge);
   if (!u.id || STATUS_LIST.indexOf(u.status) === -1) throw new Error('되돌릴 정보가 없어요.');
   return withLock_(function () {
     var ctx = taskContext_();
@@ -1496,6 +1503,21 @@ function undoTask(u) {
       }
     }
     return { ok: true };
+  });
+}
+
+/** '독촉 글 복사' 되돌리기: 아직 맡긴 일인 줄의 확인일·확인 횟수 두 칸만 원래 값으로 */
+function restoreNudge_(list) {
+  return withLock_(function () {
+    var ctx = taskContext_(), n = 0;
+    var by = {}; (list || []).forEach(function (x) { by[String(x.id)] = x; });
+    readAllTasks_(ctx).forEach(function (t) {
+      var x = by[t.id]; if (!x || t.status !== STATUS.DELEGATED) return;
+      if (ctx.map.followUp) ctx.sheet.getRange(t.row, ctx.map.followUp).setValue(x.followUp ? ymd_(x.followUp) : '');
+      if (ctx.map.checks) ctx.sheet.getRange(t.row, ctx.map.checks).setValue(Number(x.checks) > 0 ? Number(x.checks) : '');
+      n++;
+    });
+    return { ok: true, count: n };
   });
 }
 
@@ -1653,14 +1675,15 @@ function markNudged(ids, days) {
   return withLock_(function () {
     var ctx = taskContext_();
     if (!ctx.map.followUp) throw new Error('먼저 업데이트를 적용해 주세요.');
-    var d = addDaysYmd_(todayYmd_(ctx.tz), Math.min(30, Math.max(1, Math.round(Number(days)) || 3))), n = 0;
+    var d = addDaysYmd_(todayYmd_(ctx.tz), Math.min(30, Math.max(1, Math.round(Number(days)) || 3))), n = 0, before = [];
     readAllTasks_(ctx).forEach(function (t) {
       if (ids.indexOf(t.id) < 0 || t.status !== STATUS.DELEGATED) return;
+      before.push({ id: t.id, followUp: t.followUp || '', checks: t.checks || 0 });
       ctx.sheet.getRange(t.row, ctx.map.followUp).setValue(d);
       applyTrack_(ctx, t.row, { check: true });
       n++;
     });
-    return { ok: true, count: n, followUp: d };
+    return { ok: true, count: n, followUp: d, undo: before.length ? { id: before[0].id, nudge: before } : undefined };
   });
 }
 
@@ -3662,6 +3685,7 @@ function buildTodayView_(tasks, today, ext) {
     if (t.nextMark) o.nextMark = true;
     if (t.energy) o.energy = t.energy;
     if (t.checks) o.checks = t.checks;
+    if (t.status === STATUS.DELEGATED && !t.delegatedOn && t.created) o.created = t.created; // 독촉 글의 '맡긴 지 N일' 계산용
     if (pendingIds[t.id]) o.pending = true;
     return o;
   };
