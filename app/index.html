@@ -25,7 +25,7 @@
   #kitGate.kg-bar .kg-btn { width: auto; min-height: 44px; padding: 0 14px; font-size: 15px; margin-left: auto; }
   #kitGate.kg-bar .kg-msg { width: 100%; min-height: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=ae4fa36137"></script><script src="auth.js?v=ae4fa36137"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=b6fccadf01"></script><script src="auth.js?v=b6fccadf01"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -649,6 +649,67 @@
   html[data-theme="dark"] .big.pri { background: #6C6DFF; }
   html[data-theme="dark"] .wd.today .dn, html[data-theme="dark"] .mc.today .dn { background: #6C6DFF; }
   html[data-theme="dark"] .tile.green { color: #A2A3FF; }
+  /* ── v1.8: 분류 대기 · 확인할 것 · 다음 칩 · 상세 · 알림함 ── */
+  .sec2 { display: flex; align-items: center; gap: 8px; margin: 18px 2px 8px; font-size: 17px; font-weight: 800; letter-spacing: -.02em; color: var(--t1); }
+  .sec2 em { font-style: normal; font-size: 13px; font-weight: 700; color: var(--t3); }
+  .sec2 .sp { flex: 1; } .hint2 { font-size: 13px; font-weight: 600; color: var(--t3); }
+  .ckcard .ckl { border-left: 3px solid var(--amber); }
+  .pend .swr + .swr { border-top: 1px solid var(--line); }
+  .pcls { position: relative; z-index: 1; background: var(--card); display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px 58px; }
+  .pcls button { min-height: 40px; padding: 0 13px; border: 0; border-radius: 12px; background: var(--fill); color: var(--t2); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .pcls button.go { background: var(--gt); color: var(--g); }
+  .pcls button:hover { filter: brightness(.96); }
+  .srcchip { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; background: var(--fill); color: var(--t2); font-size: 12px; font-weight: 700; vertical-align: 2px; }
+  .srcchip.ai { background: #EFE6FF; color: #6B4FBB; }
+  .nxt { display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 8px; border-radius: 11px; background: #FFF1D6; color: #A25F00; font-size: 12px; font-weight: 800; vertical-align: middle; }
+  html[data-theme="dark"] .nxt { background: #4A3410; color: #FFC864; }
+  .bulkbar { display: flex; gap: 8px; margin-bottom: 10px; }
+  .actrow2 { display: flex; gap: 8px; margin-top: 16px; }
+  .swq { padding: 6px 0; font-size: 15.5px; font-weight: 600; color: var(--t1); }
+  .sheet .shx { position: absolute; top: 10px; right: 12px; z-index: 2; width: 40px; height: 40px; border: 0; border-radius: 20px; background: var(--fill); color: var(--t2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .sheet .st { padding-right: 44px; }
+  .sheet .dtl { display: block; }
+  .sheet .dtlmain { min-width: 0; }
+  .dtltabs { display: flex; gap: 6px; margin: 0 0 10px; }
+  .dtltabs button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--fill); color: var(--t2); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .dtltabs button.on { background: var(--gt); color: var(--g); }
+  .md { font-size: 15.5px; line-height: 1.65; color: var(--t1); overflow-wrap: anywhere; }
+  .md h2, .md h3, .md h4, .md h5 { margin: 16px 0 6px; font-size: 16.5px; letter-spacing: -.01em; }
+  .md h2 { font-size: 18px; } .md p { margin: 6px 0; } .md ul, .md ol { margin: 6px 0; padding-left: 22px; }
+  .md ul.mdck { list-style: none; padding-left: 2px; } .md ul.mdck label { display: flex; align-items: flex-start; gap: 10px; min-height: 36px; padding: 4px 0; cursor: pointer; }
+  .md ul.mdck input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--g); flex: none; }
+  .md code { padding: 1px 6px; border-radius: 6px; background: var(--fill); font-size: .92em; } .md pre { padding: 12px; border-radius: 12px; background: var(--fill); overflow: auto; }
+  .md blockquote { margin: 8px 0; padding: 2px 12px; border-left: 3px solid var(--line); color: var(--t2); } .md a, .mdlinks a { color: var(--g); font-weight: 600; text-decoration: underline; }
+  .dtlta { width: 100%; min-height: 280px; resize: vertical; font-size: 14.5px; line-height: 1.6; font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+  .dtlbar { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .dtlempty { padding: 26px 8px; text-align: center; color: var(--t3); font-size: 14.5px; line-height: 1.6; } .dtlempty .pillbtn { margin-top: 10px; }
+  .dtlmemo { margin-top: 14px; } .mdmemo { white-space: pre-wrap; font-size: 14.5px; line-height: 1.55; color: var(--t2); background: var(--fill); border-radius: 12px; padding: 10px 12px; }
+  .bell { display: none; }
+  .ibx { display: none; }
+  @keyframes bellring { 0% { box-shadow: 0 0 0 0 rgba(242,162,12,.45); } 70%, 100% { box-shadow: 0 0 0 12px rgba(242,162,12,0); } }
+  @keyframes ibin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .ibi.new .t::after { content: ''; display: block; height: 2px; margin-top: 2px; background: var(--amber); transform-origin: left; animation: ibline .6s .2s both; } @keyframes ibline { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  html.calm .bell.pulse, html.calm .ibi, html.calm .ibi.new .t::after { animation: none !important; }
+  @media (prefers-reduced-motion: reduce) { .bell.pulse, .ibi, .ibi.new .t::after { animation: none !important; } }
+  @media (min-width: 1024px) {
+    .sheet.wide { width: min(1000px, 94vw); max-height: 90vh; overflow: auto; }
+    .sheet.wide .dtl { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(250px, 1fr); gap: 22px; margin-top: 10px; }
+    .sheet.wide .dtlside { border-left: 1px solid var(--line); padding-left: 18px; max-height: 70vh; overflow: auto; }
+    .sheet.wide .dtlmain { max-height: 70vh; overflow: auto; padding-right: 4px; }
+    .bell { position: fixed; top: 16px; right: 24px; z-index: 30; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 0; border-radius: 22px; background: var(--card); color: var(--t2); box-shadow: 0 2px 10px rgba(0,0,0,.08); cursor: pointer; }
+    .bell.has { color: #A25F00; background: #FFF6E3; } html[data-theme="dark"] .bell.has { background: #3A2B0E; color: #FFC864; }
+    .bell.pulse { animation: bellring 2.8s infinite; }
+    .bell .bn { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--amber); color: #fff; font-size: 12px; font-weight: 800; line-height: 20px; text-align: center; }
+    .ibx { position: fixed; top: 66px; right: 24px; z-index: 31; width: 380px; max-height: 70vh; overflow: auto; padding: 8px; border-radius: 20px; background: var(--card); box-shadow: 0 18px 50px rgba(0,0,0,.22); transform-origin: top right; animation: ibin .22s var(--spring) both; }
+    .ibx:not([hidden]) { display: block; }
+    .ibh { display: flex; align-items: center; gap: 8px; padding: 8px 10px 6px; font-size: 16px; } .ibh .sp { flex: 1; } .ibh .lnk { font-size: 14px; font-weight: 700; color: var(--g); background: none; border: 0; cursor: pointer; min-height: 36px; }
+    .ibc { width: 36px; height: 36px; border: 0; border-radius: 18px; background: var(--fill); color: var(--t2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .ibi { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 0; border-radius: 14px; background: transparent; text-align: left; font: inherit; color: var(--t1); cursor: pointer; animation: ibin .3s calc(var(--i) * 60ms) both; }
+    .ibi:hover { background: var(--fill); } .ibi .tx { display: flex; flex-direction: column; min-width: 0; } .ibi .t { font-size: 15px; font-weight: 700; } .ibi .m { font-size: 13px; color: var(--t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ibi.k-check .tile { background: #FFF1D6; color: #A25F00; } .ibi.k-halt .tile { background: #FDE3E3; color: #C0392B; } .ibi.k-close .tile { background: #EFE6FF; color: #6B4FBB; } .ibi.k-review .tile { background: #E3F0FF; color: #1F6FD0; }
+    .ibf { padding: 8px 12px 6px; font-size: 12.5px; color: var(--t3); }
+  }
+  @media (max-width: 1023px) { #sideAi, #sideReport, #sideCommunity { display: none !important; } .pcls { padding-left: 16px; } }
 </style>
 </head>
 <body>
@@ -657,6 +718,9 @@
     <div class="brand"><span class="tile"><svg class="i" data-i="check" width="18" height="18"></svg></span><span class="lb">GTD 워크</span><button type="button" class="sidetg" id="sideTg" aria-label="사이드바 접기" title="사이드바 접기 ( [ )" aria-expanded="true"><svg class="i" data-i="panel" width="20" height="20"></svg></button></div>
     <button class="nv on" data-go="today" title="오늘"><svg class="i" data-i="home" width="20" height="20"></svg><span class="lb">오늘</span><span class="sp"></span><span class="cnt" id="sNow" style="display:none"></span></button>
     <button class="nv" data-go="inbox" title="수집함" hidden><svg class="i" data-i="inbox" width="20" height="20"></svg><span class="lb">수집함</span><span class="sp"></span><span class="cnt" id="sInbox" style="display:none;background:var(--amber);color:#fff"></span></button>
+    <button class="nv" data-nav="waiting" title="맡긴 일"><svg class="i" data-i="user" width="20" height="20"></svg><span class="lb">맡긴 일</span><span class="sp"></span><span class="cnt" id="sWait" style="display:none"></span></button>
+    <button class="nv" data-nav="projects" title="프로젝트"><svg class="i" data-i="folder" width="20" height="20"></svg><span class="lb">프로젝트</span><span class="sp"></span><span class="cnt" id="sHalt" style="display:none;background:var(--red);color:#fff"></span></button>
+    <button class="nv" data-nav="weekly" title="주간 검토"><svg class="i" data-i="calcheck" width="20" height="20"></svg><span class="lb">주간 검토</span></button>
     <button class="nv" data-go="calendar" title="캘린더"><svg class="i" data-i="calendar" width="20" height="20"></svg><span class="lb">캘린더</span></button>
     <button class="nv" data-go="insight" title="인사이트"><svg class="i" data-i="chart" width="20" height="20"></svg><span class="lb">인사이트</span></button>
     <button class="nv" data-go="more" title="더보기"><svg class="i" data-i="grid" width="20" height="20"></svg><span class="lb">더보기</span></button>
@@ -715,7 +779,9 @@
 </nav>
 
 <div class="dim" id="dim"></div>
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetBody"><div class="grab"></div><div id="sheetBody"></div></div>
+<button type="button" class="bell" id="bell" aria-label="알림함" aria-expanded="false" aria-haspopup="dialog"><svg class="i" data-i="bell" width="22" height="22"></svg><span class="bn" id="bellN" style="display:none">0</span></button>
+<div class="ibx" id="ibx" role="dialog" aria-label="알림함" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetBody"><div class="grab"></div><button type="button" class="shx" id="shx" aria-label="닫기" title="닫기 (Esc)"><svg class="i" data-i="x" width="18" height="18"></svg></button><div id="sheetBody"></div></div>
 <div class="fm" id="fm">
   <div class="lb">집중 중</div>
   <div class="ttl2" id="fmTitle"></div>
@@ -738,7 +804,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = "";
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.7.6·v2" };
+  var KIT = { name: "GTD 워크", version: "1.8.2·v2" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -763,7 +829,7 @@
     chat: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z',
     bug: 'M8 2l1.88 1.88 M14.12 3.88 16 2 M9 7.13v-1a3.003 3.003 0 1 1 6 0v1 M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6 M12 20v-9 M6.53 9C4.6 8.8 3 7.1 3 5 M6 13H2 M3 21c0-2.1 1.7-3.9 3.8-4 M20.97 5c0 2.1-1.6 3.8-3.5 4 M22 13h-4 M17.2 17c2.1.1 3.8 1.9 3.8 4',
     camera: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
-    up: 'M12 19V5 M5 12l7-7 7 7',
+    up: 'M12 19V5 M5 12l7-7 7 7', x: 'M18 6 6 18 M6 6l12 12',
     bell: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0', zap: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z',
     list: 'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01', file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h8',
     sparkle: 'M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z M19 3v4 M17 5h4',
@@ -781,7 +847,7 @@
   var errLog = [];
   function logErr(where, msg) { errLog.push(new Date().toTimeString().slice(0, 8) + ' ' + where + ': ' + String(msg).slice(0, 160)); if (errLog.length > 10) errLog.shift(); }
   window.addEventListener('error', function (e) { logErr('page', e.message); });
-  function call(fn) { var p = call0.apply(null, arguments); p.catch(function (e) { logErr(fn, e && e.message); }); return p; }
+  function call(fn) { var p = call0.apply(null, arguments); p.then(function (r) { if (r && r.askNext) askNext(r.askNext); }, function (e) { logErr(fn, e && e.message); }); return p; }
   // 실패 종류: 'link' = 개인 링크가 바뀜(시트에서 새로 만듦), 'offline' = 인터넷 연결 문제, 'server' = 그 밖의 오류
   function errKind(e) {
     if (e && e.kind) return e.kind;
@@ -831,7 +897,7 @@
         .then(function (j) { if (!j.ok) throw new Error(j.error === '알 수 없는 요청입니다.' ? '이 기능은 새 버전에서 쓸 수 있어요. 시트의 코드를 업데이트해 주세요' : j.error || '알 수 없는 오류'); return j.result; });
     }
     var WEB = { getAppData: 'webData', getInbox: 'webInbox', addTasks: 'webAdd', clarifyTask: 'webClarify', completeTask: 'webComplete', postponeFollowUp: 'webPostpone', skipTask: 'webSkip',
-      getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', notify: 'webNotify', getAll: 'webAll', getWeekly: 'webWeekly', sendWeekly: 'webSendWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', getCalendars: 'webCalendars', setCalendars: 'webSetCalendars', timebox: 'webTimebox', placeTask: 'webPlaceTask', unplaceTask: 'webUnplaceTask' };
+      getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', notify: 'webNotify', getAll: 'webAll', getWeekly: 'webWeekly', sendWeekly: 'webSendWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', getCalendars: 'webCalendars', setCalendars: 'webSetCalendars', timebox: 'webTimebox', placeTask: 'webPlaceTask', unplaceTask: 'webUnplaceTask', getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen' };
     return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(ok).withFailureHandler(no); r[WEB[fn]].apply(r, [KEY].concat(args)); });
   }
   function addDays(ymd, n) { var p = ymd.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10); }
@@ -946,6 +1012,7 @@
   document.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { go(b.getAttribute('data-go')); }); });
   function go(name) {
     document.querySelectorAll('[data-go]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-go') === name); });
+    document.querySelectorAll('[data-nav]').forEach(function (b) { b.classList.remove('on'); });
     document.querySelectorAll('.page').forEach(function (p) { p.classList.toggle('on', p.id === 'p-' + name); });
     $('main').classList.toggle('narrow', name === 'inbox' || name === 'more');
     $('main').classList.toggle('mid', name === 'insight');
@@ -961,7 +1028,7 @@
   var listMore = false, timeView = (function () { try { return localStorage.getItem('kitTodayView') !== 'list'; } catch (e) { return true; } })(), wkOffset = 0, wkData = null, animNext = true, ctxFilter = '', QUICK = '__15';
   function todayList(d) {
     var seen = {}, out = [];
-    (d.focus || []).concat(d.routines || [], d.now || []).forEach(function (t) { if (!seen[t.id]) { seen[t.id] = 1; out.push(t); } });
+    (d.focus || []).concat(d.routines || [], d.now || []).forEach(function (t) { if (!seen[t.id] && !t.pending) { seen[t.id] = 1; out.push(t); } }); // 분류 대기는 따로(분류하면 여기로)
     return out;
   }
   function metaHtml(t) {
@@ -1018,8 +1085,9 @@
     var a = '', al = '', dw = dowOf(d.today);
 
     if ((d.followUp || []).length) al += '<button class="apill" data-goto="waiting">' + tile('user', 'blue', 15) + '맡긴 일 확인 <b>' + d.followUp.length + '</b></button>';
-    if (d.reviewDue && (dw >= 5 || dw === 0)) al += '<button class="apill" data-goto="weekly">' + tile('calcheck', 'green', 15) + '주간 검토</button>';
+    if (d.reviewDue) al += '<button class="apill" data-goto="weekly">' + tile('calcheck', 'green', 15) + '주간 검토</button>';
     if (al) a += '<div class="alerts">' + al + '</div>';
+    a += checkInHtml(d) + pendingHtml(d);
     a += carryHtml(d);
     var showTime = timeView && !isPC();
     // 휴대폰: 할 일 | 시간표 알약 토글(처음엔 시간표, 마지막으로 본 쪽을 기억). PC는 시간표가 오른쪽에 따로 있다
@@ -1064,6 +1132,9 @@
     $('sInbox').textContent = ibn; $('sInbox').style.display = ibn ? '' : 'none';
     $('tInbox').textContent = ibn; $('tInbox').style.display = ibn ? 'inline-flex' : 'none';
     $('sheetLink').href = d.sheetUrl || '#';
+    var wn = (d.delegated || []).length, hn = (d.projects || []).filter(function (p) { return p.halted && !p.finished; }).length;
+    $('sWait').textContent = wn; $('sWait').style.display = wn ? '' : 'none'; $('sHalt').textContent = hn; $('sHalt').style.display = hn ? '' : 'none';
+    renderBell();
     // 홈 화면 앱 아이콘에 오늘 남은 할 일 수 (지원하는 기기만)
     try { if (navigator.setAppBadge) (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(function () {}); } catch (e) {}
   }
@@ -1235,6 +1306,7 @@
     else if (day === td) { fn = 'updateTask'; patch = { due: day, focus: true }; }
     else patch = { status: STATUS.SCHEDULED, due: day, focus: '' };
     if (day > td) patch.postpone = true;
+    patch.triage = true;
     var wasPlaced = day !== td && ((data.events && data.events.items) || []).some(function (e) { return e.kit === id; });
     if (day !== td && t.status !== STATUS.DELEGATED) dropLocal(id);
     return call(fn, id, patch).then(function (r) {
@@ -1341,7 +1413,7 @@
       }).join('') : '<div class="xe" style="padding:16px 14px">자주 맡기는 사람을 추가해 두세요</div>') + '</div>';
     h += '<div class="sec"><button class="pjtg" data-pjtoggle aria-expanded="' + (pjo ? 'true' : 'false') + '"><span>프로젝트</span>' + (list.length ? '<em>' + list.length + '</em>' : '') + '<span class="sp"></span>' + chev(pjo) + '</button></div>';
     if (pjo) h += '<div class="card dcard">' + list.map(function (p) {
-        return drow('pj:' + p.name, 'folder', 'purple', esc(p.name), (p.open ? '할 일 ' + p.open + '개' : '비어 있어요') + (p.important ? '<span class="dot"></span><span class="red">중요 ' + p.important + '</span>' : ''), 0, function () { return xlist(p.items || [], '할 일을 끌어다 놓으세요', function (t) { return t.status === STATUS.DELEGATED ? (t.delegatee || '맡김') : t.due ? rel(t.due) : ''; }) + '<button class="xo" data-pjid="' + esc(p.name) + '">프로젝트 설정 ' + svg('chev', 13) + '</button>'; });
+        return drow('pj:' + p.name, 'folder', 'purple', esc(p.name), (p.halted ? '<span class="red">멈춤</span>' : p.nextTask ? '<span class="nxt">다음</span>' : '') + (p.halted || p.nextTask ? '<span class="dot"></span>' : '') + (p.open ? '할 일 ' + p.open + '개' : '비어 있어요') + (p.important ? '<span class="dot"></span><span class="red">중요 ' + p.important + '</span>' : ''), 0, function () { return xlist(p.items || [], '할 일을 끌어다 놓으세요', function (t) { return t.status === STATUS.DELEGATED ? (t.delegatee || '맡김') : t.due ? rel(t.due) : ''; }) + '<button class="xo" data-pjid="' + esc(p.name) + '">프로젝트 설정 ' + svg('chev', 13) + '</button>'; });
       }).join('') + '<button class="row newpj" data-newpj>' + tile('plus', 'gray', 18) + '<div class="tx"><div class="t">새 프로젝트</div></div></button></div>';
     else h += '<div class="card dcard"><div class="row drow pjclosed" tabindex="0" role="button" data-pjtoggle data-peek="1">' + tile('folder', 'purple', 18) + '<div class="tx"><div class="t">프로젝트 ' + list.length + '개</div><div class="m">누르거나 할 일을 끌고 오면 펼쳐져요</div></div>' + chev(false) + '</div></div>';
     return h + '</div>';
@@ -1364,7 +1436,7 @@
       // 나중에(언젠가)·참고에 있던 일을 프로젝트로 묶으면 그 프로젝트의 할 일(다음 행동)이 된다
       var pn = where.slice(3), cur = findTask(id), idle = cur && [STATUS.SOMEDAY, STATUS.REFERENCE, STATUS.INBOX].indexOf(cur.status) > -1;
       optimistic(id, idle ? { project: pn, status: STATUS.NEXT } : { project: pn });
-      return (idle ? call('clarifyTask', id, { status: STATUS.NEXT, project: pn, focus: '' }) : call('updateTask', id, { project: pn }))
+      return (idle ? call('clarifyTask', id, { status: STATUS.NEXT, project: pn, focus: '', triage: true }) : call('updateTask', id, { project: pn, triage: true }))
         .then(function (r) { toast('\'' + pn + '\' 프로젝트로 묶었어요'); setView(r.view); }).catch(fail);
     }
   }
@@ -1393,13 +1465,13 @@
     var open = (d.projects || []).filter(function (p) { return !p.finished || p.empty; });
     if (!open.length) return '';
     open = open.slice().sort(function (a, b) {
-      return (b.important || 0) - (a.important || 0) || (b.stalled ? 1 : 0) - (a.stalled ? 1 : 0) || ((a.nextDue || '9') < (b.nextDue || '9') ? -1 : (a.nextDue || '9') > (b.nextDue || '9') ? 1 : 0);
+      return (b.important || 0) - (a.important || 0) || (b.halted ? 1 : 0) - (a.halted ? 1 : 0) || ((a.nextDue || '9') < (b.nextDue || '9') ? -1 : (a.nextDue || '9') > (b.nextDue || '9') ? 1 : 0);
     });
     if (!pjOpen0()) return '<div class="h2"><button class="pjtg" data-pjtoggle aria-expanded="false">프로젝트 <em style="font-style:normal;color:var(--g)">' + open.length + '</em><span class="sp"></span>' + svg('chev', 18) + '</button></div>';
     return '<div class="h2"><button class="pjtg" data-pjtoggle aria-expanded="true">프로젝트 <em style="font-style:normal;color:var(--g)">' + open.length + '</em><span class="sp"></span><span style="transform:rotate(90deg);display:inline-flex">' + svg('chev', 18) + '</span></button></div><div class="card pjcard">' + open.slice(0, 5).map(function (p) {
       var bits = [];
       if (p.important) bits.push('<span class="imp">중요 ' + p.important + '</span>');
-      if (p.stalled) bits.push('<span class="red">다음 행동 없음</span>');
+      pjBits(p).forEach(function (x) { bits.push(x); });
       if (p.nextDue) bits.push(rel(p.nextDue) + ' 마감');
       var its = p.items || [], tl = its.slice(0, 4).map(function (it) {
         var tag = it.status === STATUS.DELEGATED ? (it.delegatee ? it.delegatee + ' 확인' : '맡김') : it.due ? rel(it.due) : '';
@@ -1533,7 +1605,7 @@
       if (r2.meta) { x.fillStyle = C.t3; x.fillText(r2.meta, ix + iw - mw, py + 16); }
       x.fillStyle = C.t1; x.font = '800 14.5px ' + font; x.fillText(fit(p.name, iw - 16 - mw - 10), ix + 12, py + 16.5);
       var ly = py + 30;
-      if (!r2.lines.length) { x.fillStyle = C.t3; x.font = '600 12.5px ' + font; x.fillText(p.stalled ? '다음 행동을 정해 주세요' : '남은 할 일이 없어요', ix + 12, ly + 17); }
+      if (!r2.lines.length) { x.fillStyle = C.t3; x.font = '600 12.5px ' + font; x.fillText(p.halted ? '다음 행동을 정해 주세요' : '남은 할 일이 없어요', ix + 12, ly + 17); }
       r2.lines.forEach(function (ln) {
         var cy = ly + 13;
         if (ln.done) check(ix + 18, cy, 6.5, C.okBar);
@@ -1778,6 +1850,9 @@
     if (swipedAt && Date.now() - swipedAt < 400) return;
     // 끝낸 시간표 블록에도 data-done이 있어 완료 버튼 처리보다 먼저 본다
     if ((b = e.target.closest('.blk.dn')) && !e.target.closest('.rsz')) return toast('끝낸 일이에요 · 왼쪽 계획 칸으로 끌면 다시 할 일로 돌아가요');
+    if ((b = e.target.closest('[data-pc]'))) { e.stopPropagation(); return pendAct(b.closest('[data-id]').getAttribute('data-id'), b.getAttribute('data-pc')); }
+    if ((b = e.target.closest('[data-got]'))) { e.stopPropagation(); return gotIt(b.getAttribute('data-got')); }
+    if ((b = e.target.closest('[data-ckid]'))) { var wt = findTask(b.getAttribute('data-ckid')); if (wt) return waitSheet(wt); }
     if ((b = e.target.closest('[data-done]'))) { e.stopPropagation(); return completeRow(b.closest('[data-id]')); }
     if ((b = e.target.closest('[data-goto]'))) { var g = b.getAttribute('data-goto'); return g === 'waiting' ? openWaiting() : g === 'weekly' ? openWeekly() : go(g); }
     if ((b = e.target.closest('[data-timeview]')) || (b = e.target.closest('[data-listview]'))) {
@@ -1910,8 +1985,9 @@
   // ════════ 바텀시트 ════════
   var sheetTask = null;
   var sheetFrom = null;
-  function openSheet(html) {
+  function openSheet(html, wide) {
     if (!$('sheet').classList.contains('on')) sheetFrom = document.activeElement;
+    $('sheet').classList.toggle('wide', !!wide);
     $('sheetBody').innerHTML = html; $('dim').classList.add('on'); $('sheet').classList.add('on'); stagger($('sheetBody'));
     var f = $('sheetBody').querySelector('input:not([type=checkbox]):not([type=date]), button, [contenteditable]');
     if (f && isPC()) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) {} }, 60);
@@ -1929,28 +2005,35 @@
   // 서버 응답(약 2초)을 기다리지 않고 화면의 목록에서 먼저 뺀다. 응답이 오면 서버 화면으로 바뀐다.
   function dropLocal(id) {
     if (!data) return;
-    ['focus', 'routines', 'now', 'delegated', 'upcoming', 'due', 'followUp', 'inbox'].forEach(function (k) { if (Array.isArray(data[k])) data[k] = data[k].filter(function (x) { return x.id !== id; }); });
+    ['pending', 'focus', 'routines', 'now', 'delegated', 'upcoming', 'due', 'followUp', 'inbox'].forEach(function (k) { if (Array.isArray(data[k])) data[k] = data[k].filter(function (x) { return x.id !== id; }); });
     var row = document.querySelector('.swr[data-id="' + id + '"]'); if (row) row.classList.add('gone');
     setTimeout(function () { renderToday(); setBadges(); }, row ? 260 : 0);
   }
   function optimistic(id, patch) {
     if (!data) return;
-    ['focus', 'routines', 'now', 'delegated', 'upcoming', 'due'].forEach(function (k) { (data[k] || []).forEach(function (x) { if (x.id === id) Object.keys(patch).forEach(function (p) { x[p] = patch[p]; }); }); });
+    ['pending', 'focus', 'routines', 'now', 'delegated', 'upcoming', 'due'].forEach(function (k) { (data[k] || []).forEach(function (x) { if (x.id === id) Object.keys(patch).forEach(function (p) { x[p] = patch[p]; }); }); });
     if (patch.focus !== undefined) {
       var all = (data.focus || []).concat(data.now || [], data.routines || []), seen = {};
       data.focus = all.filter(function (x) { if (seen[x.id]) return false; seen[x.id] = 1; return x.focus && x.focus <= data.today; });
     }
     renderToday();
   }
-  function findTask(id) { var all = (data.focus || []).concat(data.routines || [], data.now || [], data.delegated || [], data.upcoming || [], data.carry || [], data.somedayList || [], allItems); (data.projects || []).forEach(function (p) { all = all.concat(p.items || []); }); for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i]; return null; }
+  function findTask(id) { var all = (data.pending || []).concat(data.focus || [], data.routines || [], data.now || [], data.delegated || [], data.upcoming || [], data.carry || [], data.somedayList || [], allItems); (data.projects || []).forEach(function (p) { all = all.concat(p.items || []); }); for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i]; return null; }
   function openTask(id) {
     var t = findTask(id); if (!t) return; sheetTask = t;
     var sub = [t.due ? rel(t.due) + ' 마감' : '', t.repeat ? '반복 · ' + t.repeat : '', t.project ? t.project : ''].filter(Boolean).join('  ·  ');
-    openSheet('<div class="st" id="tTitle" contenteditable="true" spellcheck="false" enterkeyhint="done">' + esc(t.title) + '</div><div class="ss">' + esc(sub) + '</div>' +
-      '<div class="lbl" style="margin:2px 0 4px">어디로 보낼까요</div><div class="actgrid">' + qa('calendar', 'purple', '시간표', 's-plan') + qa('calcheck', 'blue', '날짜', 's-day') + qa('user', 'blue', '맡기기', 's-who') + qa('folder', 'purple', '프로젝트', 's-pj') + qa('archive', 'gray', '나중에', 's-later') + '</div>' +
+    var pj = t.project ? projOf(t.project) : null, stg = pj && (pj.stages || []).length ? pj.stages : null;
+    var side = '<div class="lbl" style="margin:2px 0 4px">어디로 보낼까요</div><div class="actgrid">' + qa('calendar', 'purple', '시간표', 's-plan') + qa('calcheck', 'blue', '날짜', 's-day') + qa('user', 'blue', '맡기기', 's-who') + qa('folder', 'purple', '프로젝트', 's-pj') + qa('archive', 'gray', '나중에', 's-later') + '</div>' +
       '<div class="actgrid">' + qa('star', 'amber', isImp(t) ? '★ 중요 빼기' : '★ 중요', 'star') + qa('up', 'red', t.urgent ? '↑ 급함 빼기' : '↑ 급함', 'urg') + qa('play', 'green', '집중', 'focus') + qa('clock', 'blue', '시간', 'est') + qa('repeat', 'green', t.repeat ? '반복 바꾸기' : '반복', 'repeat') + '</div>' +
-      '<div class="sep"></div>' + (t.repeat ? act('moon', 'purple', '이번 회차 건너뛰기', 'skip') : '') + act('file', 'blue', t.memo ? '메모 보기 · 덧붙이기' : '메모 남기기', 'memo') + act('dots', 'gray', '더 설정하기', 'more') + act('trash', 'red', '삭제', 'drop', true));
+      (t.project ? '<div class="actgrid">' + qa('flag', 'amber', t.nextMark ? '다음 빼기' : '다음으로', 'x-next') + '</div>' : '') +
+      (stg ? '<div class="lbl">단계</div><div class="chips">' + stg.map(function (s, i) { return '<button class="chip' + (String(t.stage) === String(i + 1) || t.stage === s ? ' on' : '') + '" data-stg="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="lbl">에너지</div><div class="chips">' + ['높음', '보통', '낮음'].map(function (en) { return '<button class="chip' + (t.energy === en ? ' on' : '') + '" data-en="' + en + '">' + en + '</button>'; }).join('') + '</div>' +
+      '<div class="sep"></div>' + (t.repeat ? act('moon', 'purple', '이번 회차 건너뛰기', 'skip') : '') + act('file', 'blue', t.memo ? '메모 보기 · 덧붙이기' : '메모 남기기', 'memo') + act('dots', 'gray', '더 설정하기', 'more') + act('trash', 'red', '삭제', 'drop', true);
+    var head = '<div class="st" id="tTitle" contenteditable="true" spellcheck="false" enterkeyhint="done">' + esc(t.title) + '</div><div class="ss">' + esc(sub) + (t.nextMark ? ' ' + nextChip(t) : '') + '</div>';
+    if (isPC()) { openSheet(head + '<div class="dtl"><div class="dtlmain" id="dtlMain"></div><div class="dtlside">' + side + '</div></div>', true); dtlLoad(t); }
+    else openSheet(head + side.replace('<div class="sep"></div>', '<div class="sep"></div>' + act('file', 'blue', t.hasDetail ? '상세 글 보기 · 편집' : '상세 글 쓰기', 'x-detail')));
   }
+  function dtlOnly(t) { openSheet('<div class="st">' + esc(t.title) + '</div><div class="ss">상세 글</div><div class="dtlmain" id="dtlMain"></div>', false); dtlLoad(t); }
   function openTaskShared(el) {
     var id = el.getAttribute('data-id'), tEl = el.querySelector('.t');
     if (!document.startViewTransition || !tEl) return openTask(id);
@@ -2725,17 +2808,16 @@
     return over < 0 ? rel(t.followUp) + ' 확인' : over === 0 ? '<span class="amb">오늘 확인</span>' : '<span class="' + (over > 2 ? 'red' : 'amb') + '">' + over + '일 지남</span>';
   }
   function waitAge(t) { if (!t.delegatedOn) return ''; var n = -diff(t.delegatedOn); return n <= 0 ? '오늘 맡김' : n + '일째 기다리는 중'; }
-  function waitRow(t) { var w = waitInfo(t), a = waitAge(t); return '<div class="row" tabindex="0" role="button" data-wid="' + esc(t.id) + '"><span class="tile blue" style="font-weight:800">' + esc((t.delegatee || '?').slice(0, 1)) + '</span><div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">' + esc(t.delegatee || '') + (a ? '<span class="dot"></span>' + a : '') + (w ? '<span class="dot"></span>' + w : '') + '</div></div>' + CHEV + '</div>'; }
+  function waitRow(t) { var w = waitInfo(t), a = waitAge(t); return '<div class="row" tabindex="0" role="button" data-wid="' + esc(t.id) + '"><button class="chk" data-wgot="' + esc(t.id) + '" aria-label="' + esc(t.title) + ' 받았어요" title="받았어요">' + svg('check', 15) + '</button><div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">' + esc(t.delegatee || '') + (a ? '<span class="dot"></span>' + a : '') + (w ? '<span class="dot"></span>' + w : '') + '</div></div>' + CHEV + '</div>'; }
   // 프로젝트: 완료 모습 + 다음 행동 개수. 다음 행동이 없으면 바로 하나 담을 수 있다.
   var pjOpen = false;
   function projRow(p) {
-    var state = p.stalled ? '<span class="red">다음 행동 없음</span>' : p.next ? '다음 행동 ' + p.next + '개' : '기다리는 중';
-    return '<div class="row" tabindex="0" role="button" data-pjid="' + esc(p.name) + '">' + tile('folder', 'purple') + '<div class="tx"><div class="t">' + esc(p.name) + '</div>' +
-      '<div class="m">' + (p.outcome ? esc(p.outcome) : '<span class="amb">끝난 모습을 적어 주세요</span>') + '<span class="dot"></span>' + state + '</div></div>' + CHEV + '</div>';
+    return '<div class="row" tabindex="0" role="button" data-pjid="' + esc(p.name) + '"><button class="chk" data-pjdone="' + esc(p.name) + '" aria-label="' + esc(p.name) + ' 프로젝트 끝내기" title="프로젝트 끝내기">' + svg('check', 15) + '</button><div class="tx"><div class="t">' + esc(p.name) + '</div>' +
+      '<div class="m">' + (p.outcome ? esc(p.outcome) : '<span class="amb">끝난 모습을 적어 주세요</span>') + '<span class="dot"></span>' + (pjBits(p).join('<span class="dot"></span>') || '기다리는 중') + '</div></div>' + CHEV + '</div>';
   }
   function openProjects() {
     showMore(); pjOpen = true;
-    var all = (data.projects || []), open = all.filter(function (p) { return !p.finished; }), done = all.length - open.length;
+    var all = (data.projects || []), open = all.filter(function (p) { return !p.finished; }).sort(function (a, b) { return (b.halted ? 1 : 0) - (a.halted ? 1 : 0); }), done = all.length - open.length; // 멈춘 것부터
     $('moreBody').innerHTML = backBtn() + '<div class="h1" style="margin-bottom:8px">프로젝트 <em>' + open.length + '</em><em>개</em></div><div class="sub2" style="margin-bottom:18px">두 단계 이상 걸리는 일이에요</div>' +
       (open.length ? '<div class="card">' + open.map(projRow).join('') + '</div>' : '<div class="card"><div class="empty">' + tile('folder', 'purple', 26) + '<br>수집함에서 "여러 단계예요"를 누르면 생겨요</div></div>') +
       (done ? '<div class="sub2" style="text-align:center;margin-top:18px;font-size:13px">끝난 프로젝트 ' + done + '개</div>' : '');
@@ -2787,8 +2869,9 @@
     var tag = function (it) { return it.status === STATUS.DELEGATED ? (it.delegatee || '맡김') : it.status === STATUS.SOMEDAY ? '나중에' : it.due ? rel(it.due) : ''; };
     openSheet('<div class="st">' + esc(p.name) + '</div><div class="ss">남은 일 ' + (p.open || 0) + '개 · 끝낸 일 ' + (p.done || 0) + '개</div>' +
       '<div class="lbl">끝나면 어떤 모습인가요?' + (p.outcome ? '' : ' <span style="color:#C27C00">· 아직 안 적었어요</span>') + '</div><input class="field" id="poIn" value="' + esc(p.outcome || '') + '" placeholder="예) 워크숍이 끝나고 후기가 공유됨">' +
+      projectExtra(p) +
       '<div class="lbl" style="margin-top:16px">할 일</div><div class="card" id="pjTasks" style="background:var(--fill);box-shadow:none">' + (its.length ? its.map(function (it) {
-        return '<div class="row" style="background:transparent" tabindex="0" role="button" data-pjtask="' + esc(it.id) + '"><div class="tx"><div class="t">' + esc(it.title) + '</div>' + (tag(it) ? '<div class="m">' + esc(tag(it)) + '</div>' : '') + '</div>' + CHEV + '</div>';
+        return '<div class="row" style="background:transparent" tabindex="0" role="button" data-pjtask="' + esc(it.id) + '"><div class="tx"><div class="t">' + esc(it.title) + (it.nextMark ? ' ' + nextChip(it) : '') + '</div>' + (tag(it) ? '<div class="m">' + esc(tag(it)) + '</div>' : '') + '</div>' + (it.nextMark || it.status === STATUS.SOMEDAY ? '' : '<button type="button" class="pillbtn" data-pjnext="' + esc(it.id) + '" data-name="' + esc(p.name) + '" style="background:var(--fill);color:var(--t2);box-shadow:none">다음으로</button>') + CHEV + '</div>';
       }).join('') + (more > 0 ? '<div class="xe" style="padding:10px 14px">외 ' + more + '개</div>' : '') : '<div class="xe" style="padding:14px">아직 할 일이 없어요</div>') + '</div>' +
       // 담기는 맨 위 칸 하나가 원칙이지만, 이 창에서만 예외: 여기서 적은 할 일은 처음부터 이 프로젝트에 묶인다 (운영자 결정, 2026-11-10)
       '<div style="display:flex;gap:8px;margin-top:10px"><input class="field" id="pjAddIn" data-pjname="' + esc(p.name) + '" placeholder="이 프로젝트에 할 일 바로 담기" maxlength="120" style="margin:0;flex:1"><button class="pillbtn" id="pjAddOk" data-name="' + esc(p.name) + '">담기</button></div>' +
@@ -2818,9 +2901,13 @@
   function onWaiting() { var h = document.querySelector('#moreBody .h1'); return $('p-more').classList.contains('on') && h && /맡긴 일/.test(h.textContent); }
   function openWaiting() {
     showMore();
-    var list = (data.delegated || []);
+    var list = (data.delegated || []), by = {}, order = [];
+    list.forEach(function (t) { var k = t.delegatee || '(이름 없음)'; if (!by[k]) { by[k] = []; order.push(k); } by[k].push(t); });
+    var age = function (t) { return t.delegatedOn || t.followUp || '9999'; };
+    order.forEach(function (k) { by[k].sort(function (x, y) { return age(x) < age(y) ? -1 : age(x) > age(y) ? 1 : 0; }); }); // 오래 기다린 순
+    order.sort(function (x, y) { return age(by[x][0]) < age(by[y][0]) ? -1 : 1; });
     $('moreBody').innerHTML = backBtn() + '<div class="h1" style="margin-bottom:22px">맡긴 일 <em>' + list.length + '</em><em>개</em></div>' +
-      (list.length ? '<div class="card">' + list.map(waitRow).join('') + '</div>' : '<div class="card"><div class="empty">' + tile('user', 'blue', 26) + '<br>맡긴 일이 없어요</div></div>');
+      (list.length ? order.map(function (k) { return '<div class="sec2 wgrp" data-who="' + esc(k) + '">' + tile('user', 'blue', 16) + esc(k) + ' <em>' + by[k].length + '</em></div><div class="card">' + by[k].map(waitRow).join('') + '</div>'; }).join('') : '<div class="card"><div class="empty">' + tile('user', 'blue', 26) + '<br>맡긴 일이 없어요</div></div>');
     stagger($('moreBody'));
   }
   function openRoutine() {
@@ -2861,8 +2948,8 @@
       if (w.delegated.length) steps.push('deleg');
       if ((w.projects || []).some(function (p) { return !p.finished; })) steps.push('proj');
       if (w.someday.length) steps.push('someday');
-      steps.push('next');
-      wk = { step: 0, w: w, steps: steps, sw: 0, swept: 0 }; renderWeekly();
+      steps.push('next'); steps.push('classify');
+      wk = { step: 0, w: w, steps: steps, area: 0, swept: 0, byArea: {}, picks: null }; renderWeekly();
     }).catch(function (e) { toast(e.message); });
   }
   var storyIO = null;
@@ -2916,21 +3003,19 @@
       }
       h = '<div class="h1" style="margin-bottom:18px">이번 주를 돌아봐요</div>' + empty('sun', 'amber', '다음 주엔 하나씩 끝내 봐요');
     }
-    if (key === 'sweep') h = '<div class="h1" style="margin-bottom:8px">머리 비우기</div><div class="sub2" style="margin-bottom:16px">떠오르는 걸 다 적어요. 정리는 나중에 해요</div>' +
-      '<div class="card" style="padding:18px"><div class="eyebrow" style="margin:0 0 6px">' + (wk.sw + 1) + ' / ' + SWEEP.length + '</div><div class="t" style="font-size:18px;font-weight:700;margin-bottom:12px" id="swQ">' + esc(SWEEP[wk.sw]) + '</div>' +
-      '<div class="sub2" style="font-size:14px">떠오르면 오늘 화면 맨 위 담기 칸에 적어 두세요</div>' +
-      '<button class="txtlink" data-sw style="margin-top:4px">' + (wk.sw < SWEEP.length - 1 ? '다음 질문' : '처음 질문부터') + ' ' + svg('chev', 14) + '</button></div>';
+    if (key === 'sweep') h = sweepHtml();
+    if (key === 'classify') h = classifyHtml();
     if (key === 'cal') { h = '<div class="h1" style="margin-bottom:8px">캘린더 앞뒤 보기</div><div class="sub2" style="margin-bottom:16px">챙길 일이 떠오르면 적어 두세요</div><div id="wkCal"><div class="card"><div class="empty">불러오는 중…</div></div></div>' +
       '<div class="sub2" style="font-size:14px;margin-top:10px">챙길 일은 오늘 화면 담기 칸에 적어 두세요</div>'; setTimeout(loadWeekCal, 0); }
     if (key === 'inbox') h = '<div class="h1" style="margin-bottom:18px">수집함 <em>' + (w.inbox.length + (wk.swept || 0)) + '</em><em>개</em></div>' + (w.inbox.length + (wk.swept || 0) ? '<div class="sub2" style="margin:-8px 0 0">하나씩 정리하고 돌아오세요</div><button class="cta" data-goto2="inbox">지금 정리하기</button>' : empty('inbox', 'amber', '비어 있어요'));
     if (key === 'deleg') h = '<div class="h1" style="margin-bottom:18px">맡긴 일 <em>' + w.delegated.length + '</em><em>개</em></div><div class="card">' + w.delegated.map(waitRow).join('') + '</div>';
     if (key === 'someday') h = '<div class="h1" style="margin-bottom:18px">나중에 할 일</div><div class="card">' + w.someday.map(function (t) { return '<div class="row" style="cursor:default"><div class="tx"><div class="t">' + esc(t.title) + '</div></div><button class="pillbtn" style="background:var(--gt);color:var(--g);box-shadow:none" data-promote="' + esc(t.id) + '">이제 할래요</button></div>'; }).join('') + '</div>';
-    if (key === 'proj') { var ops = (w.projects || []).filter(function (p) { return !p.finished; }), st = ops.filter(function (p) { return p.stalled; });
+    if (key === 'proj') { var ops = (w.projects || []).filter(function (p) { return !p.finished; }), st = ops.filter(function (p) { return p.halted; });
       h = '<div class="h1" style="margin-bottom:8px">프로젝트 <em>' + ops.length + '</em><em>개</em></div><div class="sub2" style="margin-bottom:16px">' + (st.length ? '멈춘 ' + st.length + '개는 다음에 할 한 가지만 적어 주세요' : '모두 다음 행동이 있어요') + '</div>' +
       st.map(function (p) {
         return '<div class="card" style="padding:16px 18px;margin-bottom:10px"><div class="t" style="font-size:16.5px;font-weight:700;display:flex;align-items:center;gap:8px">' + svg('folder', 18, 'var(--purple)') + esc(p.name) + '</div>' +
           (p.outcome ? '<div class="m" style="margin:4px 0 0;color:var(--t2);font-size:14px">' + esc(p.outcome) + '</div>' : '') + '<div class="m" style="margin:6px 0 0;color:var(--t3);font-size:13px">다음 할 일을 담기 칸에 적고 이 프로젝트로 묶어 주세요</div></div>';
-      }).join('') + (ops.length > st.length ? '<div class="card">' + ops.filter(function (p) { return !p.stalled; }).map(projRow).join('') + '</div>' : ''); }
+      }).join('') + (ops.length > st.length ? '<div class="card">' + ops.filter(function (p) { return !p.halted; }).map(projRow).join('') + '</div>' : ''); }
     if (key === 'next') { var c = uniq(w.next.concat(w.upcoming)).slice(0, 12); h = '<div class="h1" style="margin-bottom:8px">다음 주 꼭 할 일 고르기</div><div class="sub2" style="margin-bottom:16px">' + (c.length ? '후보 ' + c.length + '개 중 3개까지 골라요 · 고른 일은 다음 주 월요일 할 일로 올라와요' : '') + '</div>' + (c.length ? '<div class="card" id="wkPick">' + c.map(function (t) { return '<div class="row" data-pick="' + esc(t.id) + '"><span class="chk">' + svg('check', 15) + '</span><div class="tx"><div class="t">' + esc(t.title) + '</div></div></div>'; }).join('') + '</div>' : empty('sun', 'amber', '고를 일이 없어요')) + (window.KIT_ENGINE ? '' : '<button class="txtlink" data-wks="mail">' + svg('mail', 15) + ' 이번 주 요약 메일로 받기</button>'); }
     $('moreBody').innerHTML = head + h + next;
     stagger($('moreBody'));
@@ -2959,14 +3044,20 @@
     if ((b = e.target.closest('[data-aid]')) && !e.target.closest('[data-promote]')) { var at = findTask(b.getAttribute('data-aid')); if (at && at.status === STATUS.INBOX) return go('inbox'); return openTask(b.getAttribute('data-aid')); }
     if ((b = e.target.closest('[data-wid]'))) {
       var t = (data.delegated || []).concat((wk.w && wk.w.delegated) || []).filter(function (x) { return x.id === b.getAttribute('data-wid'); })[0]; if (!t) return;
-      sheetTask = t;
-      return openSheet('<div class="st">' + esc(t.title) + '</div><div class="ss">' + esc(t.delegatee || '') + '</div>' + act('check', 'green', '받았어요', 'w-got') + act('copy', 'blue', '리마인드 문구 복사', 'w-remind') + act('bell', 'amber', '3일 뒤 다시 확인', 'w-later') + act('calendar', 'purple', '확인일 정하기', 'w-date') + act('user', 'gray', '맡은 사람 바꾸기', 'w-who'));
+      return waitSheet(t);
     }
     if ((b = e.target.closest('[data-promote]'))) {
       b.disabled = true; b.innerHTML = svg('check', 15);
       return call('clarifyTask', b.getAttribute('data-promote'), { status: STATUS.NEXT }).then(function (r) { toast('할 일로 옮겼어요'); setView(r.view); }).catch(function (err) { toast(err.message); });
     }
-    if ((b = e.target.closest('[data-sw]'))) { wk.sw = (wk.sw + 1) % SWEEP.length; var q = $('swQ'); q.textContent = SWEEP[wk.sw]; q.previousSibling.textContent = (wk.sw + 1) + ' / ' + SWEEP.length; b.firstChild.textContent = (wk.sw < SWEEP.length - 1 ? '다음 질문' : '처음 질문부터') + ' '; bump(q); var fi = document.querySelector('[data-sweep]'); if (fi) fi.focus(); return; }
+    if ((b = e.target.closest('[data-area]'))) { wk.area = +b.getAttribute('data-area'); renderWeekly(); var fi = $('swIn'); if (fi) fi.focus(); return; }
+    if ((b = e.target.closest('[data-pc]'))) { e.stopPropagation(); return pendAct(b.closest('[data-id]').getAttribute('data-id'), b.getAttribute('data-pc')); }
+    if ((b = e.target.closest('[data-bulk]'))) {
+      var kind = b.getAttribute('data-bulk'), ids = ((data && data.pending) || []).map(function (x) { return x.id; }); if (!ids.length) return;
+      b.disabled = true;
+      return ids.reduce(function (pr, id) { return pr.then(function () { return call('clarifyTask', id, kind === 'today' ? { status: STATUS.NEXT, focus: true, triage: true } : { status: STATUS.SOMEDAY, focus: '', triage: true }); }); }, Promise.resolve())
+        .then(function () { return load(); }).then(function () { toast(ids.length + '개를 ' + (kind === 'today' ? '오늘 할 일로' : '나중에') + ' 보냈어요'); renderWeekly(); }).catch(function (err) { toast(err.message); load(); });
+    }
     if ((b = e.target.closest('[data-pick]'))) {
       var ck = b.querySelector('.chk'), n = $('wkPick').querySelectorAll('.chk.on').length;
       if (!ck.classList.contains('on') && n >= 3) return toast('3개까지만');
@@ -2974,10 +3065,10 @@
     }
     if ((b = e.target.closest('[data-wks]'))) {
       var k = b.getAttribute('data-wks');
-      if (k === 'next') { wk.step++; renderWeekly(); return window.scrollTo(0, 0); }
+      if (k === 'next') { if (wk.steps[wk.step] === 'next') wk.picks = [].map.call(document.querySelectorAll('#wkPick .chk.on'), function (x) { return x.closest('[data-pick]').getAttribute('data-pick'); }); wk.step++; renderWeekly(); return window.scrollTo(0, 0); }
       if (k === 'mail') { b.disabled = true; return call('sendWeekly').then(function (r) { toast(r.sent ? '메일을 보냈어요' : r.reason); }).catch(function (err) { toast(err.message); }); }
       var mon = addDays(weekStartOf(wk.w.today), 7);
-      var ids = [].map.call(document.querySelectorAll('#wkPick .chk.on'), function (x) { return x.closest('[data-pick]').getAttribute('data-pick'); });
+      var ids = wk.picks || [].map.call(document.querySelectorAll('#wkPick .chk.on'), function (x) { return x.closest('[data-pick]').getAttribute('data-pick'); });
       b.disabled = true;
       return (ids.length ? call('focusMany', ids, mon) : Promise.resolve()).then(function () { return call('reviewDone'); })
         .then(function (r) { setView(r.view); toast('한 주 수고했어요!'); confetti(); renderMore(); }).catch(function (err) { b.disabled = false; toast(err.message); });
@@ -2987,6 +3078,22 @@
     if (!e.target.closest('#report')) return;
     e.preventDefault(); openReport();
   });
+  $('moreBody').addEventListener('submit', function (e) {
+    if (e.target.id !== 'swForm') return; e.preventDefault();
+    var inp = $('swIn'), v = inp.value.trim(); if (!v) return; var area = AREAS[wk.area || 0].k; inp.disabled = true;
+    call('addTasks', v, { source: '머리비우기:' + area }).then(function (r) { wk.swept = (wk.swept || 0) + 1; wk.byArea = wk.byArea || {}; wk.byArea[area] = (wk.byArea[area] || 0) + 1; if (r.view) setView(r.view); renderWeekly(); var f = $('swIn'); if (f) f.focus(); toast('담았어요 · ' + area); })
+      .catch(function (err) { inp.disabled = false; toast(err.message); });
+  });
+  $('moreBody').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-wgot]'); if (b) { e.stopPropagation(); gotIt(b.getAttribute('data-wgot')); return; }
+    if ((b = e.target.closest('[data-pjdone]'))) { e.stopPropagation(); var nm = b.getAttribute('data-pjdone'); call('setProjectInfo', nm, { state: '끝남' }).then(function (r) { setView(r.view); openProjects(); pjUndo(nm); }).catch(function (err) { toast(err.message); }); }
+  }, true);
+  function pjUndo(nm) {
+    var t = $('toast'); t.innerHTML = '<span>\'' + esc(nm) + '\' 프로젝트를 끝냈어요</span>'; t.classList.add('act');
+    var bt = document.createElement('button'); bt.className = 'undo'; bt.textContent = '되돌리기';
+    bt.onclick = function () { t.classList.remove('on'); call('setProjectInfo', nm, { state: '진행' }).then(function (r) { toast('되돌렸어요'); setView(r.view); openProjects(); }).catch(function (err) { toast(err.message); }); };
+    t.appendChild(bt); t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('on'); }, 6500);
+  }
   $('sideReport').addEventListener('click', function (e) { e.preventDefault(); openReport(); });
   $('sideAi').addEventListener('click', function (e) { e.preventDefault(); openAi(); });
   function openReport() {
@@ -3015,20 +3122,10 @@
     var title = inp.value.trim(), proj = inp.getAttribute('data-proj'); inp.disabled = true;
     call('addAction', title, { project: proj }).then(function (r) {
       data = r.view; saveView(r.view); setBadges();
-      if (wk.w) (wk.w.projects || []).forEach(function (p) { if (p.name === proj) { p.next++; p.stalled = false; } });
+      if (wk.w) (wk.w.projects || []).forEach(function (p) { if (p.name === proj) { p.next++; p.stalled = false; p.halted = false; } });
       toast(proj + ' · 다음 행동을 담았어요'); inp.disabled = false; inp.value = ''; inp.placeholder = '담았어요 ✓ 더 적어도 돼요';
     }).catch(function (err) { inp.disabled = false; toast(err.message); });
   });
-  // 주간 검토: 머리 비우기 · 캘린더 → 수집함
-  document.addEventListener('keydown', function (e) {
-    var inp = e.target.closest && e.target.closest('[data-sweep]'); if (!inp || e.key !== 'Enter' || e.isComposing || !inp.value.trim()) return;
-    e.preventDefault();
-    var title = inp.value.trim(); inp.value = '';
-    var box = $('swAdded'); if (box) box.insertAdjacentHTML('beforeend', '<span class="chip on" style="cursor:default">' + esc(title) + '</span>');
-    wk.swept = (wk.swept || 0) + 1;
-    call('addTasks', title).then(function (r) { data = r.view; saveView(r.view); setBadges(); }).catch(function () { toast('담지 못했어요: ' + title); });
-  });
-
   // ════════ 집중 모드 ════════
   var fm = { t: null, left: 0, timer: null, paused: false };
   function openFocus(t) {
@@ -3123,6 +3220,325 @@
   if ($('sideSearch')) $('sideSearch').onclick = openSearch;
 
   // ── 단축키 · 빠르게 담는 법 ( ? ) ──
+  // ════════ v1.8 마크다운 (허용 목록 방식) ════════
+  // 시트의 글은 에이전트·다른 사람이 쓸 수 있으므로 HTML을 믿지 않는다: 태그는 모두 떼어 내고, 아래 고정 태그만 직접 만들어 쓴다.
+  // 링크는 http/https만(새 탭 · noopener), 이미지는 열지 않고 글자만 보인다. 글에 든 모든 글자는 이스케이프한다.
+  /* md:start */
+  function mdEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function mdUrl(u) { u = String(u || '').trim(); return /^https?:\/\/[^\s<>"'`]+$/i.test(u) ? u : ''; }
+  function mdLink(u, label) { return '<a href="' + mdEsc(u) + '" target="_blank" rel="noopener noreferrer">' + mdEsc(label) + '</a>'; }
+  function mdInline(raw) {
+    var s = String(raw == null ? '' : raw).replace(/<\/?[a-zA-Z!?][^>]*>/g, ''); // HTML 태그 제거
+    var re = /(!?)\[([^\]]*)\]\(([^)\s]*)\)|(https?:\/\/[^\s<>"'`)\]]+)|`([^`]+)`|\*\*([^*]+)\*\*|\*([^*\s][^*]*)\*/g, out = '', last = 0, m;
+    while ((m = re.exec(s))) {
+      out += mdEsc(s.slice(last, m.index)); last = m.index + m[0].length;
+      if (m[5] !== undefined) out += '<code>' + mdEsc(m[5]) + '</code>';
+      else if (m[6] !== undefined) out += '<b>' + mdEsc(m[6]) + '</b>';
+      else if (m[7] !== undefined) out += '<i>' + mdEsc(m[7]) + '</i>';
+      else if (m[4] !== undefined) { var u4 = mdUrl(m[4]); out += u4 ? mdLink(u4, m[4]) : mdEsc(m[4]); }
+      else { var u = mdUrl(m[3]); out += (u && !m[1]) ? mdLink(u, m[2] || m[3]) : mdEsc(m[2] || (m[1] ? '이미지' : m[3])); } // 이미지·허용 안 되는 주소(javascript: 등)는 글자만
+    }
+    return out + mdEsc(s.slice(last));
+  }
+  var MD_CK = /^(\s*)([-*+])\s+\[( |x|X)\]\s?(.*)$/;
+  function mdRender(src) {
+    var lines = String(src == null ? '' : src).replace(/\r\n?/g, '\n').split('\n'), html = '', para = [], list = '', code = null, ck = 0;
+    var flushP = function () { if (para.length) { html += '<p>' + para.map(mdInline).join('<br>') + '</p>'; para = []; } };
+    var flushL = function () { if (list) { html += '</' + list + '>'; list = ''; } };
+    lines.forEach(function (ln) {
+      if (code !== null) { if (/^\s*```/.test(ln)) { html += '<pre><code>' + mdEsc(code.join('\n')) + '</code></pre>'; code = null; } else code.push(ln); return; }
+      if (/^\s*```/.test(ln)) { flushP(); flushL(); code = []; return; }
+      var m;
+      if ((m = ln.match(MD_CK))) { flushP(); if (list !== 'ul') { flushL(); html += '<ul class="mdck">'; list = 'ul'; } html += '<li><label><input type="checkbox" data-ck="' + (ck++) + '"' + (m[3] !== ' ' ? ' checked' : '') + '><span>' + mdInline(m[4]) + '</span></label></li>'; return; }
+      if ((m = ln.match(/^(#{1,6})\s+(.*)$/))) { flushP(); flushL(); var lv = Math.min(5, m[1].length + 1); html += '<h' + lv + '>' + mdInline(m[2]) + '</h' + lv + '>'; return; }
+      if ((m = ln.match(/^\s*([-*+])\s+(.*)$/))) { flushP(); if (list !== 'ul') { flushL(); html += '<ul>'; list = 'ul'; } html += '<li>' + mdInline(m[2]) + '</li>'; return; }
+      if ((m = ln.match(/^\s*\d+[.)]\s+(.*)$/))) { flushP(); if (list !== 'ol') { flushL(); html += '<ol>'; list = 'ol'; } html += '<li>' + mdInline(m[1]) + '</li>'; return; }
+      if ((m = ln.match(/^\s*>\s?(.*)$/))) { flushP(); flushL(); html += '<blockquote>' + mdInline(m[1]) + '</blockquote>'; return; }
+      if (/^\s*([-*_])\s*\1\s*\1[\s\-*_]*$/.test(ln)) { flushP(); flushL(); html += '<hr>'; return; }
+      if (!ln.trim()) { flushP(); flushL(); return; }
+      flushL(); para.push(ln);
+    });
+    if (code !== null) html += '<pre><code>' + mdEsc(code.join('\n')) + '</code></pre>';
+    flushP(); flushL();
+    return html;
+  }
+  // n번째 체크박스 줄의 [ ] ↔ [x] 를 바꾼 새 글 (코드 블록 안은 세지 않는다. mdRender와 같은 순서)
+  function mdToggle(src, n, on) {
+    var lines = String(src == null ? '' : src).replace(/\r\n?/g, '\n').split('\n'), code = false, ck = 0;
+    for (var i = 0; i < lines.length; i++) {
+      if (/^\s*```/.test(lines[i])) { code = !code; continue; }
+      if (code) continue;
+      var m = lines[i].match(MD_CK);
+      if (m) { if (ck === n) { lines[i] = m[1] + m[2] + ' [' + (on ? 'x' : ' ') + '] ' + m[4]; return lines.join('\n'); } ck++; }
+    }
+    return lines.join('\n');
+  }
+  /* md:end */
+  // ════════ v1.8 오늘: 확인할 것 · 분류 대기 ════════
+  var SRC_LABEL = function (s) { s = String(s || ''); return /^AI/.test(s) ? 'AI' : /^머리비우기/.test(s) ? '머리 비우기' : ''; };
+  function nextChip(t) { return t && t.nextMark ? '<span class="nxt" title="이 프로젝트의 다음 행동">' + svg('flag', 12) + '다음</span>' : ''; }
+  // 확인일이 된 맡긴 일: 오늘에는 '확인할 것' 한 줄만 보인다 (새 할 일을 만들지 않는다 — 맡긴 일 줄 하나가 그대로 원본)
+  function checkInHtml(d) {
+    var f = d.followUp || []; if (!f.length) return '';
+    return '<div class="sec2" id="ckSec">' + svg('user', 18, 'var(--amber)') + '확인할 것 <em>' + f.length + '</em></div><div class="card ckcard">' + f.map(function (t) {
+      return '<div class="row ckl" tabindex="0" role="button" data-ckid="' + esc(t.id) + '" aria-label="' + esc((t.delegatee || '') + ' 확인: ' + t.title) + '"><button class="chk" data-got="' + esc(t.id) + '" aria-label="' + esc(t.title) + ' 받았어요" title="받았어요">' + svg('check', 15) + '</button>' +
+        '<div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">' + esc(t.delegatee || '') + '님께 확인<span class="dot"></span>' + waitInfo(t) + (waitAge(t) ? '<span class="dot"></span>' + waitAge(t) : '') + '</div></div>' + CHEV + '</div>';
+    }).join('') + '</div>';
+  }
+  var PC_BTNS = [['today', '오늘 할래요', true], ['project', '프로젝트로'], ['who', '맡기기'], ['day', '날짜 정하기'], ['later', '나중에'], ['drop', '버리기']];
+  function pendRow(t) {
+    var sl = SRC_LABEL(t.source), area = /^머리비우기:/.test(t.source || '') ? t.source.slice(6) : '';
+    return '<div class="swr pendr" data-id="' + esc(t.id) + '"><div class="swbg"><span class="l">' + svg('check', 18) + '완료</span><span class="r">내일로' + svg('moon', 18) + '</span></div>' +
+      '<div class="row" tabindex="0" role="button" aria-label="' + esc(t.title) + ' 열기"><button class="chk" data-done aria-label="' + esc(t.title) + ' 완료">' + svg('check', 15) + '</button>' +
+      '<div class="tx"><div class="t">' + esc(t.title) + (sl ? ' <span class="srcchip' + (sl === 'AI' ? ' ai' : '') + '">' + esc(area ? area : sl) + '</span>' : '') + '</div>' + metaHtml(t) + '</div></div>' +
+      '<div class="pcls" role="group" aria-label="분류">' + PC_BTNS.map(function (b) { return '<button type="button" class="' + (b[2] ? 'go' : '') + '" data-pc="' + b[0] + '">' + b[1] + '</button>'; }).join('') + '</div></div>';
+  }
+  function pendingHtml(d) {
+    var p = d.pending || []; if (!p.length) return '';
+    var n = (d.counts && d.counts.pending) || p.length;
+    return '<div class="sec2" id="pendSec">' + svg('inbox', 18, 'var(--amber)') + '분류 대기 <em>' + n + '</em><span class="sp"></span><span class="hint2">눌러서 정리해요</span></div><div class="card pend" id="pendCard">' + p.map(pendRow).join('') + '</div>';
+  }
+  function pendDrop(id) { if (!data) return; ['pending', 'focus', 'now', 'carry'].forEach(function (k) { if (Array.isArray(data[k])) data[k] = data[k].filter(function (x) { return x.id !== id; }); }); if (data.counts && data.counts.pending) data.counts.pending--; }
+  // 분류 버튼: 오늘·나중에·버리기는 1번, 프로젝트·맡기기·날짜는 고르는 창이 한 번 더(2번)
+  function pendAct(id, k) {
+    var t = findTask(id); if (!t) return; sheetTask = t;
+    var fail = function (e) { toast(e.message); load(); };
+    var done = function (msg) { return function (r) { toast(msg, r.undo); setView(r.view); }; };
+    animNext = false;
+    if (k === 'today') { pendDrop(id); renderToday(); return call('clarifyTask', id, { status: STATUS.NEXT, focus: true, triage: true }).then(done('오늘 할 일로 정했어요')).catch(fail); }
+    if (k === 'later') { pendDrop(id); renderToday(); return call('clarifyTask', id, { status: STATUS.SOMEDAY, focus: '', triage: true }).then(done('나중에 할 일로 보냈어요')).catch(fail); }
+    if (k === 'drop') { pendDrop(id); renderToday(); return call('clarifyTask', id, { status: STATUS.DROPPED, triage: true }).then(done('버렸어요')).catch(fail); }
+    if (k === 'project') return pjSheet(t);
+    if (k === 'who') return whoSheet(t);
+    if (k === 'day') return daySheet(t);
+  }
+  function daySheet(t) {
+    var td = data.today, dd = []; for (var di = 0; di < 8; di++) dd.push(addDays(td, di));
+    openSheet('<div class="st">언제로 옮길까요?</div><div class="ss">' + esc(t.title) + '</div><div class="chips">' + dd.map(function (x) { var dt2 = new Date(x + 'T00:00:00'); return '<button class="chip" data-sday="' + x + '">' + (x === td ? '오늘' : x === addDays(td, 1) ? '내일' : (dt2.getMonth() + 1) + '/' + dt2.getDate() + ' ' + DOW[dt2.getDay()]) + '</button>'; }).join('') + '</div><div class="lbl">직접 고르기</div><input class="field" type="date" id="sDayIn"><button class="cta" id="sDayOk">옮기기</button>');
+  }
+  function whoSheet(t) {
+    var pp = people();
+    openSheet('<div class="st">누구에게 맡길까요?</div><div class="ss">' + esc(t.title) + ' · 3일 뒤 확인해요</div>' + (pp.length ? '<div class="chips">' + pp.map(function (n) { return '<button class="chip" data-swho="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="lbl">다른 사람</div><input class="field" id="sWhoIn" placeholder="이름" maxlength="20"><button class="cta" id="sWhoOk">맡기기</button>');
+  }
+  function pjSheet(t) {
+    var pl = openPjList(data);
+    openSheet('<div class="st">어느 프로젝트에 묶을까요?</div><div class="ss">' + esc(t.title) + '</div>' + (pl.length ? '<div class="chips">' + pl.map(function (p) { return '<button class="chip' + (t.project === p.name ? ' on' : '') + '" data-spj="' + esc(p.name) + '">' + esc(p.name) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="lbl">새 프로젝트</div><input class="field" id="sPjIn" placeholder="프로젝트 이름" maxlength="40"><button class="cta" id="sPjOk">묶기</button>');
+  }
+  // 받았어요: 맡긴 일을 끝낸다 (5초 넘게 되돌리기 가능). 프로젝트 일이면 '다음은?'이 이어서 뜬다
+  function gotIt(id) {
+    var t = findTask(id); dropLocal(id);
+    if ($('p-more').classList.contains('on') && onWaiting()) setTimeout(openWaiting, 280);
+    return call('completeTask', id).then(function (r) { toast((t && t.delegatee ? t.delegatee + '님 일 ' : '') + '받았어요', r.undo); setView(r.view); if (onWaiting()) openWaiting(); })
+      .catch(function (e) { toast(e.message); load(); });
+  }
+  function waitSheet(t) {
+    sheetTask = t;
+    openSheet('<div class="st">' + esc(t.title) + '</div><div class="ss">' + esc(t.delegatee || '') + '</div>' + act('check', 'green', '받았어요', 'w-got') + act('copy', 'blue', '리마인드 문구 복사', 'w-remind') + act('bell', 'amber', '3일 뒤 다시 확인', 'w-later') + act('calendar', 'purple', '확인일 정하기', 'w-date') + act('user', 'gray', '맡은 사람 바꾸기', 'w-who'));
+  }
+
+  // ════════ v1.8 프로젝트: 단계 · 상태 · 다음 칩 · '다음은?' ════════
+  function projOf(name) { return ((data && data.projects) || []).filter(function (p) { return p.name === name; })[0] || null; }
+  function stageText(p) { var st = p.stages || []; if (!st.length) return ''; var i = Math.min(Math.max((p.stage || 1) - 1, 0), st.length - 1); return '단계 ' + (i + 1) + '/' + st.length + ' ' + st[i].replace(/^\d+\s*/, ''); }
+  function pjBits(p) {
+    var b = [];
+    if (p.paused) b.push('<span class="amb">보류</span>');
+    else if (p.halted) b.push('<span class="red">멈춤 · 다음을 정해 주세요</span>');
+    else if (p.nextTask) b.push(nextChip({ nextMark: true }) + ' ' + esc(p.nextTask.title));
+    else if (p.waiting) b.push('기다리는 중');
+    if (stageText(p)) b.push(esc(stageText(p)));
+    return b;
+  }
+  // 프로젝트 할 일을 끝냈을 때만: 이 프로젝트의 다음은? (프로젝트 밖 할 일에서는 열리지 않는다)
+  var nextAskT = 0;
+  function askNext(a) {
+    if (!a || !a.name) return;
+    clearTimeout(nextAskT);
+    nextAskT = setTimeout(function () { openNextPrompt(a.name); }, 450);
+  }
+  function openNextPrompt(name) {
+    var p = projOf(name); if (!p) return;
+    var its = (p.items || []).filter(function (it) { return it.status !== STATUS.SOMEDAY; });
+    openSheet('<div class="st" id="npTitle">\'' + esc(name) + '\'의 다음은?</div><div class="ss">다음에 할 한 가지를 정해요. 정하면 \'다음\' 표시가 붙어요</div>' +
+      (its.length ? '<div class="lbl">이미 있는 할 일 중에서</div><div class="card" style="background:var(--fill);box-shadow:none">' + its.map(function (it) {
+        return '<button type="button" class="row npick" data-npick="' + esc(it.id) + '" style="background:transparent;width:100%;text-align:left"><div class="tx"><div class="t">' + esc(it.title) + '</div>' + (it.status === STATUS.DELEGATED ? '<div class="m">' + esc(it.delegatee || '맡김') + '</div>' : '') + '</div>' + CHEV + '</button>';
+      }).join('') + '</div>' : '') +
+      '<div class="lbl">새로 적기</div><div style="display:flex;gap:8px"><input class="field" id="npNew" placeholder="다음에 할 일" maxlength="120" style="margin:0;flex:1"><button class="pillbtn" id="npNewOk" data-name="' + esc(name) + '">정하기</button></div>' +
+      '<div class="lbl">기다리는 중이에요</div><div style="display:flex;gap:8px"><input class="field" id="npWho" placeholder="누구에게서 기다리나요" maxlength="20" style="margin:0;flex:1"><input class="field" id="npWhat" placeholder="무엇을" maxlength="60" style="margin:0;flex:1"><button class="pillbtn" id="npWaitOk" data-name="' + esc(name) + '">맡긴 일로</button></div>' +
+      '<div class="actrow2"><button class="pillbtn" id="npEnd" data-name="' + esc(name) + '" style="background:var(--fill);color:var(--t2);box-shadow:none">프로젝트가 끝났어요</button><button class="pillbtn" id="npLater" style="background:var(--fill);color:var(--t2);box-shadow:none">나중에</button></div>');
+  }
+  $('sheetBody').addEventListener('click', function (e) {
+    var b, fail = function (err) { toast(err.message); load(); };
+    if ((b = e.target.closest('[data-npick]'))) { var id = b.getAttribute('data-npick'); closeSheet(); return call('setNext', id).then(function (r) { toast('다음 행동을 정했어요'); setView(r.view); }).catch(fail); }
+    if (e.target.id === 'npNewOk') {
+      var v = $('npNew').value.trim(), nm = e.target.getAttribute('data-name'); if (!v) return toast('할 일을 적어 주세요');
+      closeSheet(); return call('addAction', v, { project: nm, next: true }).then(function (r) { toast('다음 행동을 정했어요'); setView(r.view); }).catch(fail);
+    }
+    if (e.target.id === 'npWaitOk') {
+      var who = $('npWho').value.trim(), what = $('npWhat').value.trim() || '답을 기다리는 중', nm2 = e.target.getAttribute('data-name'); if (!who) return toast('누구에게서 기다리는지 적어 주세요');
+      var fu = addDays(data.today, 3); addPerson(who); closeSheet();
+      return call('addAction', what, { project: nm2 }).then(function (r) { return call('clarifyTask', r.id, { status: STATUS.DELEGATED, delegatee: who, followUp: fu }); }).then(function (r) { toast(who + '님을 기다려요 · ' + rel(fu) + ' 확인'); setView(r.view); }).catch(fail);
+    }
+    if (e.target.id === 'npEnd') { var nm3 = e.target.getAttribute('data-name'); closeSheet(); return call('setProjectInfo', nm3, { state: '끝남' }).then(function (r) { toast('프로젝트를 끝냈어요'); setView(r.view); }).catch(fail); }
+    if (e.target.id === 'npLater') { closeSheet(); return toast('나중에 정해도 돼요 · 멈춤으로 표시돼요'); }
+  });
+  // ════════ v1.8 상세 팝업: 가운데 마크다운 보기·편집 · 옆 패널 ════════
+  var dtl = { id: '', text: '', base: '', mode: 'view', memo: '', ok: false, err: '' };
+  function dtlLoad(t) {
+    var id = t.id; dtl = { id: id, text: '', base: '', mode: 'view', memo: t.memo || '', ok: false, err: '' }; dtlDraw();
+    call('getTaskDetail', id).then(function (r) { if (dtl.id !== id) return; dtl.text = dtl.base = r.detail || ''; dtl.memo = r.memo || ''; dtl.ok = true; dtlDraw(); })
+      .catch(function (e) { if (dtl.id !== id) return; dtl.err = e.message; dtlDraw(); });
+  }
+  function dtlDraw() {
+    var el = $('dtlMain'); if (!el) return;
+    var tabs = '<div class="dtltabs" role="tablist"><button type="button" role="tab" data-dt="view" aria-selected="' + (dtl.mode === 'view') + '" class="' + (dtl.mode === 'view' ? 'on' : '') + '">보기</button><button type="button" role="tab" data-dt="edit" aria-selected="' + (dtl.mode === 'edit') + '" class="' + (dtl.mode === 'edit' ? 'on' : '') + '">편집</button></div>', body;
+    if (dtl.err) body = '<div class="empty">' + esc(dtl.err) + '</div>';
+    else if (!dtl.ok) body = '<div class="empty" style="padding:24px">불러오는 중…</div>';
+    else if (dtl.mode === 'edit') body = '<textarea id="dtlEdit" class="field dtlta" spellcheck="false" aria-label="상세 글(마크다운)" placeholder="## 배경&#10;## 출처&#10;## 다음 단계&#10;- [ ] 할 일&#10;## 완료 기준">' + mdEsc(dtl.text) + '</textarea><div class="dtlbar"><button type="button" class="pillbtn" id="dtlSave">저장</button><button type="button" class="pillbtn" id="dtlCancel" style="background:var(--fill);color:var(--t2);box-shadow:none">취소</button><span class="hint2">4만 자까지</span></div>';
+    else body = (dtl.text.trim() ? '<div class="md" id="dtlMd">' + mdRender(dtl.text) + '</div>' : '<div class="dtlempty">아직 상세 글이 없어요.<br>배경·출처·다음 단계를 적어 두면, 나중의 나나 에이전트가 바로 이어받을 수 있어요.<br><button type="button" class="pillbtn" data-dt="edit">글 쓰기</button></div>') +
+      (dtl.memo ? '<div class="dtlmemo"><div class="lbl">메모</div><div class="mdmemo">' + esc(dtl.memo) + '</div></div>' : '');
+    el.innerHTML = tabs + body;
+  }
+  function dtlSave(text, cb) {
+    var id = dtl.id, base = dtl.base;
+    if (text.length > 40000) { if (cb) cb.checked = !cb.checked; return toast('상세 글이 너무 길어요(4만 자까지)'); }
+    return call('saveDetail', id, text, base).then(function (r) {
+      if (r.conflict) { dtl.text = dtl.base = r.detail || ''; dtl.mode = 'view'; dtlDraw(); toast('다른 곳에서 글이 먼저 바뀌어서 저장하지 않았어요 · 최신 글을 보여 드려요'); if (r.view) setView(r.view); return; }
+      dtl.text = dtl.base = r.detail === undefined ? text : r.detail; dtl.mode = 'view'; dtlDraw(); if (!cb) toast('상세 글을 저장했어요'); if (r.view) setView(r.view);
+    }).catch(function (err) { toast(err.message); if (cb) cb.checked = !cb.checked; });
+  }
+  $('sheetBody').addEventListener('click', function (e) {
+    var b, t = sheetTask, fail = function (err) { toast(err.message); load(); };
+    if ((b = e.target.closest('[data-dt]'))) { dtl.mode = b.getAttribute('data-dt'); dtlDraw(); var ta = $('dtlEdit'); if (ta) ta.focus(); return; }
+    if (e.target.id === 'dtlCancel') { dtl.mode = 'view'; return dtlDraw(); }
+    if (e.target.id === 'dtlSave') return dtlSave($('dtlEdit').value);
+    if (!t) return;
+    if ((b = e.target.closest('[data-a="x-next"]'))) { var on = !!t.nextMark; return call('setNext', t.id, on).then(function (r) { t.nextMark = !on; toast(on ? '\'다음\' 표시를 뺐어요' : '다음 행동으로 정했어요'); setView(r.view); openTask(t.id); }).catch(function (err) { toast(err.message); }); }
+    if ((b = e.target.closest('[data-a="x-detail"]'))) return dtlOnly(t);
+    if ((b = e.target.closest('[data-en]'))) { var en = b.getAttribute('data-en'), same = t.energy === en; return call('updateTask', t.id, { energy: same ? '' : en }).then(function (r) { t.energy = same ? '' : en; setView(r.view); openTask(t.id); }).catch(fail); }
+    if ((b = e.target.closest('[data-stg]'))) { var sg = b.getAttribute('data-stg'); return call('updateTask', t.id, { stage: sg }).then(function (r) { t.stage = sg; setView(r.view); openTask(t.id); }).catch(fail); }
+  });
+  $('sheetBody').addEventListener('change', function (e) {
+    var cb = e.target.closest && e.target.closest('input[data-ck]'); if (!cb) return;
+    dtlSave(mdToggle(dtl.text, +cb.getAttribute('data-ck'), cb.checked), cb);
+  });
+
+  // ════════ v1.8 프로젝트 창: 상태 · 단계 · 다음 ════════
+  function projectExtra(p) {
+    var st = p.state || '진행', stg = p.stages || [];
+    return '<div class="lbl" style="margin-top:14px">상태</div><div class="chips" id="pjSt">' + ['진행', '보류', '끝남'].map(function (s) { return '<button class="chip' + (st === s ? ' on' : '') + '" data-pjst="' + s + '" data-name="' + esc(p.name) + '">' + s + '</button>'; }).join('') + '</div>' +
+      '<div class="lbl">단계 <span style="font-weight:500;color:var(--t3)">· 줄 사이를 | 로 나눠 적어요</span></div><div style="display:flex;gap:8px"><input class="field" id="pjStages" value="' + esc(stg.join(' | ')) + '" placeholder="1 기획 | 2 시안 | 3 검수 | 4 배포" style="margin:0;flex:1"><button class="pillbtn" id="pjStagesOk" data-name="' + esc(p.name) + '">저장</button></div>' +
+      (stg.length ? '<div class="chips" style="margin-top:8px">' + stg.map(function (s, i) { return '<button class="chip' + ((p.stage || 1) === i + 1 ? ' on' : '') + '" data-pjstage="' + (i + 1) + '" data-name="' + esc(p.name) + '">' + esc(s) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="lbl">기한</div><input class="field" type="date" id="pjDue" value="' + esc(p.due || '') + '" data-name="' + esc(p.name) + '">' +
+      ((p.links || []).length ? '<div class="lbl">링크</div><div class="mdlinks">' + p.links.map(function (u) { var s = mdUrl(u); return s ? mdLink(s, s) : '<span>' + esc(u) + '</span>'; }).join('<br>') + '</div>' : '');
+  }
+  $('sheetBody').addEventListener('click', function (e) {
+    var b, fail = function (err) { toast(err.message); load(); }, nm;
+    var save = function (name, patch, msg) { return call('setProjectInfo', name, patch).then(function (r) { setView(r.view); if (msg) toast(msg); openProjectSheet(name); }).catch(fail); };
+    if ((b = e.target.closest('[data-pjst]'))) return save(b.getAttribute('data-name'), { state: b.getAttribute('data-pjst') }, '프로젝트 상태를 바꿨어요');
+    if (e.target.id === 'pjStagesOk') { nm = e.target.getAttribute('data-name'); return save(nm, { stages: $('pjStages').value, stage: 1 }, '단계를 저장했어요'); }
+    if ((b = e.target.closest('[data-pjstage]'))) return save(b.getAttribute('data-name'), { stage: +b.getAttribute('data-pjstage') });
+    if ((b = e.target.closest('[data-pjnext]'))) { var tid = b.getAttribute('data-pjnext'), nm2 = b.getAttribute('data-name'); return call('setNext', tid).then(function (r) { setView(r.view); toast('다음 행동으로 정했어요'); openProjectSheet(nm2); }).catch(fail); }
+  });
+  $('sheetBody').addEventListener('change', function (e) { if (e.target.id === 'pjDue') { var nm = e.target.getAttribute('data-name'); call('setProjectInfo', nm, { due: e.target.value }).then(function (r) { setView(r.view); toast('기한을 저장했어요'); }).catch(function (err) { toast(err.message); }); } });
+  // ════════ v1.8 알림함 (이 화면이 열려 있을 때만: 이메일·푸시 없음) ════════
+  // 60초마다 + 탭으로 돌아올 때 시트를 새로 읽는다 (가려져 있으면 5분마다). 마지막 확인은 [_설정]에 앱이 직접 적는다 (call inboxSeen).
+  function closeMinute() { var n = new Date(); return n.getHours() * 60 + n.getMinutes(); }
+  function inboxItems() {
+    var d = data; if (!d || !d.counts) return [];
+    var out = [], f = d.followUp || [], hp = (d.projects || []).filter(function (p) { return p.halted && !p.finished; }), seen = (d.alertSeen && d.alertSeen.keys) || [];
+    if (f.length) out.push({ key: 'check:' + f.map(function (t) { return t.id; }).sort().join('+'), kind: 'check', text: '확인할 맡긴 일 ' + f.length + '개', sub: f.slice(0, 2).map(function (t) { return (t.delegatee || '') + ' · ' + t.title; }).join(' / '), go: 'check' });
+    if (hp.length && d.lastReview && (!d.adoptedOn || d.lastReview >= d.adoptedOn)) out.push({ key: 'halt:' + hp.map(function (p) { return p.name; }).sort().join('+'), kind: 'halt', text: '멈춘 프로젝트 ' + hp.length + '개', sub: hp.slice(0, 3).map(function (p) { return p.name; }).join(' · '), go: 'projects' });
+    if (closeMinute() >= 17 * 60 + 30) out.push({ key: 'close:' + d.today, kind: 'close', text: '하루 닫기 시간이에요', sub: '오늘 남은 일을 정리하고 마무리해요', go: 'close' });
+    if (d.reviewDue) out.push({ key: 'review:' + (d.lastReview || 'none'), kind: 'review', text: '주간 검토 할 때예요', sub: d.lastReview ? '마지막 검토 ' + rel(d.lastReview) : '아직 한 번도 안 했어요', go: 'review' });
+    out.forEach(function (x) { x.unseen = seen.indexOf(x.key) < 0; });
+    return out;
+  }
+  var ibxOpen = false;
+  function renderBell() {
+    var b = $('bell'); if (!b) return;
+    var items = inboxItems(), n = items.filter(function (x) { return x.unseen; }).length;
+    b.classList.toggle('pulse', n > 0 && !calm()); b.classList.toggle('has', n > 0);
+    var bn = $('bellN'); if (bn && bn.textContent !== String(n)) { bn.textContent = n; if (n && !calm()) bump(bn); } bn.style.display = n ? '' : 'none';
+    b.setAttribute('aria-label', '알림함' + (n ? ' · 새 알림 ' + n + '개' : ''));
+    document.title = (n ? '(' + n + ') ' : '') + KIT.name;
+    if (ibxOpen) drawInbox(items);
+  }
+  var IBX_ICON = { check: 'user', halt: 'folder', close: 'moon', review: 'calcheck' };
+  function drawInbox(items) {
+    items = items || inboxItems();
+    var el = $('ibx');
+    el.innerHTML = '<div class="ibh"><b>알림함</b><span class="sp"></span>' + (items.some(function (x) { return x.unseen; }) ? '<button type="button" class="lnk" id="ibxAll">모두 확인함</button>' : '') + '<button type="button" class="ibc" id="ibxX" aria-label="알림함 닫기">' + svg('x', 18) + '</button></div>' +
+      (items.length ? items.map(function (x, i) { return '<button type="button" class="ibi k-' + x.kind + (x.unseen ? ' new' : '') + '" data-ibgo="' + x.go + '" style="--i:' + i + '">' + tile(IBX_ICON[x.kind], '', 18) + '<span class="tx"><span class="t">' + esc(x.text) + '</span><span class="m">' + esc(x.sub) + '</span></span></button>'; }).join('') : '<div class="empty" style="padding:22px 12px">새 알림이 없어요</div>') +
+      '<div class="ibf">이 화면이 열려 있을 때만 알려요 · 이메일·푸시는 없어요</div>';
+  }
+  function setIbx(on) {
+    ibxOpen = on; var el = $('ibx'); el.hidden = !on; $('bell').setAttribute('aria-expanded', String(on));
+    if (on) drawInbox(); else if ($('bell')) $('bell').focus && 0;
+  }
+  $('bell').addEventListener('click', function (e) { e.stopPropagation(); setIbx(!ibxOpen); });
+  document.addEventListener('click', function (e) { if (ibxOpen && !e.target.closest('#ibx') && !e.target.closest('#bell')) setIbx(false); });
+  document.addEventListener('keydown', function (e) { if (ibxOpen && e.key === 'Escape') { setIbx(false); $('bell').focus(); } });
+  $('ibx').addEventListener('click', function (e) {
+    var b;
+    if (e.target.closest('#ibxX')) { setIbx(false); return $('bell').focus(); }
+    if (e.target.closest('#ibxAll')) {
+      var keys = inboxItems().map(function (x) { return x.key; });
+      data.alertSeen = { at: new Date().toISOString(), keys: keys }; renderBell();
+      return call('inboxSeen', keys).then(function (r) { if (r.view) { r.view.alertSeen = r.view.alertSeen || { keys: keys }; setView(r.view); } }).catch(function (err) { toast(err.message); });
+    }
+    if ((b = e.target.closest('[data-ibgo]'))) {
+      var g = b.getAttribute('data-ibgo'); setIbx(false);
+      if (g === 'check') { go('today'); var s = $('ckSec'); if (s) { try { s.scrollIntoView({ block: 'center' }); } catch (x) {} } return; }
+      if (g === 'projects') return openProjects();
+      if (g === 'close') return openShutdown();
+      if (g === 'review') return openWeekly();
+    }
+  });
+  var pollT = null, hiddenTicks = 0;
+  function pollTick() { if (document.hidden) { if (++hiddenTicks < 5) return; } hiddenTicks = 0; if (data && !$('sheet').classList.contains('on')) load(); }
+  function schedPoll() { clearTimeout(pollT); pollT = setTimeout(function () { pollTick(); schedPoll(); }, 60000); }
+  schedPoll();
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { hiddenTicks = 0; if (data && !$('sheet').classList.contains('on')) load(); } });
+  window.addEventListener('focus', function () { if (data && !$('sheet').classList.contains('on')) load(); });
+  window.__kitPoll = function () { hiddenTicks = 99; pollTick(); };
+  // 저장 직전 확인에서 '다른 곳에서 먼저 바뀐' 줄이 있어 저장하지 않았을 때
+  window.addEventListener('kit:conflict', function (e) { var c = (e.detail || [])[0]; toast('다른 곳에서 먼저 바뀐 줄이 있어 저장하지 않았어요' + (c && c.title ? ' · ' + c.title : '') + ' · 최신 내용을 다시 불러와요'); setTimeout(load, 400); });
+  // 사이드바: 맡긴 일 · 프로젝트 · 주간 검토 (PC)
+  document.querySelectorAll('[data-nav]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var k = b.getAttribute('data-nav');
+      if (k === 'waiting') openWaiting(); else if (k === 'projects') openProjects(); else if (k === 'weekly') openWeekly();
+      document.querySelectorAll('[data-go]').forEach(function (x) { x.classList.remove('on'); }); document.querySelectorAll('[data-nav]').forEach(function (x) { x.classList.toggle('on', x === b); });
+    });
+  });
+  $('shx').addEventListener('click', closeSheet);
+
+  // 머리 비우기: 영역별 질문 → 그 자리에서 적으면 '분류 대기'로 들어간다 (영역 표시와 함께)
+  var AREAS = [
+    { k: '사람', qs: ['약속해 놓고 아직 못 한 사람은?', '내 답을 기다리는 사람은?', '오래 연락 못 한 사람은?'] },
+    { k: '회사 프로젝트', qs: ['다음 단계가 분명하지 않은 일은?', '내가 결정해야 해서 멈춘 일은?', '마감이 다가오는데 손 못 댄 일은?'] },
+    { k: '메일·약속', qs: ['답장해야 할 메일·메시지는?', '다가오는 회의 준비는?', '일정에 넣어야 할 약속은?'] },
+    { k: '집·개인', qs: ['고치거나 사야 할 것은?', '예약·서류로 챙길 것은?', '건강·가족 일은?'] },
+    { k: '걱정거리', qs: ['마음에 걸리는데 아직 일이 아닌 것은? (적어 두기만 해요)'] },
+    { k: '돈·서류', qs: ['청구서·세금·계약서·정산은?'] }
+  ];
+  function sweepHtml() {
+    var ai = wk.area || 0, A = AREAS[ai];
+    return '<div class="h1" style="margin-bottom:8px">머리 비우기</div><div class="sub2" style="margin-bottom:12px">떠오르는 걸 영역별로 적어요. 정리는 마지막에 한꺼번에 해요</div>' +
+      '<div class="chips" id="swAreas" role="tablist">' + AREAS.map(function (a, i) { return '<button class="chip' + (i === ai ? ' on' : '') + '" role="tab" data-area="' + i + '">' + esc(a.k) + (wk.byArea && wk.byArea[a.k] ? ' <b>' + wk.byArea[a.k] + '</b>' : '') + '</button>'; }).join('') + '</div>' +
+      '<div class="card" style="padding:16px 18px;margin-top:10px"><div class="eyebrow" style="margin:0 0 8px">떠올려 보세요</div>' + A.qs.map(function (q) { return '<div class="swq">' + esc(q) + '</div>'; }).join('') +
+      '<form id="swForm" autocomplete="off" style="display:flex;gap:8px;margin-top:12px"><input class="field" id="swIn" data-sweep placeholder="떠오른 것을 적고 Enter" maxlength="120" style="margin:0;flex:1"><button class="pillbtn" type="submit">담기</button></form>' +
+      '<div class="sub2" style="font-size:14px;margin-top:10px">' + (wk.swept ? '이번 검토에서 ' + wk.swept + '개 담았어요 · 마지막 단계에서 한꺼번에 분류해요' : '적은 건 \'분류 대기\'에 모여요') + '</div></div>';
+  }
+  function classifyHtml() {
+    var p = (data && data.pending) || [];
+    return '<div class="h1" style="margin-bottom:8px">분류하고 마무리 <em>' + p.length + '</em><em>개</em></div><div class="sub2" style="margin-bottom:14px">줄마다 버튼 하나로 정해요. 모르겠으면 \'나중에\'로 보내도 돼요</div>' +
+      (p.length ? '<div class="bulkbar"><button class="pillbtn" data-bulk="today">모두 오늘 할 일로</button><button class="pillbtn" data-bulk="later" style="background:var(--fill);color:var(--t2);box-shadow:none">모두 나중에</button></div><div class="card pend" id="clsCard">' + p.map(pendRow).join('') + '</div>'
+        : '<div class="card"><div class="empty">' + tile('check', 'green', 26) + '<br>분류할 것이 없어요</div></div>');
+  }
+
   // ════════ AI 연결: 내 시트 ID와 사용법을 안내문 하나로 묶어 복사 → AI에 붙여넣기 (AI는 구글 시트 MCP로 내 시트를 직접 읽고 씀) ════════
   function sheetIdOf(u) { var m = String(u || '').match(/\/d\/([A-Za-z0-9_-]+)/); return m ? m[1] : ''; }
   function aiPrompt() {
@@ -3140,7 +3556,7 @@
     L.push('');
     L.push('## 탭');
     L.push('- [업무]: 할 일 목록. 1행이 머리글, 2행부터 할 일 1개 = 1줄. 할 일은 여기만 고친다.');
-    L.push('- [프로젝트]: 프로젝트 · 완료 모습 · 만든 날. 프로젝트의 목표(완료 모습)를 적을 때만 고친다. 완료 모습이 "[버림]"으로 시작하면 다른 프로젝트로 합쳐서 없앤 프로젝트이니 쓰지 마.');
+    L.push('- [프로젝트]: 프로젝트(이름) · 완료 모습 · 만든 날 · ID · 상태(진행/보류/끝남) · 기한 · 마지막 검토일 · 단계 · 현재 단계 · 링크. 프로젝트의 목표(완료 모습)·상태·기한을 적을 때만 고친다. ID는 앱이 붙이는 번호(P-로 시작)이니 바꾸지 마. 새 프로젝트 줄은 이름만 적고 ID는 비워 둬(앱이 붙여). 완료 모습이 "[버림]"으로 시작하면 다른 프로젝트로 합쳐서 없앤 프로젝트이니 쓰지 마.');
     L.push('- [오늘], [_설정]: 앱이 쓰는 탭. 읽지도 고치지도 마.');
     L.push('');
     L.push('## [업무] 열 — 열 위치는 반드시 1행 머리글 이름으로 찾아 (순서가 바뀌어 있을 수 있음)');
@@ -3153,17 +3569,21 @@
     L.push('- 예상(분) · 쓴 시간(분) · 미룬 횟수: 숫자');
     L.push('- 반복: 반복 규칙(매일·매주 월 등) — 고치지 마');
     L.push('- ID: 할 일 고유 번호');
+    L.push('- 상세: 할 일의 자세한 글(마크다운). 첫 글자는 반드시 "## "로 시작해(=·+·-·@로 시작하면 시트가 수식으로 읽을 수 있어). 틀: ## 배경 → ## 출처(링크와 한 줄 요약만, 메일 본문은 옮기지 마) → ## 다음 단계(- [ ] 체크리스트) → ## 완료 기준 → ## 메모. 4만 자까지.');
+    L.push('- 출처: 누가 넣었는지. 내가 새 줄을 넣을 때는 AI:Claude 처럼 "AI:내 이름"으로 적어.');
+    L.push('- 분류일: 분류를 마친 날(yyyy-MM-dd). 새 줄을 넣을 때는 비워 둬 → 앱의 "분류 대기"에 나타나 내가 직접 분류해. 이미 있는 줄의 분류일은 바꾸지 마.');
+    L.push('- 프로젝트ID: 앱이 채우는 프로젝트 번호. 바꾸지 마(프로젝트 이름만 적어도 앱이 이름으로 찾아). 단계 · ★다음(프로젝트의 "다음" 칩) · 에너지(높음/보통/낮음) · 확인 횟수: 앱이 관리하는 칸이니 사용자가 시킨 경우가 아니면 고치지 마.');
     L.push('');
     L.push('## 꼭 지킬 것');
     L.push('- 줄을 지우지 마. 지울 때는 상태를 "버림"으로 바꾼다.');
     L.push('- 있는 줄의 ID·머리글·반복·쓴 시간(분)은 바꾸지 마. 시트에 없는 열을 만들지 마.');
-    L.push('- 새 줄은 마지막 할 일 바로 아래에, 빈 줄 없이 추가하고 ID를 꼭 채운다: AI-yyyyMMddHHmmss-순번 (예: AI-20261109153000-1).');
+    L.push('- 새 줄은 마지막 할 일 바로 아래에, 빈 줄 없이 추가하고 ID를 꼭 채운다: AI-yyyyMMddHHmmss-순번 (예: AI-20261109153000-1). 줄을 중간에 끼워 넣거나 정렬하지 마(앱이 줄 번호와 ID로 줄을 찾아).');
     L.push('- 고칠 할 일은 제목으로 찾되, 비슷한 게 여러 개면 고르기 전에 나에게 물어봐.');
     L.push('- 프로젝트 이름은 이미 있는 이름을 글자 그대로 쓴다. 대소문자·띄어쓰기·하이픈만 다른 프로젝트가 있으면 새로 만들지 말고 그 이름을 쓴다.');
     L.push('- 쓰기 전에 그 줄을 다시 읽어 확인하고, 끝나면 무엇을 바꿨는지 짧게 알려 줘.');
     L.push('');
     L.push('## 이렇게 처리해');
-    L.push('- 담기: 새 줄 · 할일=제목 · 상태=다음 행동 · 오늘 할 날=오늘 · 등록일=오늘. 날짜가 미래인 일이면 상태=일정 · 마감일=그날 · 오늘 할 날은 비움. 중요하면 우선순위=높음, 급하면 긴급=급함. 프로젝트·상황·예상(분)·메모는 알면 채움.');
+    L.push('- 담기: 새 줄 · 할일=제목 · 상태=다음 행동 · 오늘 할 날=오늘 · 등록일=오늘 · 출처=AI:내 이름 · 분류일=비움. 날짜가 미래인 일이면 상태=일정 · 마감일=그날 · 오늘 할 날은 비움. 중요하면 우선순위=높음, 급하면 긴급=급함. 프로젝트·상황·예상(분)·메모는 알면 채움.');
     L.push('- 오늘 할 일 보기: 상태가 완료·버림·참고·언젠가가 아니면서 (오늘 할 날 ≤ 오늘) 또는 (마감일 ≤ 오늘)인 줄. 오늘 할 날이 지난 것은 "어제 못 끝낸 일". 위임은 확인일 ≤ 오늘이면 "확인할 맡긴 일".');
     L.push('- 완료: 상태=완료 · 완료일=오늘. 단, 반복이 있는 할 일은 완료하지 말고 "반복 일은 앱에서 완료해 주세요(다음 회차가 생겨요)"라고 알려.');
     L.push('- 다른 날로 옮기기: 상태=일정 · 마감일=그날 · 오늘 할 날 비움 · 미룬 횟수 +1. 오늘로 당기기: 상태=다음 행동 · 오늘 할 날=오늘.');

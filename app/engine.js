@@ -43,10 +43,19 @@ function createKitEngine(opts) {
   function makeBook(meta) {
     var book = { id: meta.id, url: 'https://docs.google.com/spreadsheets/d/' + meta.id + '/edit', tz: meta.tz || 'Asia/Seoul', tzChanged: false, sheets: [], removed: [] };
     function makeSheet(name, id, rows, hidden, isNew) {
-      var s = { name: name, id: id, data: rows || [], hidden: !!hidden, hiddenChanged: false, isNew: !!isNew, dirty: {}, full: false, prevRows: (rows || []).length, prevCols: 0, rules: [], formulas: {} };
+      var s = { name: name, id: id, data: rows || [], hidden: !!hidden, hiddenChanged: false, isNew: !!isNew, dirty: {}, orig: {}, full: false, prevRows: (rows || []).length, prevCols: 0, rules: [], formulas: {} };
       (rows || []).forEach(function (r) { s.prevCols = Math.max(s.prevCols, r.length); });
       var cell = function (r, c) { return s.data[r - 1] && s.data[r - 1][c - 1] !== undefined && s.data[r - 1][c - 1] !== null ? s.data[r - 1][c - 1] : ''; };
-      var setCell = function (r, c, v) { while (s.data.length < r) s.data.push([]); s.data[r - 1][c - 1] = v; s.dirty[r] = 1; editSeq++; };
+      // 바꾼 '칸'만 기억한다(dirty: 줄 → 칸 번호들). 바뀌기 전 줄 모습(orig)도 함께 둔다 → 저장 직전 시트와 비교하는 기준.
+      // 같은 값을 다시 쓰는 것은 바뀐 것이 아니다.
+      var blank = function (x) { return x === '' || x === undefined || x === null; };
+      var setCell = function (r, c, v) {
+        while (s.data.length < r) s.data.push([]);
+        var old = s.data[r - 1][c - 1];
+        if (old === v || (blank(old) && blank(v))) return;
+        if (!s.orig[r]) s.orig[r] = (s.data[r - 1] || []).slice();
+        s.data[r - 1][c - 1] = v; (s.dirty[r] = s.dirty[r] || {})[c] = 1; editSeq++;
+      };
       var lastRow = function () { for (var i = s.data.length; i > 0; i--) if ((s.data[i - 1] || []).some(function (v) { return v !== '' && v !== undefined && v !== null; })) return i; return 0; };
       var lastCol = function () { var m = 0; s.data.forEach(function (r) { r.forEach(function (v, i) { if (v !== '' && v !== undefined && v !== null) m = Math.max(m, i + 1); }); }); return m; };
       var range = function (r, c, nr, nc) {
@@ -70,9 +79,10 @@ function createKitEngine(opts) {
         getLastRow: lastRow, getLastColumn: lastCol, getMaxRows: function () { return Math.max(1000, s.data.length); }, getMaxColumns: function () { return Math.max(26, lastCol()); },
         getRange: range, getDataRange: function () { return range(1, 1, Math.max(lastRow(), 1), Math.max(lastCol(), 1)); },
         hideSheet: function () { if (!s.hidden) { s.hidden = true; s.hiddenChanged = true; editSeq++; } return api; },
-        deleteRow: function (r) { s.data.splice(r - 1, 1); s.full = true; editSeq++; return api; },
+        // 줄을 밀어 올리지 않고 그 줄의 칸만 비운다: 줄 번호가 바뀌면 다른 곳(에이전트·다른 기기)이 가리키는 줄이 어긋난다
+        deleteRow: function (r) { var w = Math.max(((s.data[r - 1] || []).length), 1); for (var j = 1; j <= w; j++) setCell(r, j, ''); return api; },
         getConditionalFormatRules: function () { return s.rules.slice(); }, setConditionalFormatRules: function (x) { s.rules = x; },
-        clear: function () { s.data = []; s.formulas = {}; s.full = true; editSeq++; return api; }, clearConditionalFormatRules: function () { s.rules = []; },
+        clear: function () { s.data = []; s.formulas = {}; s.full = true; s.dirty = {}; s.orig = {}; editSeq++; return api; }, clearConditionalFormatRules: function () { s.rules = []; },
         _s: s
       });
       s.api = api;
@@ -88,7 +98,7 @@ function createKitEngine(opts) {
       setActiveSheet: function () {}, toast: function () {}
     });
     book.api = bookApi;
-    (meta.sheets || []).forEach(function (m) { book.sheets.push(makeSheet(m.title, m.sheetId, m.rows, m.hidden, !!m.isNew)); });
+    (meta.sheets || []).forEach(function (m) { var sh = makeSheet(m.title, m.sheetId, m.rows, m.hidden, !!m.isNew); sh._s.gridR = m.gridR; sh._s.gridC = m.gridC; book.sheets.push(sh); });
     return book;
   }
 
@@ -106,6 +116,7 @@ function createKitEngine(opts) {
   var sending = 0;
   async function flush() { sending++; try { return await flush0(); } finally { sending--; } }
   var inflight = []; // 보내는 중인 변경 (저장본에는 '아직 못 보냄'으로 남긴다)
+  var conflictLog = []; // 저장 직전 확인에서 '다른 곳에서 먼저 바뀜'으로 저장하지 않은 줄 (takeConflicts 로 가져간다)
   async function flush0() {
     if (!book) return 0;
     if (!hasChanges()) return 0;
@@ -113,9 +124,15 @@ function createKitEngine(opts) {
     var bk = book, reqs = [], data = [], n = 0, marks = [];
     var st = { tz: bk.tzChanged, removed: bk.removed.slice(), sheets: [] };
     if (bk.tzChanged) reqs.push({ updateSpreadsheetProperties: { properties: { timeZone: bk.tz }, fields: 'timeZone' } });
+    var fresh = [];
     bk.sheets.forEach(function (sh, idx) {
       var s = sh._s;
-      if (s.isNew) reqs.push({ addSheet: { properties: { sheetId: s.id, title: s.name, index: idx, hidden: s.hidden } } });
+      if (s.isNew) {
+        // 새 탭은 쓸 칸 수에 맞춰 처음부터 넉넉히 만든다 (구글 기본은 26열 · 1000줄)
+        var w0 = 0; s.data.forEach(function (r) { w0 = Math.max(w0, (r || []).length); });
+        s.gridC = Math.max(26, w0); s.gridR = Math.max(1000, s.data.length);
+        reqs.push({ addSheet: { properties: { sheetId: s.id, title: s.name, index: idx, hidden: s.hidden, gridProperties: { rowCount: s.gridR, columnCount: s.gridC } } } }); fresh.push(s);
+      }
       else if (s.hiddenChanged) reqs.push({ updateSheetProperties: { properties: { sheetId: s.id, hidden: s.hidden }, fields: 'hidden' } });
       if (s.isNew || s.hiddenChanged) st.sheets.push({ s: s, isNew: s.isNew, hid: s.hiddenChanged });
       s.isNew = false; s.hiddenChanged = false;
@@ -129,17 +146,15 @@ function createKitEngine(opts) {
       width = Math.max(width, s.prevCols, 1);
       var rowVals = function (i) { var r = s.data[i - 1] || [], out = []; for (var j = 0; j < width; j++) out.push(toCell(r[j])); return out; };
       if (s.full) {
+        // 탭 통째로 다시 쓰기는 clear() 뒤에만 쓴다 (줄을 밀지 않으므로 보통은 오지 않는다)
         var rows = Math.max(s.data.length, s.prevRows), vals = [];
         for (var i = 1; i <= rows; i++) vals.push(rowVals(i));
         if (vals.length) data.push({ range: q(s.name) + '!A1:' + colName(width) + rows, values: vals });
-      } else {
-        var ks = Object.keys(s.dirty).map(Number).sort(function (a, b) { return a - b; }), start = null, prev = null, block = [];
-        var push = function () { if (start !== null) data.push({ range: q(s.name) + '!A' + start + ':' + colName(width) + prev, values: block }); };
-        ks.forEach(function (r) { if (prev !== null && r === prev + 1) { block.push(rowVals(r)); prev = r; } else { push(); start = r; prev = r; block = [rowVals(r)]; } });
-        push();
       }
-      marks.push({ s: s, full: s.full, dirty: s.dirty, prevRows: s.prevRows, prevCols: s.prevCols });
-      s.full = false; s.dirty = {}; s.prevRows = s.data.length; s.prevCols = width;
+      // 보내는 순간의 줄 모습을 떠 둔다: 보내는 동안 화면이 같은 줄을 또 고쳐도 이번에 보낼 것은 이 모습이다(그 변경은 다음 저장에 실린다)
+      var snap = {}; if (!s.full) Object.keys(s.dirty).forEach(function (r) { snap[r] = (s.data[r - 1] || []).slice(); });
+      marks.push({ s: s, snap: snap, full: s.full, dirty: s.full ? {} : s.dirty, orig: s.full ? {} : s.orig, fresh: fresh.indexOf(s) >= 0, prevRows: s.prevRows, prevCols: s.prevCols });
+      s.full = false; s.dirty = {}; s.orig = {}; s.prevRows = s.data.length; s.prevCols = width;
     });
     inflight = marks;
     try { return await send(); } finally { inflight = []; }
@@ -153,18 +168,185 @@ function createKitEngine(opts) {
         restore(marks); throw e;
       }
     }
+    var moved = false, conflicts = [];
+    try {
+      // 저장 직전: 바꾼 줄을 시트에서 다시 읽어 내가 알던 모습과 같은지 확인한다 (다른 곳에서 먼저 바뀐 줄은 덮어쓰지 않는다)
+      var plan = await verifyRows(bk, marks);
+      moved = plan.moved; conflicts = plan.conflicts;
+      await ensureGrid(bk, plan.writes); // 시트 칸(격자) 밖에는 쓸 수 없다: 열·줄이 모자라면 먼저 늘린다
+      var cellData = cellRanges(plan.writes);
+      cellData.forEach(function (d) { data.push(d); });
+    } catch (e) { restore(marks); throw e; }
     if (data.length) {
       try { await gapi('POST', API.sheets + '/' + bk.id + '/values:batchUpdate', { valueInputOption: 'RAW', data: data }); n += data.length; }
       catch (e) { restore(marks); saveSnap(); throw e; }
     }
-    if (n) saveSnap();
+    if (conflicts.length) {
+      conflicts.forEach(function (c) { marks.forEach(function (m) { if (m.s.name === c.tab) delete m.dirty[c.row]; }); }); // 저장하지 않은 줄은 다시 보내지 않는다
+      conflictLog = conflictLog.concat(conflicts);
+      if (opts.onConflict) try { opts.onConflict(conflicts); } catch (x) {}
+    }
+    if (n || conflicts.length) saveSnap();
+    if (moved || conflicts.length) setTimeout(function () { bgReload(); }, 0); // 시트와 화면의 줄이 어긋났을 수 있으니 새로 받는다
     return n;
     }
+  }
+  // 칸 목록 → 구글 시트 범위 묶음: 줄마다 이어진 칸을 한 범위로, 같은 칸 범위가 이어진 줄은 한 덩어리로
+  function cellRanges(writes) {
+    var out = [], byKey = {};
+    writes.forEach(function (w) {
+      var runs = [], cs = w.cols.slice().sort(function (a, b) { return a - b; });
+      cs.forEach(function (c) { var r = runs[runs.length - 1]; if (r && c === r[1] + 1) r[1] = c; else runs.push([c, c]); });
+      runs.forEach(function (rg) {
+        var vals = []; for (var c = rg[0]; c <= rg[1]; c++) vals.push(toCell(w.vals[c - 1]));
+        var key = w.tab + '|' + rg[0] + '|' + rg[1], list = byKey[key] = byKey[key] || [];
+        list.push({ row: w.row, vals: vals, c0: rg[0], c1: rg[1], tab: w.tab });
+      });
+    });
+    Object.keys(byKey).forEach(function (k) {
+      var list = byKey[k].sort(function (a, b) { return a.row - b.row; }), blk = null;
+      var push = function () { if (blk) out.push({ range: q(blk.tab) + '!' + colName(blk.c0) + blk.r0 + ':' + colName(blk.c1) + blk.r1, values: blk.vals }); };
+      list.forEach(function (x) { if (blk && x.row === blk.r1 + 1) { blk.vals.push(x.vals); blk.r1 = x.row; } else { push(); blk = { tab: x.tab, c0: x.c0, c1: x.c1, r0: x.row, r1: x.row, vals: [x.vals] }; } });
+      push();
+    });
+    return out;
+  }
+  // 쓸 칸이 시트의 열·줄 수를 넘으면 먼저 늘린다 (새 열을 붙이는 시트 구조 업데이트, 줄이 1000을 넘는 경우). 칸 수를 모르면 구글에 물어본다
+  async function ensureGrid(bk, writes) {
+    var need = {};
+    writes.forEach(function (w) { var n = need[w.tab] = need[w.tab] || { r: 0, c: 0 }; n.r = Math.max(n.r, w.row); w.cols.forEach(function (c) { n.c = Math.max(n.c, c); }); });
+    var reqs = [], learn = [];
+    bk.sheets.forEach(function (sh) { var s = sh._s, n = need[s.name]; if (n && !s.gridR && n.r > 1000 || n && !s.gridC && n.c > 26) learn.push(s); });
+    if (learn.length) {
+      var m = await gapi('GET', API.sheets + '/' + bk.id + '?fields=' + enc('sheets(properties(sheetId,gridProperties(rowCount,columnCount)))'));
+      (m.sheets || []).forEach(function (x) { var p = x.properties || {}, g = p.gridProperties || {}; bk.sheets.forEach(function (sh) { if (sh._s.id === p.sheetId) { sh._s.gridR = g.rowCount; sh._s.gridC = g.columnCount; } }); });
+    }
+    bk.sheets.forEach(function (sh) {
+      var s = sh._s, n = need[s.name]; if (!n) return;
+      var gr = s.gridR || 1000, gc = s.gridC || 26;
+      if (n.c > gc) reqs.push({ appendDimension: { sheetId: s.id, dimension: 'COLUMNS', length: n.c - gc } });
+      if (n.r > gr) reqs.push({ appendDimension: { sheetId: s.id, dimension: 'ROWS', length: n.r - gr } });
+    });
+    if (!reqs.length) return;
+    await gapi('POST', API.sheets + '/' + bk.id + ':batchUpdate', { requests: reqs });
+    bk.sheets.forEach(function (sh) { var s = sh._s, n = need[s.name]; if (!n) return; s.gridC = Math.max(s.gridC || 26, n.c); s.gridR = Math.max(s.gridR || 1000, n.r); });
+  }
+  var NOID = -1;
+  function same(a, b) { return String(a === undefined || a === null ? '' : a) === String(b === undefined || b === null ? '' : b); }
+  function isBlankRow(r) { return !(r || []).some(function (v) { return v !== '' && v !== undefined && v !== null; }); }
+  async function readRanges(id, ranges) {
+    if (!ranges.length) return [];
+    var v = await gapi('GET', API.sheets + '/' + id + '/values:batchGet?' + ranges.map(function (r) { return 'ranges=' + enc(r); }).join('&') + '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING');
+    return (v.valueRanges || []).map(function (x) { return x.values || []; });
+  }
+  // 바꾼 칸을 쓰기 전에 그 줄을 시트에서 다시 읽어 확인한다.
+  //  · 줄 번호의 ID가 내가 알던 ID와 다르면(다른 곳에서 줄을 끼우거나 지움) ID로 다시 찾아 그 줄에 쓴다. 못 찾으면 쓰지 않는다.
+  //  · 내가 쓸 칸과 [상태]·[상세] 칸이 내가 알던 값과 달라졌으면(다른 곳에서 먼저 고침) 그 줄은 저장을 멈추고 알린다.
+  //  · 새 줄을 추가하려는 자리에 이미 다른 줄이 생겼으면 시트의 맨 아래로 옮겨 쓴다.
+  async function verifyRows(bk, marks) {
+    var res = { writes: [], conflicts: [], moved: false };
+    var work = marks.filter(function (m) { return !m.full && !m.fresh && Object.keys(m.dirty).length; });
+    // 줄 번호가 없는 탭([_설정] 등)·새 탭은 확인 없이 칸만 쓴다
+    marks.forEach(function (m) {
+      if (work.indexOf(m) >= 0) return;
+      Object.keys(m.dirty).forEach(function (r) { res.writes.push({ tab: m.s.name, row: +r, cols: Object.keys(m.dirty[r]).map(Number), vals: m.snap[r] || m.s.data[r - 1] || [] }); });
+    });
+    if (!work.length) return res;
+    var info = work.map(function (m) {
+      var hdr = (m.s.data[0] || []).map(function (h) { return String(h === undefined || h === null ? '' : h).trim(); });
+      var rows = Object.keys(m.dirty).map(Number).sort(function (a, b) { return a - b; });
+      var width = 0; m.s.data.forEach(function (r) { width = Math.max(width, (r || []).length); }); width = Math.max(width, m.prevCols || 0, 1);
+      return { m: m, s: m.s, hdr: hdr, rows: rows, width: width, idc: hdr.indexOf('ID'), guard: ['상태', '상세'].map(function (h) { return hdr.indexOf(h) + 1; }).filter(function (c) { return c > 0; }) };
+    });
+    // 1) 바꾼 줄 읽기 (이어진 줄은 한 범위로)
+    var ranges = [], owner = [];
+    info.forEach(function (t) {
+      var blk = null;
+      var push = function () { if (blk) { ranges.push(q(t.s.name) + '!A' + blk[0] + ':' + colName(t.width) + blk[1]); owner.push({ t: t, r0: blk[0], r1: blk[1] }); } };
+      t.rows.forEach(function (r) { if (blk && r === blk[1] + 1) blk[1] = r; else { push(); blk = [r, r]; } });
+      push();
+    });
+    var got = await readRanges(bk.id, ranges);
+    info.forEach(function (t) { t.remote = {}; });
+    owner.forEach(function (o, i) { for (var r = o.r0; r <= o.r1; r++) o.t.remote[r] = (got[i] || [])[r - o.r0] || []; });
+    // 2) 어긋난 줄 찾기
+    var lost = [];
+    info.forEach(function (t) {
+      t.work = [];
+      t.rows.forEach(function (r) {
+        var orig = t.m.orig[r], cols = Object.keys(t.m.dirty[r]).map(Number);
+        if (r === 1) { t.work.push({ r: r, to: r, cols: cols, orig: null }); return; } // 머리글 줄
+        if (!orig) { t.work.push({ r: r, to: r, cols: cols, orig: null }); return; } // 바꾸기 전 모습을 모르면(옛 저장본) 칸만 쓴다
+        var oid = t.idc >= 0 ? String(orig[t.idc] === undefined || orig[t.idc] === null ? '' : orig[t.idc]).trim() : '';
+        var rem = t.remote[r] || [];
+        var item = { r: r, to: r, cols: cols, orig: orig, oid: oid, append: isBlankRow(orig) };
+        var sr0 = t.m.snap[r] || t.s.data[r - 1] || [], sid = t.idc >= 0 ? String(sr0[t.idc] === undefined || sr0[t.idc] === null ? '' : sr0[t.idc]).trim() : '';
+        item.sid = sid;
+        // 새 줄 자리에 이미 같은 ID의 줄이 있으면 같은 줄이다(다른 창이 먼저 저장함). 다른 줄이면 시트 맨 아래로 옮긴다
+        if (item.append) { if (!isBlankRow(rem) && !(sid && String(rem[t.idc] === undefined || rem[t.idc] === null ? '' : rem[t.idc]).trim() === sid)) { item.to = 0; lost.push([t, item]); } }
+        else if (oid && String(rem[t.idc] === undefined || rem[t.idc] === null ? '' : rem[t.idc]).trim() !== oid) { item.to = 0; lost.push([t, item]); }
+        t.work.push(item);
+      });
+    });
+    // 3) 어긋난 줄이 있으면 그 탭의 ID·제목 칸을 읽어 다시 찾는다
+    if (lost.length) {
+      res.moved = true;
+      var tabs = [];
+      lost.forEach(function (x) { if (tabs.indexOf(x[0]) < 0) tabs.push(x[0]); });
+      var cranges = [];
+      tabs.forEach(function (t) { var c1 = t.idc >= 0 ? t.idc + 1 : 1, c2 = Math.max(t.hdr.indexOf('할일') + 1, 1); cranges.push(q(t.s.name) + '!' + colName(c1) + '1:' + colName(c1)); cranges.push(q(t.s.name) + '!' + colName(c2) + '1:' + colName(c2)); });
+      var cg = await readRanges(bk.id, cranges);
+      var fetchRows = [];
+      tabs.forEach(function (t, i) {
+        var ids = cg[i * 2] || [], tit = cg[i * 2 + 1] || [], last = Math.max(ids.length, tit.length), at = {};
+        ids.forEach(function (v, j) { var k = String((v || [])[0] === undefined || (v || [])[0] === null ? '' : v[0]).trim(); if (k && !at[k]) at[k] = j + 1; });
+        var next = last + 1;
+        lost.filter(function (x) { return x[0] === t; }).forEach(function (x) {
+          var it = x[1];
+          if (it.append) { it.to = (it.sid && at[it.sid]) || next++; it.rem = []; return; }
+          it.to = at[it.oid] || 0;
+          if (it.to) fetchRows.push([t, it]);
+        });
+      });
+      var rg = fetchRows.map(function (x) { return q(x[0].s.name) + '!A' + x[1].to + ':' + colName(x[0].width) + x[1].to; });
+      var rgot = await readRanges(bk.id, rg);
+      fetchRows.forEach(function (x, i) { x[1].rem = (rgot[i] || [])[0] || []; });
+    }
+    // 4) 칸마다 확인하고 쓸 것을 정한다
+    info.forEach(function (t) {
+      t.work.forEach(function (it) {
+        var src = t.m.snap[it.r] || t.s.data[it.r - 1] || [];
+        if (!it.orig) { res.writes.push({ tab: t.s.name, row: it.to, cols: it.cols, vals: src }); return; }
+        if (!it.to) { res.conflicts.push(conflictOf(t, it, src, '줄을 찾지 못함')); return; }
+        if (it.append) { res.writes.push({ tab: t.s.name, row: it.to, cols: it.cols, vals: src }); return; }
+        var rem = it.rem || t.remote[it.r] || [], guard = it.cols.concat(t.guard), bad = [];
+        guard.forEach(function (c) {
+          if (bad.indexOf(c) >= 0) return;
+          var mine = same(src[c - 1], it.orig[c - 1]) ? null : src[c - 1]; // 내가 바꾼 값 (안 바꾼 칸은 null)
+          if (!same(rem[c - 1], it.orig[c - 1]) && (mine === null || !same(rem[c - 1], mine))) bad.push(c);
+        });
+        if (bad.length) {
+          res.conflicts.push(conflictOf(t, it, src, '다른 곳에서 먼저 바뀜', bad, rem));
+          if (!res.moved && it.to === it.r) { // 줄 번호가 그대로면 화면의 그 줄을 시트의 모습으로 맞춘다
+            var arr = t.s.data[it.r - 1] = (t.s.data[it.r - 1] || []).slice();
+            for (var j = 0; j < Math.max(arr.length, rem.length); j++) arr[j] = rem[j] === undefined ? '' : rem[j];
+          }
+          return;
+        }
+        res.writes.push({ tab: t.s.name, row: it.to, cols: it.cols, vals: src });
+      });
+    });
+    return res;
+  }
+  function conflictOf(t, it, src, why, bad, rem) {
+    var tc = t.hdr.indexOf('할일'), ic = t.idc;
+    var pick = function (r, c) { return c >= 0 && r && r[c] !== undefined && r[c] !== null ? String(r[c]) : ''; };
+    return { tab: t.s.name, row: it.r, id: pick(it.orig, ic) || pick(src, ic), title: pick(src, tc) || pick(it.orig, tc), why: why, cols: (bad || it.cols).map(function (c) { return t.hdr[c - 1] || ''; }).filter(String) };
   }
   function restore(marks) {
     marks.forEach(function (m) {
       var s = m.s; if (m.full) s.full = true;
-      Object.keys(m.dirty).forEach(function (r) { s.dirty[r] = 1; });
+      Object.keys(m.dirty).forEach(function (r) { var d = s.dirty[r] = s.dirty[r] || {}; Object.keys(m.dirty[r]).forEach(function (c) { d[c] = 1; }); if (m.orig[r]) s.orig[r] = m.orig[r]; });
       s.prevRows = Math.max(s.prevRows, m.prevRows); s.prevCols = Math.max(s.prevCols, m.prevCols);
     });
   }
@@ -183,7 +365,7 @@ function createKitEngine(opts) {
     var hint = null;
     if (book && book.id === id) hint = book.sheets.map(function (sh) { return sh.getName(); });
     else { try { hint = JSON.parse(store.get('kitTabs:' + id) || 'null'); } catch (e) { hint = null; } }
-    var metaP = gapi('GET', API.sheets + '/' + id + '?fields=' + enc('properties(timeZone),sheets(properties(sheetId,title,hidden,index))'));
+    var metaP = gapi('GET', API.sheets + '/' + id + '?fields=' + enc('properties(timeZone),sheets(properties(sheetId,title,hidden,index,gridProperties(rowCount,columnCount)))'));
     var valsP = hint && hint.length ? getVals(hint) : null;
     if (valsP) valsP.catch(function () {}); // 탭 이름이 바뀌었으면 아래에서 다시 읽는다
     var meta = await metaP;
@@ -193,7 +375,7 @@ function createKitEngine(opts) {
     if (valsP && titles.every(function (t) { return hint.indexOf(t) >= 0; })) { try { vals = await valsP; } catch (e) { vals = null; } }
     if (!vals) vals = await getVals(titles);
     store.set('kitTabs:' + id, JSON.stringify(titles));
-    return { id: id, tz: meta.properties && meta.properties.timeZone, sheets: sheets.map(function (s) { return { title: s.title, sheetId: s.sheetId, hidden: s.hidden, rows: vals[s.title] || [] }; }) };
+    return { id: id, tz: meta.properties && meta.properties.timeZone, sheets: sheets.map(function (s) { var g = s.gridProperties || {}; return { title: s.title, sheetId: s.sheetId, hidden: s.hidden, rows: vals[s.title] || [], gridR: g.rowCount, gridC: g.columnCount }; }) };
   }
   function applyBook(meta, at) { cache = {}; book = makeBook(meta); loadedAt = at || Date.now(); saveSnap(); return book; }
   async function loadBook(id) { var at = Date.now(); return applyBook(await fetchBook(id), at); }
@@ -210,9 +392,12 @@ function createKitEngine(opts) {
     if (!book) return;
     try {
       store.set('kitBook:' + book.id, JSON.stringify({ v: 1, at: loadedAt, tz: book.tz, tzc: book.tzChanged, rm: book.removed, sheets: book.sheets.map(function (sh) {
-        var x = sh._s, fl = inflight.filter(function (m) { return m.s === x; })[0], d = Object.keys(x.dirty);
-        if (fl) d = d.concat(Object.keys(fl.dirty).filter(function (r) { return d.indexOf(r) < 0; }));
-        return { t: x.name, id: x.id, h: x.hidden, hc: x.hiddenChanged, n: x.isNew, f: x.full || !!(fl && fl.full), d: d, pr: x.prevRows, pc: x.prevCols, r: x.data.map(function (row) { return (row || []).map(toCell); }) };
+        var x = sh._s, fl = inflight.filter(function (m) { return m.s === x; })[0], dc = {}, od = {};
+        var addCols = function (src) { Object.keys(src).forEach(function (r) { var c = dc[r] = dc[r] || []; Object.keys(src[r]).forEach(function (k) { if (c.indexOf(+k) < 0) c.push(+k); }); }); };
+        addCols(x.dirty); if (fl) addCols(fl.dirty);
+        Object.keys(x.orig).forEach(function (r) { od[r] = x.orig[r].map(toCell); });
+        if (fl) Object.keys(fl.orig).forEach(function (r) { od[r] = fl.orig[r].map(toCell); }); // 아직 못 보낸 쪽의 '바뀌기 전 모습'이 기준
+        return { t: x.name, id: x.id, h: x.hidden, hc: x.hiddenChanged, n: x.isNew, f: x.full || !!(fl && fl.full), dc: dc, od: od, pr: x.prevRows, pc: x.prevCols, r: x.data.map(function (row) { return (row || []).map(toCell); }) };
       }) }));
     } catch (e) {}
   }
@@ -221,7 +406,10 @@ function createKitEngine(opts) {
     if (!o || o.v !== 1 || !o.sheets || !o.sheets.length) return null;
     var b = makeBook({ id: id, tz: o.tz, sheets: o.sheets.map(function (x) { return { title: x.t, sheetId: x.id, hidden: x.h, rows: x.r, isNew: x.n }; }) });
     b.tzChanged = !!o.tzc; b.removed = o.rm || [];
-    b.sheets.forEach(function (sh, i) { var x = o.sheets[i], st = sh._s; st.isNew = !!x.n; st.hiddenChanged = !!x.hc; st.full = !!x.f; (x.d || []).forEach(function (r) { st.dirty[r] = 1; }); st.prevRows = x.pr || 0; st.prevCols = x.pc || 0; });
+    b.sheets.forEach(function (sh, i) { var x = o.sheets[i], st = sh._s; st.isNew = !!x.n; st.hiddenChanged = !!x.hc; st.full = !!x.f; 
+      if (x.dc) { Object.keys(x.dc).forEach(function (r) { st.dirty[r] = {}; x.dc[r].forEach(function (c) { st.dirty[r][c] = 1; }); }); Object.keys(x.od || {}).forEach(function (r) { st.orig[r] = x.od[r]; }); }
+      else (x.d || []).forEach(function (r) { st.dirty[r] = {}; for (var c = 1; c <= (x.r[r - 1] || []).length; c++) st.dirty[r][c] = 1; }); // 옛 저장본: 그 줄 전체
+      st.prevRows = x.pr || 0; st.prevCols = x.pc || 0; });
     return { book: b, at: o.at || 0 };
   }
 
@@ -237,7 +425,7 @@ function createKitEngine(opts) {
     var f = await gapi('POST', API.drive + '/files?fields=id', { name: SHEET_NAME, mimeType: 'application/vnd.google-apps.spreadsheet', appProperties: { myTaskKit: '1' }, description: 'GTD 워크가 만든 시트예요. 지우면 앱의 데이터도 사라져요.' });
     store.set('kitSheetId', f.id);
     // 방금 만든 빈 시트는 다시 읽지 않는다: 기본 탭(sheetId 0) 하나뿐이다. 시간대는 setup 이 서울로 맞춘다
-    applyBook({ id: f.id, tz: 'Etc/UTC', sheets: [{ title: 'Sheet1', sheetId: 0, hidden: false, rows: [] }] });
+    applyBook({ id: f.id, tz: 'Etc/UTC', sheets: [{ title: 'Sheet1', sheetId: 0, hidden: false, rows: [], gridR: 1000, gridC: 26 }] });
     return { id: f.id, created: true };
   }
   /** 다른 시트(예: v1에서 쓰던 시트)를 고르면 그 시트로 연결 (구글 파일 선택 창이 drive.file 권한을 열어 준다) */
@@ -305,8 +493,8 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.7.6',       // 코드 버전 (화면 표시용)
-  SCHEMA_VERSION: 6,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열
+  VERSION: '1.8.2',       // 코드 버전 (화면 표시용)
+  SCHEMA_VERSION: 7,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
   SETTINGS_SHEET: '_설정',
@@ -372,7 +560,23 @@ var COLUMNS = [
   { key: 'spent',     header: '쓴 시간(분)', width: 90, since: 6, aliases: [], type: 'number',
     note: '실제로 쓴 시간(분). 시간표에서 끝낸 블록의 길이가 자동으로 적힙니다.' },
   { key: 'postponed', header: '미룬 횟수',  width: 80,  since: 6, aliases: [], type: 'number',
-    note: '내일·다른 날로 미룬 횟수. 자동으로 셉니다.' }
+    note: '내일·다른 날로 미룬 횟수. 자동으로 셉니다.' },
+  { key: 'detail',    header: '상세',       width: 360, since: 7, aliases: [],
+    note: '할 일의 자세한 글(마크다운). 배경·출처·다음 단계·완료 기준 등. 첫 글자는 ## 로 시작해 주세요(=,+,-,@로 시작하면 시트가 수식으로 읽을 수 있어요).' },
+  { key: 'source',    header: '출처',       width: 90,  since: 7, aliases: [],
+    note: '누가 넣었는지. 직접 / AI:Claude / AI:Grok / 머리비우기:사람 등.' },
+  { key: 'triaged',   header: '분류일',     width: 100, since: 7, aliases: [], type: 'date',
+    note: '분류를 마친 날. 비어 있으면 오늘 화면의 "분류 대기"에 보입니다. 앱의 분류 버튼이 오늘 날짜를 적습니다.' },
+  { key: 'projectId', header: '프로젝트ID', width: 90,  since: 7, aliases: [],
+    note: '[프로젝트] 탭의 ID(P-로 시작). 프로젝트 이름이 바뀌어도 이 번호로 이어집니다. 앱이 채웁니다.' },
+  { key: 'stage',     header: '단계',       width: 80,  since: 7, aliases: [],
+    note: '프로젝트 안의 단계 이름 또는 번호.' },
+  { key: 'nextMark',  header: '★다음',      width: 70,  since: 7, aliases: [], list: ['★'],
+    note: '이 프로젝트의 다음 행동 표시(★). 프로젝트마다 하나만. 앱의 호박색 "다음" 칩입니다. (★ 중요=우선순위 높음 과는 다릅니다)' },
+  { key: 'energy',    header: '에너지',     width: 70,  since: 7, aliases: [], list: ['높음', '보통', '낮음'],
+    note: '이 일에 드는 에너지.' },
+  { key: 'checks',    header: '확인 횟수',  width: 80,  since: 7, aliases: [], type: 'number',
+    note: '맡긴 일을 확인하거나 독촉한 횟수. 자동으로 셉니다.' }
 ];
 
 var PRIORITY_ORDER = { '높음': 0, '보통': 1, '': 1, '낮음': 2 };
@@ -384,7 +588,10 @@ var PRIORITY_ORDER = { '높음': 0, '보통': 1, '': 1, '낮음': 2 };
  *
  * 예) 2: function (ctx) { renameStatusValues_(ctx, { '대기': '위임' }); }
  */
-var MIGRATIONS = {};
+var MIGRATIONS = {
+  // v7: 프로젝트 ID 부여 · 업무 줄의 프로젝트ID 채움 · 기존 줄은 분류일을 채워 '분류 대기'로 쏟아지지 않게 (35_Projects.gs)
+  7: function (ctx) { migrateToV7_(ctx); }
+};
 
 /* ── 10_Util.gs ── */
 /** GTD 워크 — 공통 도우미 (시트에 의존하지 않는 순수 함수) */
@@ -492,7 +699,15 @@ function rowToTask_(values, map, tz, rowNumber) {
     delegatedOn: ymd_(get('delegatedOn'), tz),
     urgent: str('urgent'),
     spent: Math.max(0, Math.round(Number(get('spent')) || 0)),
-    postponed: Math.max(0, Math.round(Number(get('postponed')) || 0))
+    postponed: Math.max(0, Math.round(Number(get('postponed')) || 0)),
+    detail: (function () { var v = get('detail'); return v === null || v === undefined ? '' : String(v); })(),
+    source: str('source'),
+    triaged: ymd_(get('triaged'), tz),
+    projectId: str('projectId'),
+    stage: str('stage'),
+    nextMark: str('nextMark') === '★',
+    energy: str('energy'),
+    checks: Math.max(0, Math.round(Number(get('checks')) || 0))
   };
 }
 
@@ -902,7 +1117,8 @@ function readAllTasks_(ctx) {
     var t = rowToTask_(values[i], ctx.map, ctx.tz, i + 2);
     if (t.title) out.push(t);
   }
-  return out;
+  // 프로젝트ID를 먼저, 없으면 이름으로 프로젝트에 잇는다 (이름이 달라도 안 끊김)
+  return ctx.ss ? linkProjects_(out, readProjectRows_(ctx.ss)) : out;
 }
 
 function findRowById_(ctx, id) {
@@ -936,7 +1152,8 @@ function withLock_(fn) {
 // ── 사이드바에서 부르는 공개 함수 (이름 바꾸지 말 것) ─────────────────
 
 /** 여러 줄 텍스트 → 줄마다 수집함 항목 1개 */
-function addTasks(text) {
+function addTasks(text, opts) {
+  var source = (opts && String(opts.source || '').trim()) || '직접';
   var lines = String(text || '').split(/\r?\n/)
     .map(function (s) { return s.replace(/^\s*[-*•·]\s*/, '').trim(); })
     .filter(function (s) { return s !== ''; });
@@ -949,9 +1166,10 @@ function addTasks(text) {
     appendTasks_(ctx, parsed.map(function (p) {
       // 담은 일은 곧 오늘 할 일(★). 날짜를 적었으면 그날의 일정으로 (따로 '정리하기' 단계 없음)
       var later = p.due && p.due > today;
-      var t = { title: p.title, status: later ? STATUS.SCHEDULED : STATUS.NEXT, created: today };
+      var t = { title: p.title, status: later ? STATUS.SCHEDULED : STATUS.NEXT, created: today, source: source };
       if (!later) t.focus = today;
       ['due', 'context', 'project', 'priority', 'est'].forEach(function (k) { if (p[k]) t[k] = p[k]; });
+      if (t.project) t.projectId = projectIdForName_(ctx.ss, t.project);
       return t;
     }));
     return { added: lines.length, parsed: parsed };
@@ -1049,7 +1267,7 @@ function spawnNextOccurrence_(ctx, task, today, allTasks) {
   appendTasks_(ctx, [{
     id: nid, title: task.title, status: delegated ? STATUS.DELEGATED : STATUS.SCHEDULED, due: next,
     context: task.context, delegatee: task.delegatee, followUp: delegated ? next : '',
-    memo: task.memo, repeat: task.repeat, created: today
+    memo: task.memo, repeat: task.repeat, created: today, triaged: today
   }]);
   return next;
 }
@@ -1107,21 +1325,39 @@ function clarifyTask(id, d) {
     if (d.followUp !== undefined) set('followUp', ymd_(d.followUp));
     if (d.memo !== undefined && String(d.memo).trim()) set('memo', String(d.memo).trim());
     if (d.repeat !== undefined) set('repeat', String(d.repeat).trim());
-    if (d.project !== undefined) set('project', String(d.project).trim());
+    if (d.project !== undefined) { set('project', String(d.project).trim()); set('projectId', projectIdForName_(ctx.ss, d.project)); }
     if (d.est !== undefined) set('est', Number(d.est) > 0 ? Math.round(Number(d.est)) : '');
     if (d.priority !== undefined) set('priority', ['높음', '보통', '낮음'].indexOf(d.priority) !== -1 ? d.priority : '');
     if (d.focus !== undefined) set('focus', d.focus === true ? today : ymd_(d.focus));
+    if (!before.triaged) set('triaged', today); // 상태를 정한 것 = 분류를 마친 것
     applyTrack_(ctx, row, d);
     set('completed', d.status === STATUS.DONE ? today : '');
     if (d.status === STATUS.DELEGATED && before.status !== STATUS.DELEGATED) set('delegatedOn', today);
-    var next = '', nextId = '';
+    var next = '', nextId = '', proj = null;
     if (d.status === STATUS.DONE || d.status === STATUS.DROPPED) {
       var t = rowToTask_(ctx.sheet.getRange(row, 1, 1, ctx.sheet.getLastColumn()).getValues()[0], ctx.map, ctx.tz, row);
       LAST_SPAWN_ID_ = '';
       if (t.repeat && (d.status === STATUS.DONE || d.skip)) { next = spawnNextOccurrence_(ctx, t, today); nextId = next ? LAST_SPAWN_ID_ : ''; }
+      // 프로젝트 할 일을 끝냈을 때만 "이 프로젝트의 다음은?"을 물을 수 있게 알려 준다 (프로젝트 밖 할 일에는 없음)
+      if (d.status === STATUS.DONE && !isClosedStatus_(before.status)) {
+        var me = readAllTasks_(ctx).filter(function (x) { return x.id === id; })[0];
+        if (me && me.project) {
+          var pr = readProjectRows_(ctx.ss).filter(function (r) { return r.id && r.id === me.pid; })[0];
+          if (!pr || pr.state === '진행') proj = { name: me.project, id: me.pid || '', wasNext: !!before.nextMark };
+        }
+      }
+      if (before.nextMark && ctx.map.nextMark) set('nextMark', ''); // 끝낸 일의 '다음' 칩은 내린다
     }
-    return { ok: true, next: next, nextId: nextId, undo: { id: id, status: before.status, focus: before.focus, nextId: nextId } };
+    return { ok: true, next: next, nextId: nextId, askNext: proj, undo: undoOf_(id, before, nextId, d) };
   });
+}
+
+/** 되돌리기 정보. 분류 버튼으로 정한 것(d.triage)은 되돌리면 다시 '분류 대기'가 되게 untriage를 싣는다 */
+function undoOf_(id, before, nextId, d) {
+  var u = { id: id, status: before.status, focus: before.focus, nextId: nextId };
+  if (before.nextMark) u.nextMark = '★';
+  if (d && d.triage && !before.triaged) u.untriage = true;
+  return u;
 }
 
 /**
@@ -1136,14 +1372,14 @@ function addRoutine(title, rule, start, context) {
     if (!ctx.map.repeat) throw new Error('먼저 업데이트를 적용해 주세요.');
     var today = todayYmd_(ctx.tz);
     var due = ymd_(start) || today;
-    appendTasks_(ctx, [{ title: title, status: STATUS.SCHEDULED, due: due, repeat: String(rule).trim(), context: String(context || '').trim(), created: today }]);
+    appendTasks_(ctx, [{ title: title, status: STATUS.SCHEDULED, due: due, repeat: String(rule).trim(), context: String(context || '').trim(), created: today, triaged: today, source: '직접' }]);
     return { ok: true, due: due };
   });
 }
 
 /**
  * 업무 일부만 고치기 (상태는 그대로). 허용: focus(★ 오늘 할 날, true=오늘, ''=해제), est, priority,
- * memoAppend(메모 뒤에 덧붙이기), due, context, project, title, followUp, delegatee
+ * memoAppend(메모 뒤에 덧붙이기), due, context, project, title, followUp, delegatee, stage, energy, triage(true면 분류일=오늘)
  */
 function updateTask(id, patch) {
   patch = patch || {};
@@ -1159,9 +1395,12 @@ function updateTask(id, patch) {
     if (patch.priority !== undefined) set('priority', ['높음', '보통', '낮음'].indexOf(patch.priority) !== -1 ? patch.priority : '');
     if (patch.due !== undefined) set('due', ymd_(patch.due));
     if (patch.context !== undefined) set('context', String(patch.context).trim());
-    if (patch.project !== undefined) set('project', String(patch.project).trim());
+    if (patch.project !== undefined) { set('project', String(patch.project).trim()); set('projectId', projectIdForName_(ctx.ss, patch.project)); if (!String(patch.project).trim()) set('nextMark', ''); }
     if (patch.followUp !== undefined) set('followUp', ymd_(patch.followUp));
     if (patch.delegatee !== undefined && String(patch.delegatee).trim()) set('delegatee', String(patch.delegatee).trim());
+    if (patch.stage !== undefined) set('stage', String(patch.stage).trim());
+    if (patch.energy !== undefined) set('energy', ['높음', '보통', '낮음'].indexOf(patch.energy) !== -1 ? patch.energy : '');
+    if (patch.triage) set('triaged', today);
     applyTrack_(ctx, row, patch);
     if (patch.memoAppend && ctx.map.memo) {
       var cur = String(ctx.sheet.getRange(row, ctx.map.memo).getValue() || '').trim();
@@ -1177,6 +1416,10 @@ function applyTrack_(ctx, row, p) {
   var set = function (key, val) { if (ctx.map[key]) ctx.sheet.getRange(row, ctx.map[key]).setValue(val); };
   if (p.urgent !== undefined) set('urgent', p.urgent ? '급함' : '');
   if (p.spent !== undefined) set('spent', Number(p.spent) > 0 ? Math.round(Number(p.spent)) : '');
+  if (p.check && ctx.map.checks) {
+    var cc = Number(ctx.sheet.getRange(row, ctx.map.checks).getValue()) || 0;
+    set('checks', cc + 1);
+  }
   if (p.postpone && ctx.map.postponed) {
     var cur = Number(ctx.sheet.getRange(row, ctx.map.postponed).getValue()) || 0;
     set('postponed', cur + 1);
@@ -1228,6 +1471,8 @@ function undoTask(u) {
     var set = function (key, val) { if (ctx.map[key]) ctx.sheet.getRange(row, ctx.map[key]).setValue(val); };
     set('status', u.status); set('completed', '');
     if (u.focus !== undefined) set('focus', ymd_(u.focus));
+    if (u.nextMark !== undefined) set('nextMark', u.nextMark);
+    if (u.untriage) set('triaged', '');
     if (u.nextId) {
       var nrow = findRowById_(ctx, u.nextId);
       if (nrow) {
@@ -1256,6 +1501,34 @@ function reopenTask(id) {
 /** 루틴 이번 회차 건너뛰기: 이번 회차는 '버림'으로 남기고 다음 회차를 만든다 */
 function skipTask(id) {
   return clarifyTask(id, { status: STATUS.DROPPED, skip: true });
+}
+
+/** 할 일 하나의 상세 글(마크다운)과 메모. 화면 목록에는 글 전체를 싣지 않고 열 때만 읽는다 */
+function getTaskDetail(id) {
+  var ctx = taskContext_(), t = readAllTasks_(ctx).filter(function (x) { return x.id === id; })[0];
+  if (!t) throw new Error('항목을 찾지 못했습니다. 시트에서 지워졌을 수 있습니다.');
+  return { id: t.id, title: t.title, detail: t.detail, memo: t.memo, source: t.source, project: t.project, projectId: t.pid || '', stage: t.stage, energy: t.energy, nextMark: t.nextMark, checks: t.checks };
+}
+
+/**
+ * 상세 글 저장 (편집·체크박스). base = 화면이 열 때 읽은 글. 저장 직전에 시트의 글을 다시 읽어 base와 다르면
+ * (그 사이 다른 곳에서 고침) 저장하지 않고 최신 글을 돌려준다(conflict).
+ */
+function saveDetail(id, text, base) {
+  text = String(text === null || text === undefined ? '' : text);
+  if (text.length > 40000) throw new Error('상세 글이 너무 길어요(4만 자까지).');
+  return withLock_(function () {
+    var ctx = taskContext_();
+    if (!ctx.map.detail) throw new Error('먼저 업데이트를 적용해 주세요.');
+    var row = findRowById_(ctx, id);
+    if (!row) throw new Error('항목을 찾지 못했습니다. 시트에서 지워졌을 수 있습니다.');
+    var cur = ctx.sheet.getRange(row, ctx.map.detail).getValue();
+    cur = cur === null || cur === undefined ? '' : String(cur);
+    if (base !== undefined && base !== null && String(base) !== cur) return { ok: false, conflict: true, detail: cur };
+    if (/^[=+\-@]/.test(text)) text = ' ' + text; // 시트가 수식으로 읽지 않게
+    if (text !== cur) ctx.sheet.getRange(row, ctx.map.detail).setValue(text);
+    return { ok: true, detail: text };
+  });
 }
 
 // ── 시트에서 직접 편집할 때 (onEdit) ──────────────────────────
@@ -1325,84 +1598,255 @@ function handleEdit_(e) {
 
 /* ── 35_Projects.gs ── */
 /**
- * GTD 워크 — 프로젝트 (완료 모습) · 다음 행동 바로 추가
+ * GTD 워크 — 프로젝트 (완료 모습 · ID · 단계 · 다음 행동) · 다음 행동 바로 추가
  *
  * GTD에서 프로젝트는 "끝나면 어떤 모습인가"를 한 줄로 정해 둔다.
- * [프로젝트] 시트는 처음으로 완료 모습을 적을 때 생긴다. 열은 머리글 이름으로 찾는다.
- * 프로젝트 이름은 [업무] 시트의 '프로젝트' 열과 같은 글자로 맞춘다.
+ * [프로젝트] 시트는 처음으로 프로젝트를 적을 때 생긴다. 열은 머리글 이름으로 찾고, 없는 열은 오른쪽 끝에 붙인다.
+ * 프로젝트 이름은 [업무] 시트의 '프로젝트' 열과 같은 글자로 맞춘다. v1.8.0부터 '프로젝트ID'(P-xxxxxx)로도 잇는다:
+ * 앱은 프로젝트ID를 먼저 보고, 없으면 이름으로 찾는다 (이름을 고치거나 철자가 달라도 할 일이 끊기지 않게).
  */
 
-var PROJECT_HEADERS = ['프로젝트', '완료 모습', '만든 날'];
+var PROJECT_HEADERS = ['프로젝트', '완료 모습', '만든 날', 'ID', '상태', '기한', '마지막 검토일', '단계', '현재 단계', '링크'];
+var PROJECT_STATES = ['진행', '보류', '끝남'];
 
 /** 합쳐서 없앤 프로젝트는 행을 지우지 않고 '완료 모습' 칸 앞에 이 표시를 붙인다 (열을 새로 만들지 않기 위해) */
 var PROJECT_DROPPED_TAG = '[버림]';
 function isDroppedOutcome_(v) { return String(v || '').indexOf(PROJECT_DROPPED_TAG) === 0; }
 
-/** { 프로젝트 이름: 완료 모습 } */
-function readProjectOutcomes_(ss) {
+/**
+ * [프로젝트] 시트와 열 번호. create=true면 시트가 없을 때 만들고, 없는 열은 오른쪽 끝에 붙인다.
+ * @return {{sh:Object, col:Object, width:number}|null}
+ */
+function projectSheetInfo_(ss, create) {
   var sh = ss.getSheetByName(KIT.PROJECT_SHEET);
-  if (!sh || sh.getLastRow() < 2) return {};
-  var width = Math.max(sh.getLastColumn(), 2);
+  if (!sh) {
+    if (!create) return null;
+    sh = ss.insertSheet(KIT.PROJECT_SHEET);
+    sh.getRange(1, 1, 1, PROJECT_HEADERS.length).setValues([PROJECT_HEADERS]).setFontWeight('bold').setBackground('#EEEEFF');
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 180); sh.setColumnWidth(2, 360); sh.setColumnWidth(3, 100);
+  }
+  var width = Math.max(sh.getLastColumn(), 1);
   var head = sh.getRange(1, 1, 1, width).getValues()[0].map(function (h) { return String(h).trim(); });
-  var cName = head.indexOf(PROJECT_HEADERS[0]), cOut = head.indexOf(PROJECT_HEADERS[1]);
-  if (cName < 0 || cOut < 0) return {};
-  var out = {};
-  sh.getRange(2, 1, sh.getLastRow() - 1, width).getValues().forEach(function (r) {
-    var n = String(r[cName]).trim();
-    if (n) out[n] = String(r[cOut] || '').trim();
+  var col = {};
+  PROJECT_HEADERS.forEach(function (h) {
+    var i = head.indexOf(h);
+    if (i >= 0) { col[h] = i + 1; return; }
+    if (!create) return;
+    width++; sh.getRange(1, width).setValue(h); head.push(h); col[h] = width;
+  });
+  return { sh: sh, col: col, width: width };
+}
+
+function splitStages_(v) {
+  return String(v || '').split('|').map(function (s) { return s.trim(); }).filter(String);
+}
+
+/** [프로젝트] 줄 전부. 합쳐서 없앤 줄(dropped)도 들어 있다 */
+function readProjectRows_(ss) {
+  var info = projectSheetInfo_(ss, false);
+  if (!info || !info.col['프로젝트']) return [];
+  var sh = info.sh, last = sh.getLastRow();
+  if (last < 2) return [];
+  var tz = ss.getSpreadsheetTimeZone();
+  var vals = sh.getRange(2, 1, last - 1, info.width).getValues();
+  var g = function (r, h) { var c = info.col[h]; if (!c) return ''; var v = r[c - 1]; return v === null || v === undefined ? '' : v; };
+  var out = [];
+  vals.forEach(function (r, i) {
+    var name = String(g(r, '프로젝트')).trim();
+    if (!name) return;
+    var outcome = String(g(r, '완료 모습')).trim();
+    var state = String(g(r, '상태')).trim();
+    out.push({
+      row: i + 2, name: name, outcome: outcome, dropped: isDroppedOutcome_(outcome),
+      id: String(g(r, 'ID')).trim(), state: PROJECT_STATES.indexOf(state) >= 0 ? state : '진행',
+      due: ymd_(g(r, '기한'), tz), reviewed: ymd_(g(r, '마지막 검토일'), tz), created: ymd_(g(r, '만든 날'), tz),
+      stages: splitStages_(g(r, '단계')), stage: Math.max(0, Math.round(Number(g(r, '현재 단계')) || 0)),
+      links: String(g(r, '링크')).split(/\r?\n/).map(function (s) { return s.trim(); }).filter(String)
+    });
   });
   return out;
 }
 
-/** 프로젝트 현황(projectStats_)에 완료 모습을 붙인다 */
-function withOutcomes_(ss, projects) {
-  var o = readProjectOutcomes_(ss);
-  var have = {};
-  var out = (projects || []).map(function (p) { have[p.name] = 1; p.outcome = isDroppedOutcome_(o[p.name]) ? '' : (o[p.name] || ''); return p; });
-  // 할 일이 아직 없는 새 프로젝트 폴더도 보이게 (합쳐서 버린 프로젝트는 숨김)
-  Object.keys(o).forEach(function (n) { if (!have[n] && !isDroppedOutcome_(o[n])) out.push({ name: n, open: 0, done: 0, next: 0, waiting: 0, important: 0, nextDue: '', items: [], stalled: false, finished: false, empty: true, outcome: o[n] }); });
+/** { 프로젝트 이름: 완료 모습 } (옛 모양 그대로) */
+function readProjectOutcomes_(ss) {
+  var out = {};
+  readProjectRows_(ss).forEach(function (r) { out[r.name] = r.outcome; });
   return out;
 }
 
-/** 프로젝트 완료 모습 저장 (없으면 시트·줄을 만든다) */
+function newProjectId_(rows) {
+  var used = {};
+  (rows || []).forEach(function (r) { if (r.id) used[r.id] = 1; });
+  var A = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ', id;
+  do {
+    id = 'P-';
+    for (var i = 0; i < 6; i++) id += A.charAt(Math.floor(Math.random() * A.length));
+  } while (used[id]);
+  return id;
+}
+
+/** 이름·ID로 프로젝트 찾기 (합쳐서 없앤 줄은 제외). ID를 먼저 본다 */
+function projectIndex_(rows) {
+  var byId = {}, byName = {};
+  (rows || []).forEach(function (r) {
+    if (r.dropped) return;
+    if (r.id && !byId[r.id]) byId[r.id] = r;
+    if (!byName[r.name]) byName[r.name] = r;
+  });
+  return { byId: byId, byName: byName };
+}
+
+/**
+ * 업무 줄을 프로젝트에 잇는다: 프로젝트ID가 맞으면 그 프로젝트의 이름으로, 없으면 이름으로 찾는다.
+ * (t.project = 화면에 보일 이름, t.pid = 프로젝트 ID. 이름이 달라도 ID로 안 끊긴다. 멱등)
+ */
+function linkProjects_(tasks, rows) {
+  var ix = projectIndex_(rows);
+  tasks.forEach(function (t) {
+    var r = (t.projectId && ix.byId[t.projectId]) || (t.project && ix.byName[t.project]) || null;
+    if (r) { t.project = r.name; t.pid = r.id; } else t.pid = '';
+  });
+  return tasks;
+}
+
+/**
+ * 프로젝트 줄을 찾거나 만든다(ID 포함). ref는 이름 또는 ID.
+ * byId=true(번호로 찾는 길: setProjectInfo)일 때만, P-번호 모양인데 없으면 오류. 이름으로 만드는 길에서는 'P-2026Q4' 같은 이름도 그냥 이름이다.
+ * @return {{row:number, id:string, name:string, info:Object}}
+ */
+function ensureProjectRow_(ss, ref, outcome, byId) {
+  ref = String(ref || '').trim();
+  if (!ref) throw new Error('프로젝트 이름을 적어 주세요.');
+  var info = projectSheetInfo_(ss, true), rows = readProjectRows_(ss), ix = projectIndex_(rows);
+  var hit = ix.byId[ref] || ix.byName[ref];
+  // P-로 시작하는 번호 모양인데 그 번호의 프로젝트가 없으면 이름으로 오해해 새로 만들지 않는다
+  if (!hit && byId && /^P-[0-9A-Z]{6}$/.test(ref)) throw new Error('그 번호의 프로젝트를 찾지 못했어요.');
+  // 합쳐서 없앤 이름을 다시 쓰면 새 줄(새 ID)을 만들지 않고 그 줄을 되살린다 (같은 이름의 프로젝트 줄·ID가 둘이 되지 않게)
+  if (!hit) {
+    var dead = rows.filter(function (r) { return r.dropped && r.name === ref; })[0];
+    if (dead) {
+      if (!dead.id) { dead.id = newProjectId_(rows); info.sh.getRange(dead.row, info.col['ID']).setValue(dead.id); }
+      // 새 목표를 줄 때만 그 글로, 아니면 [버림] 표시 뒤에 남아 있던 원래 목표 글로 되돌린다 (목표를 빈칸으로 덮지 않는다)
+      var kept = String(dead.outcome).match(/ · ([\s\S]*)$/);
+      info.sh.getRange(dead.row, info.col['완료 모습']).setValue(outcome ? outcome : (kept ? kept[1] : ''));
+      return { row: dead.row, id: dead.id, name: dead.name, info: info, created: false };
+    }
+  }
+  if (hit) {
+    if (!hit.id) { hit.id = newProjectId_(rows); info.sh.getRange(hit.row, info.col['ID']).setValue(hit.id); }
+    return { row: hit.row, id: hit.id, name: hit.name, info: info, created: false };
+  }
+  var id = newProjectId_(rows), row = info.sh.getLastRow() + 1;
+  info.sh.getRange(row, info.col['프로젝트']).setValue(ref);
+  info.sh.getRange(row, info.col['완료 모습']).setValue(outcome || '');
+  info.sh.getRange(row, info.col['만든 날']).setValue(todayYmd_(ss.getSpreadsheetTimeZone()));
+  info.sh.getRange(row, info.col['ID']).setValue(id);
+  info.sh.getRange(row, info.col['상태']).setValue('진행');
+  return { row: row, id: id, name: ref, info: info, created: true };
+}
+
+/** 프로젝트 이름 → 프로젝트ID (없으면 줄을 만든다). 이름이 비면 '' */
+function projectIdForName_(ss, name) {
+  name = String(name || '').trim();
+  if (!name) return '';
+  return ensureProjectRow_(ss, name).id;
+}
+
+/** 프로젝트 현황(projectStats_)에 완료 모습·ID·상태·단계를 붙이고, 할 일이 아직 없는 새 프로젝트도 보이게 한다 */
+function withOutcomes_(ss, projects, rowsOpt) {
+  var rows = rowsOpt || readProjectRows_(ss), ix = projectIndex_(rows);
+  var have = {};
+  var enrich = function (p, r) {
+    p.outcome = r ? r.outcome : '';
+    p.id = r ? r.id : (p.id || '');
+    p.state = r ? r.state : '진행';
+    p.due = r ? r.due : '';
+    p.reviewed = r ? r.reviewed : '';
+    p.stages = r ? r.stages : [];
+    p.stage = r ? r.stage : 0;
+    p.links = r ? r.links : [];
+    p.paused = p.state === '보류';
+    if (p.state === '끝남') p.finished = true;
+    // 멈춤 = 진행 중인데 '다음' 표시가 하나도 없음 (맡겨 놓고 기다리는 중이면 멈춤이 아니다)
+    p.halted = p.state === '진행' && !p.finished && !p.hasNext && !(p.delegated > 0);
+    return p;
+  };
+  var out = (projects || []).map(function (p) { var r = ix.byName[p.name] || null; have[p.name] = 1; return enrich(p, r); });
+  // 할 일이 아직 없는 새 프로젝트 폴더도 보이게 (합쳐서 버린 프로젝트는 숨김)
+  rows.forEach(function (r) {
+    if (r.dropped || have[r.name]) return;
+    have[r.name] = 1;
+    out.push(enrich({ name: r.name, open: 0, done: 0, next: 0, waiting: 0, important: 0, someday: 0, total: 0, nextDue: '', items: [], stalled: false, finished: false, empty: true, hasNext: false, nextTask: null, delegated: 0 }, r));
+  });
+  return out;
+}
+
+/** 프로젝트 완료 모습 저장 (없으면 시트·줄을 만든다). 합쳐서 없앤 이름이어도 새로 적으면 되살린다 */
 function setProjectOutcome(name, outcome) {
   name = String(name || '').trim();
   outcome = String(outcome || '').trim();
   if (!name) throw new Error('프로젝트 이름을 적어 주세요.');
   return withLock_(function () {
     var ctx = taskContext_();
-    var sh = ctx.ss.getSheetByName(KIT.PROJECT_SHEET);
-    if (!sh) {
-      sh = ctx.ss.insertSheet(KIT.PROJECT_SHEET);
-      sh.getRange(1, 1, 1, PROJECT_HEADERS.length).setValues([PROJECT_HEADERS]).setFontWeight('bold').setBackground('#EEEEFF');
-      sh.setFrozenRows(1);
-      sh.setColumnWidth(1, 180); sh.setColumnWidth(2, 360); sh.setColumnWidth(3, 100);
+    var rows = readProjectRows_(ctx.ss);
+    var any = rows.filter(function (r) { return r.name === name; })[0];
+    if (any && any.dropped) {
+      var info = projectSheetInfo_(ctx.ss, true);
+      info.sh.getRange(any.row, info.col['완료 모습']).setValue(outcome);
+      if (!any.id) info.sh.getRange(any.row, info.col['ID']).setValue(newProjectId_(rows));
+      return { ok: true };
     }
-    var width = Math.max(sh.getLastColumn(), PROJECT_HEADERS.length);
-    var head = sh.getRange(1, 1, 1, width).getValues()[0].map(function (h) { return String(h).trim(); });
-    // 사용자가 열을 지웠거나 옮겼어도 머리글로 찾고, 없으면 오른쪽에 붙인다
-    var col = PROJECT_HEADERS.map(function (h) {
-      var i = head.indexOf(h);
-      if (i >= 0) return i + 1;
-      width++; sh.getRange(1, width).setValue(h); head.push(h); return width;
-    });
-    var last = sh.getLastRow();
-    if (last >= 2) {
-      var names = sh.getRange(2, col[0], last - 1, 1).getValues();
-      for (var i = 0; i < names.length; i++) {
-        if (String(names[i][0]).trim() === name) { sh.getRange(i + 2, col[1]).setValue(outcome); return { ok: true }; }
-      }
-    }
-    sh.getRange(last + 1, col[0]).setValue(name);
-    sh.getRange(last + 1, col[1]).setValue(outcome);
-    sh.getRange(last + 1, col[2]).setValue(todayYmd_(ctx.tz));
-    return { ok: true };
+    var hit = ensureProjectRow_(ctx.ss, name, outcome);
+    if (!hit.created) hit.info.sh.getRange(hit.row, hit.info.col['완료 모습']).setValue(outcome);
+    return { ok: true, id: hit.id };
+  });
+}
+
+/**
+ * 프로젝트 정보 고치기. ref = 이름 또는 ID. patch: { outcome, state('진행'|'보류'|'끝남'), due, stages(문자열 배열 또는 '|'로 구분한 글),
+ * stage(현재 단계 번호), links(배열 또는 줄바꿈 글), reviewed(true면 오늘) }
+ */
+function setProjectInfo(ref, patch) {
+  patch = patch || {};
+  if (patch.state !== undefined && PROJECT_STATES.indexOf(patch.state) < 0) throw new Error('프로젝트 상태는 진행·보류·끝남 중 하나예요.');
+  return withLock_(function () {
+    var ctx = taskContext_(), hit = ensureProjectRow_(ctx.ss, ref, undefined, true), put = function (h, v) { hit.info.sh.getRange(hit.row, hit.info.col[h]).setValue(v); };
+    if (patch.outcome !== undefined) put('완료 모습', String(patch.outcome).trim());
+    if (patch.state !== undefined) put('상태', patch.state);
+    if (patch.due !== undefined) put('기한', ymd_(patch.due));
+    if (patch.stages !== undefined) put('단계', (Array.isArray(patch.stages) ? patch.stages : splitStages_(patch.stages)).map(function (s) { return String(s).trim(); }).filter(String).join(' | '));
+    if (patch.stage !== undefined) put('현재 단계', Number(patch.stage) > 0 ? Math.round(Number(patch.stage)) : '');
+    if (patch.links !== undefined) put('링크', (Array.isArray(patch.links) ? patch.links : String(patch.links).split(/\r?\n/)).map(function (s) { return String(s).trim(); }).filter(String).join('\n'));
+    if (patch.reviewed) put('마지막 검토일', todayYmd_(ctx.tz));
+    return { ok: true, id: hit.id };
+  });
+}
+
+/**
+ * 프로젝트의 '다음' 칩(★다음)을 한 할 일에 둔다. 같은 프로젝트의 다른 ★다음은 내린다(프로젝트당 하나).
+ * clear=true면 그 할 일의 표시만 뺀다. 프로젝트 밖 할 일에는 둘 수 없다.
+ */
+function setNextAction(id, clear) {
+  return withLock_(function () {
+    var ctx = taskContext_();
+    if (!ctx.map.nextMark) throw new Error('먼저 업데이트를 적용해 주세요.');
+    var all = readAllTasks_(ctx), t = all.filter(function (x) { return x.id === id; })[0];
+    if (!t) throw new Error('항목을 찾지 못했습니다.');
+    var mark = function (row, on) { ctx.sheet.getRange(row, ctx.map.nextMark).setValue(on ? '★' : ''); };
+    if (clear) { mark(t.row, false); return { ok: true }; }
+    if (!t.project) throw new Error('프로젝트에 속한 할 일만 \'다음\'으로 정할 수 있어요.');
+    var pid = t.pid || ensureProjectRow_(ctx.ss, t.project).id;
+    all.forEach(function (x) { if (x.id !== id && x.nextMark && (x.pid === pid || (!x.pid && x.project === t.project))) mark(x.row, false); });
+    mark(t.row, true);
+    if (ctx.map.projectId && t.projectId !== pid) ctx.sheet.getRange(t.row, ctx.map.projectId).setValue(pid);
+    return { ok: true, projectId: pid };
   });
 }
 
 /**
  * 수집함을 거치지 않고 바로 '다음 행동'으로 담기 (주간 검토의 프로젝트 단계, 수집함의 프로젝트 만들기).
- * d: { project, context, due } — due가 있으면 그날의 '일정'으로 담는다 (캘린더에서 추가)
+ * d: { project, context, due, next } — due가 있으면 그날의 '일정'으로 담는다 (캘린더에서 추가), next=true면 프로젝트의 '다음'으로
  */
 function addAction(title, d) {
   d = d || {};
@@ -1412,15 +1856,24 @@ function addAction(title, d) {
     var ctx = taskContext_();
     var today = todayYmd_(ctx.tz);
     var due = ymd_(d.due);
-    appendTasks_(ctx, [{ title: title, status: due ? STATUS.SCHEDULED : STATUS.NEXT, due: due, created: today,
-      project: String(d.project || '').trim(), context: String(d.context || '').trim() }]);
-    return { ok: true };
+    var project = String(d.project || '').trim();
+    var task = { title: title, status: due ? STATUS.SCHEDULED : STATUS.NEXT, due: due, created: today, triaged: today, source: '직접',
+      project: project, context: String(d.context || '').trim() };
+    var pid = '';
+    if (project) { pid = projectIdForName_(ctx.ss, project); task.projectId = pid; }
+    var nid = newId_(); task.id = nid;
+    if (d.next && project) {
+      readAllTasks_(ctx).forEach(function (x) { if (x.nextMark && (x.pid === pid || (!x.pid && x.project === project)) && ctx.map.nextMark) ctx.sheet.getRange(x.row, ctx.map.nextMark).setValue(''); });
+      task.nextMark = '★';
+    }
+    appendTasks_(ctx, [task]);
+    return { ok: true, id: nid };
   });
 }
 
 /**
  * 프로젝트 합치기: from 프로젝트의 할 일 전부를 to 프로젝트로 옮긴다.
- * [업무]의 '프로젝트' 칸만 한 칸씩 고치고(다른 열·행은 그대로), 행은 지우지 않는다.
+ * [업무]의 '프로젝트'·'프로젝트ID' 칸만 한 칸씩 고치고(다른 열·행은 그대로), 행은 지우지 않는다.
  * from의 [프로젝트] 줄은 '완료 모습' 앞에 [버림]을 붙여 목록에서만 숨긴다.
  * 확인은 화면에서 이미 받았다고 본다. 같은 이름끼리는 합칠 수 없다.
  */
@@ -1434,17 +1887,19 @@ function mergeProject(from, to) {
     var tasks = readAllTasks_(ctx);
     var toExists = tasks.some(function (t) { return t.project === to; }) || readProjectOutcomes_(ctx.ss).hasOwnProperty(to);
     if (!toExists) throw new Error('합칠 대상 프로젝트를 찾지 못했어요.');
+    var toId = ensureProjectRow_(ctx.ss, to).id;
     var moved = 0;
     tasks.forEach(function (t) {
       if (t.project !== from) return;
       ctx.sheet.getRange(t.row, ctx.map.project).setValue(to);
+      if (ctx.map.projectId) ctx.sheet.getRange(t.row, ctx.map.projectId).setValue(toId);
+      if (t.nextMark && ctx.map.nextMark) ctx.sheet.getRange(t.row, ctx.map.nextMark).setValue(''); // 프로젝트당 '다음'은 하나
       moved++;
     });
     var sh = ctx.ss.getSheetByName(KIT.PROJECT_SHEET);
     if (sh && sh.getLastRow() >= 2) {
-      var width = Math.max(sh.getLastColumn(), 2);
-      var head = sh.getRange(1, 1, 1, width).getValues()[0].map(function (h) { return String(h).trim(); });
-      var cName = head.indexOf(PROJECT_HEADERS[0]) + 1, cOut = head.indexOf(PROJECT_HEADERS[1]) + 1;
+      var info = projectSheetInfo_(ctx.ss, false);
+      var cName = info.col['프로젝트'] || 0, cOut = info.col['완료 모습'] || 0;
       if (cName && cOut) {
         var names = sh.getRange(2, cName, sh.getLastRow() - 1, 1).getValues();
         for (var i = 0; i < names.length; i++) {
@@ -1456,6 +1911,53 @@ function mergeProject(from, to) {
     }
     return { ok: true, moved: moved };
   });
+}
+
+/**
+ * v7 마이그레이션 (시트 구조 6 → 7). 멱등.
+ * - [프로젝트] 줄마다 ID를 붙이고, 업무 줄의 '프로젝트' 이름이 같은 프로젝트와 한 번 잇는다(프로젝트ID 채움). 비슷한 이름은 잇지 않는다(합치기 버튼으로).
+ * - 이미 있던 업무 줄은 '분류일'을 채워 '분류 대기'로 쏟아지지 않게 한다. 도입일은 [_설정] '분류도입일'에 적는다.
+ * 기존 열 이름·값은 건드리지 않고, 비어 있던 새 열 칸만 채운다.
+ */
+function migrateToV7_(ctx) {
+  var ss = ctx.ss, sheet = ctx.sheet, map = ctx.map, tz = ss.getSpreadsheetTimeZone(), today = todayYmd_(tz);
+  if (!readSettings_(ss)['분류도입일']) writeSetting_(ss, '분류도입일', today);
+  var last = sheet.getLastRow();
+  var vals = last >= 2 ? sheet.getRange(2, 1, last - 1, sheet.getLastColumn()).getValues() : [];
+  var names = [], seen = {};
+  if (map.title && map.project) vals.forEach(function (r) {
+    if (!String(r[map.title - 1]).trim()) return;
+    var n = String(r[map.project - 1] === null || r[map.project - 1] === undefined ? '' : r[map.project - 1]).trim();
+    if (n && !seen[n]) { seen[n] = 1; names.push(n); }
+  });
+  // 프로젝트 줄에 ID를 붙이고, 업무에만 있던 이름은 줄을 만든다 (프로젝트 탭이 아예 없고 이름도 없으면 만들지 않는다)
+  var rows = [];
+  if (ss.getSheetByName(KIT.PROJECT_SHEET) || names.length) {
+    var info = projectSheetInfo_(ss, true);
+    rows = readProjectRows_(ss);
+    rows.forEach(function (r) { if (!r.id) { r.id = newProjectId_(rows); info.sh.getRange(r.row, info.col['ID']).setValue(r.id); } });
+    var live = projectIndex_(rows).byName, droppedNames = {};
+    rows.forEach(function (r) { if (r.dropped) droppedNames[r.name] = 1; });
+    names.forEach(function (n) { if (!live[n] && !droppedNames[n]) ensureProjectRow_(ss, n); });
+    rows = readProjectRows_(ss);
+  }
+  var byName = projectIndex_(rows).byName;
+  if (!vals.length) return;
+  var pidCol = [], trCol = [], needPid = false, needTr = false;
+  vals.forEach(function (r) {
+    var has = String(r[map.title - 1]).trim() !== '';
+    var pid = map.projectId ? String(r[map.projectId - 1] || '').trim() : '';
+    if (has && !pid && map.project) {
+      var n = String(r[map.project - 1] === null || r[map.project - 1] === undefined ? '' : r[map.project - 1]).trim();
+      if (n && byName[n] && byName[n].id) { pid = byName[n].id; needPid = true; }
+    }
+    pidCol.push([pid]);
+    var tr = map.triaged ? r[map.triaged - 1] : '';
+    if (has && map.triaged && (tr === '' || tr === null || tr === undefined)) { tr = ymd_(map.created ? r[map.created - 1] : '', tz) || today; needTr = true; }
+    trCol.push([tr === null || tr === undefined ? '' : tr]);
+  });
+  if (needPid) sheet.getRange(2, map.projectId, vals.length, 1).setValues(pidCol);
+  if (needTr) sheet.getRange(2, map.triaged, vals.length, 1).setValues(trCol);
 }
 
 /* ── 40_Dashboard.gs ── */
@@ -1639,7 +2141,7 @@ function projectListFormula_(title, status, project, nonEmpty, open, empty) {
 /** GTD 워크 — 주간 검토 메일 (매주 금요일, 나에게만) */
 
 /** 업무 목록 → 주간 검토 요약 (순수 함수 — 테스트 대상) */
-function buildWeeklySummary_(tasks, today) {
+function buildWeeklySummary_(tasks, today, projectRows) {
   var weekStart = weekStartYmd_(today);
   var nextWeekEnd = addDaysYmd_(weekStart, 13);
   var byDue = function (a, b) { return (a.due || '9999') < (b.due || '9999') ? -1 : (a.due || '9999') > (b.due || '9999') ? 1 : 0; };
@@ -1658,7 +2160,7 @@ function buildWeeklySummary_(tasks, today) {
     inbox: tasks.filter(function (t) { return t.status === STATUS.INBOX || t.status === ''; }),
     someday: tasks.filter(function (t) { return t.status === STATUS.SOMEDAY; }),
     routineDone: routineStats_(tasks, weekStart, today),
-    projects: projectStats_(tasks),
+    projects: projectStats_(tasks, projectRows),
     reference: tasks.filter(function (t) { return t.status === STATUS.REFERENCE; })
   };
 }
@@ -1667,11 +2169,12 @@ function buildWeeklySummary_(tasks, today) {
  * 프로젝트별 현황. '다음 행동'이 하나도 없는 열린 프로젝트는 멈춘 프로젝트(stalled)로 표시한다.
  * (일정·위임만 있으면 기다리는 중이므로 멈춘 것으로 보지 않는다)
  */
-function projectStats_(tasks) {
+function projectStats_(tasks, projectRows) {
   var by = {}, order = [];
+  if (projectRows && projectRows.length) linkProjects_(tasks, projectRows); // 프로젝트ID로 이름을 맞춘다 (이름이 달라도 한 프로젝트)
   tasks.forEach(function (t) {
     if (!t.project) return;
-    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, someday: 0, total: 0, nextDue: '', items: [] }; order.push(t.project); }
+    if (!by[t.project]) { by[t.project] = { name: t.project, id: t.pid || '', open: 0, done: 0, next: 0, waiting: 0, important: 0, someday: 0, total: 0, nextDue: '', items: [], hasNext: false, nextTask: null, delegated: 0 }; order.push(t.project); }
     var g = by[t.project];
     g.total++; // 합치기 확인창용: 이 프로젝트 줄 전체(버림·참고 포함)
     if (t.status === STATUS.DONE) g.done++;
@@ -1680,7 +2183,9 @@ function projectStats_(tasks) {
     else if (isActionable_(t.status)) {
       g.open++;
       if (t.priority === '높음') g.important++;
-      if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: t.delegatee || '', project: t.project, priority: t.priority || '', context: t.context || '' });
+      if (t.status === STATUS.DELEGATED) g.delegated++;
+      if (t.nextMark && !g.hasNext) { g.hasNext = true; g.nextTask = { id: t.id, title: t.title, status: t.status, delegatee: t.delegatee || '' }; }
+      if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: t.delegatee || '', project: t.project, priority: t.priority || '', context: t.context || '', nextMark: !!t.nextMark, stage: t.stage || '', detail: !!t.detail });
       if (t.due && (!g.nextDue || t.due < g.nextDue)) g.nextDue = t.due;
       if (t.status === STATUS.NEXT) g.next++;
       if (t.status === STATUS.DELEGATED || t.status === STATUS.SCHEDULED) g.waiting++;
@@ -2056,6 +2561,7 @@ function insertSampleTasks_(ss, useLock) {
       var r = new Array(width);
       for (var k = 0; k < width; k++) r[k] = '';
       Object.keys(t).forEach(function (key) { if (ctx.map[key]) r[ctx.map[key] - 1] = t[key]; });
+      if (ctx.map.triaged) r[ctx.map.triaged - 1] = t.created; // 예시는 이미 분류된 것으로 (분류 대기로 쏟아지지 않게)
       if (ctx.map.id) r[ctx.map.id - 1] = newId_(i + 1);
       return r;
     });
@@ -2160,7 +2666,7 @@ function checkKey_(k) {
 // 바꾸는 함수는 바뀐 뒤의 '오늘' 화면 데이터를 함께 돌려준다 → 화면이 서버를 한 번만 부른다(속도).
 function webData(k) { checkKey_(k); return getAppData(); }
 function webInbox(k) { checkKey_(k); appContext_(); return getInbox(); }
-function webAdd(k, text) { checkKey_(k); appContext_(); var r = addTasks(text); return withView_(r); }
+function webAdd(k, text, opts) { checkKey_(k); appContext_(); var r = addTasks(text, opts); return withView_(r); }
 function webClarify(k, id, d) { checkKey_(k); var r = clarifyTask(id, d); return withView_(r); }
 function webComplete(k, id) { checkKey_(k); var r = completeTask(id); return withView_(r); }
 function webPostpone(k, id, days) { checkKey_(k); var r = postponeFollowUp(id, days); return withView_(r); }
@@ -2182,6 +2688,19 @@ function webAddAction(k, title, d) { checkKey_(k); appContext_(); var r = addAct
 function webFocusMany(k, ids, focus) { checkKey_(k); var r = setFocusMany(ids, focus); return withView_(r); }
 function webSetProject(k, name, outcome) { checkKey_(k); appContext_(); var r = setProjectOutcome(name, outcome); return withView_(r); }
 function webMergeProject(k, from, to) { checkKey_(k); appContext_(); var r = mergeProject(from, to); return withView_(r); }
+function webTaskDetail(k, id) { checkKey_(k); appContext_(); return getTaskDetail(id); }
+function webSaveDetail(k, id, text, base) { checkKey_(k); appContext_(); var r = saveDetail(id, text, base); return withView_(r); }
+function webSetNext(k, id, clear) { checkKey_(k); appContext_(); var r = setNextAction(id, clear === true); return withView_(r); }
+function webSetProjectInfo(k, ref, patch) { checkKey_(k); appContext_(); var r = setProjectInfo(ref, patch); return withView_(r); }
+/** 알림함 '모두 확인함': 지금 알림 목록(keys)과 시각을 [_설정]에 적는다 (앱 코드가 직접 쓰는 값 — 에이전트는 읽지도 쓰지도 않는다) */
+function webInboxSeen(k, keys) {
+  checkKey_(k);
+  var ctx = appContext_();
+  var list = (Array.isArray(keys) ? keys : []).map(String).filter(String).slice(0, 200);
+  writeSetting_(ctx.ss, '알림확인시각', new Date().toISOString());
+  writeSetting_(ctx.ss, '알림확인목록', list.join('\n')); // 키에 쉼표가 든 프로젝트 이름이 있을 수 있어 줄바꿈으로 나눈다
+  return withView_({ ok: true });
+}
 // 바꾼 직후의 화면은 캐시를 읽지 않고 시트에서 새로 만든다 (방금 바꾼 내용이 반드시 보이게). 만든 화면은 캐시에 넣어 다음 열기에 쓴다.
 function withView_(r) { r = r || {}; r.view = getAppData(true); return r; }
 
@@ -2199,6 +2718,7 @@ function doPost(e) {
     getCalendar: webCalendar, addRoutine: webAddRoutine, reviewDone: webReviewDone,
     updateTask: webUpdate, planDay: webPlanDay, undoTask: webUndo, notify: webNotify,
     addAction: webAddAction, setProject: webSetProject, mergeProject: webMergeProject, focusMany: webFocusMany,
+    getTaskDetail: webTaskDetail, saveDetail: webSaveDetail, setNext: webSetNext, setProjectInfo: webSetProjectInfo, inboxSeen: webInboxSeen,
     getCalendars: webCalendars, setCalendars: webSetCalendars, timebox: webTimebox,
     placeTask: webPlaceTask, unplaceTask: webUnplaceTask, reopenTask: webReopen, setWriteCalendar: webSetWriteCalendar, moveEvent: webMoveEvent
   };
@@ -2452,7 +2972,8 @@ function webAll(k) {
     items: readAllTasks_(ctx).map(function (t) {
       return { id: t.id, title: t.title, status: t.status, due: t.due, context: t.context, delegatee: t.delegatee,
         followUp: t.followUp, memo: t.memo, created: t.created, completed: t.completed, repeat: t.repeat, project: t.project,
-        focus: t.focus, est: t.est, priority: t.priority, delegatedOn: t.delegatedOn, urgent: !!t.urgent, spent: t.spent || 0, postponed: t.postponed || 0 };
+        focus: t.focus, est: t.est, priority: t.priority, delegatedOn: t.delegatedOn, urgent: !!t.urgent, spent: t.spent || 0, postponed: t.postponed || 0,
+        detail: !!t.detail, source: t.source, triaged: t.triaged, projectId: t.pid || '', stage: t.stage, nextMark: !!t.nextMark, energy: t.energy, checks: t.checks };
     })
   };
 }
@@ -2461,12 +2982,13 @@ function webAll(k) {
 function webWeekly(k) {
   checkKey_(k);
   var ctx = appContext_();
-  var s = buildWeeklySummary_(readAllTasks_(ctx), todayYmd_(ctx.tz));
+  var rows = readProjectRows_(ctx.ss);
+  var s = buildWeeklySummary_(readAllTasks_(ctx), todayYmd_(ctx.tz), rows);
   var slim = function (list) {
     return list.map(function (t) { return { id: t.id, title: t.title, status: t.status, due: t.due, delegatee: t.delegatee, followUp: t.followUp, created: t.created, completed: t.completed, context: t.context, project: t.project, repeat: t.repeat, delegatedOn: t.delegatedOn }; });
   };
   return { today: s.today, weekStart: s.weekStart, done: slim(s.done), next: slim(s.next), overdue: slim(s.overdue),
-    followUp: slim(s.followUp), delegated: slim(s.delegated), upcoming: slim(s.upcoming), inbox: slim(s.inbox), someday: slim(s.someday), routineDone: s.routineDone, projects: withOutcomes_(ctx.ss, s.projects), reference: slim(s.reference),
+    followUp: slim(s.followUp), delegated: slim(s.delegated), upcoming: slim(s.upcoming), inbox: slim(s.inbox), someday: slim(s.someday), routineDone: s.routineDone, projects: withOutcomes_(ctx.ss, s.projects, rows), reference: slim(s.reference), pending: buildPending_(readAllTasks_(ctx), ymd_(readSettings_(ctx.ss)['분류도입일'], ctx.tz)).map(function (t) { return { id: t.id, title: t.title, source: t.source, created: t.created }; }),
     lastReview: ymd_(readSettings_(ctx.ss)['마지막주간검토'], ctx.tz) };
 }
 
@@ -2512,12 +3034,14 @@ function getAppData(fresh) {
 }
 
 function buildAppView_(ctx, today) {
-  var all = readAllTasks_(ctx);
-  var view = buildTodayView_(all, today);
+  var all = readAllTasks_(ctx), rows = readProjectRows_(ctx.ss), st0 = readSettings_(ctx.ss);
+  var view = buildTodayView_(all, today, { projectRows: rows, adoptedOn: ymd_(st0['분류도입일'], ctx.tz) });
   view.sheetUrl = ctx.ss.getUrl();
   view.kitVersion = KIT.VERSION;
   view.pageUrl = KIT.WEB_PAGE_URL ? KIT.WEB_PAGE_URL.replace(/\/?$/, '/') : '';
-  view.projects = withOutcomes_(ctx.ss, view.projects);
+  view.projects = withOutcomes_(ctx.ss, view.projects, rows);
+  view.adoptedOn = ymd_(st0['분류도입일'], ctx.tz);
+  view.alertSeen = { at: String(st0['알림확인시각'] || ''), keys: String(st0['알림확인목록'] || '').split('\n').filter(String) };
   view.week = calendarRange_(ctx, weekStartYmd_(today), 7, all);
   view.events = { ok: view.week.events.ok, reason: view.week.events.reason,
     items: view.week.events.items.filter(function (e) { return e.date === today; }) };
@@ -2530,11 +3054,36 @@ function buildAppView_(ctx, today) {
 }
 
 /** 업무 목록 → 오늘 화면 (순수 함수 — 테스트 대상) */
-function buildTodayView_(tasks, today) {
-  var s = buildWeeklySummary_(tasks, today);
+/**
+ * 분류 대기: 분류일이 비어 있고(앱의 분류 버튼이 채움) 끝나지 않은 줄. 도입일(adoptedOn) 이전에 만든 옛 줄은 이미 분류된 것으로 본다.
+ * 도입일을 모르면 아무것도 대기로 보지 않는다(옛 줄이 한꺼번에 쏟아지지 않게).
+ */
+function buildPending_(tasks, adoptedOn) {
+  if (!adoptedOn) return [];
+  return tasks.filter(function (t) {
+    return !t.triaged && !isClosedStatus_(t.status) && t.status !== STATUS.REFERENCE && (!t.created || t.created >= adoptedOn);
+  });
+}
+
+function buildTodayView_(tasks, today, ext) {
+  ext = ext || {};
+  if (ext.projectRows) linkProjects_(tasks, ext.projectRows);
+  var s = buildWeeklySummary_(tasks, today, ext.projectRows);
+  var pendingList = buildPending_(tasks, ext.adoptedOn), pendingIds = {};
+  pendingList.forEach(function (t) { pendingIds[t.id] = 1; });
   var pick = function (t) {
-    return { id: t.id, title: t.title, due: t.due, context: t.context, delegatee: t.delegatee, followUp: t.followUp, status: t.status, repeat: t.repeat || '', project: t.project || '',
+    var o = { id: t.id, title: t.title, due: t.due, context: t.context, delegatee: t.delegatee, followUp: t.followUp, status: t.status, repeat: t.repeat || '', project: t.project || '',
       focus: t.focus || '', est: t.est || 0, priority: t.priority || '', delegatedOn: t.delegatedOn || '', memo: t.memo || '', urgent: !!t.urgent };
+    // 새 열은 값이 있을 때만 싣는다 (화면 데이터 크기를 지킨다)
+    if (t.detail) o.hasDetail = true;
+    if (t.source) o.source = t.source;
+    if (t.pid) o.pid = t.pid;
+    if (t.stage) o.stage = t.stage;
+    if (t.nextMark) o.nextMark = true;
+    if (t.energy) o.energy = t.energy;
+    if (t.checks) o.checks = t.checks;
+    if (pendingIds[t.id]) o.pending = true;
+    return o;
   };
   var isRoutineToday = function (t) { return !!t.repeat && isActionable_(t.status) && (!t.due || t.due <= today); };
   var byDue = function (a, b) { return (a.due || '9999') < (b.due || '9999') ? -1 : (a.due || '9999') > (b.due || '9999') ? 1 : 0; };
@@ -2568,7 +3117,7 @@ function buildTodayView_(tasks, today) {
     today: today,
     focus: focus.map(pick),
     estMinutes: { focus: mins(focus), now: mins(now), routines: mins(routines) },
-    counts: { doneToday: s.done.filter(function (t) { return t.completed === today; }).length, inbox: s.inbox.length, focus: focus.length, now: now.length, routines: routines.length, overdue: s.overdue.length, followUp: s.followUp.length, doneWeek: s.done.length },
+    counts: { doneToday: s.done.filter(function (t) { return t.completed === today; }).length, pending: pendingList.length, inbox: s.inbox.length, focus: focus.length, now: now.length, routines: routines.length, overdue: s.overdue.length, followUp: s.followUp.length, doneWeek: s.done.length },
     routines: routines.map(pick),
     carry: carry.map(pick),
     doneToday: tasks.filter(function (t) { return t.status === STATUS.DONE && t.completed === today; }).map(function (t) { return { id: t.id, title: t.title, project: t.project || '', repeat: t.repeat || '', priority: t.priority || '', urgent: !!t.urgent, spent: t.spent || 0 }; }),
@@ -2576,6 +3125,7 @@ function buildTodayView_(tasks, today) {
     now: now.map(pick),
     followUp: s.followUp.map(pick),
     due: dueToday.map(pick),
+    pending: pendingList.slice(0, 100).map(pick),
     upcoming: s.upcoming.map(pick),
     delegated: s.delegated.slice().sort(function (a, b) {
       return (a.followUp || '9999') < (b.followUp || '9999') ? -1 : (a.followUp || '9999') > (b.followUp || '9999') ? 1 : 0;
@@ -2603,6 +3153,7 @@ function postponeFollowUp(id, days) {
     var row = findRowById_(ctx, id);
     if (!row || !ctx.map.followUp) throw new Error('항목을 찾지 못했습니다.');
     ctx.sheet.getRange(row, ctx.map.followUp).setValue(addDaysYmd_(todayYmd_(ctx.tz), Number(days) || 3));
+    applyTrack_(ctx, row, { check: true }); // 확인 횟수 +1
     return { ok: true };
   });
 }
@@ -2734,7 +3285,8 @@ function installFromEditor() {
   // ── 앱 화면이 부르는 함수 (App.html 의 call(fn) 이름과 같다) ────
   var WEB = { getAppData: 'webData', getInbox: 'webInbox', addTasks: 'webAdd', clarifyTask: 'webClarify', completeTask: 'webComplete', postponeFollowUp: 'webPostpone', skipTask: 'webSkip',
     getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', getAll: 'webAll',
-    getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen', setWriteCalendar: 'webSetWriteCalendar' };
+    getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen', setWriteCalendar: 'webSetWriteCalendar',
+    getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen' };
   var queue = Promise.resolve(); // 시트 쓰기는 한 번에 하나씩
   function serial(job) { var p = queue.then(job, job); queue = p.catch(function () {}); return p; }
   function clone(x) { return x === undefined ? null : JSON.parse(JSON.stringify(x)); }
@@ -2801,6 +3353,30 @@ function installFromEditor() {
   async function idle() { var q0, s0, r0; do { q0 = queue; s0 = saving; r0 = reloading; await q0; await s0; if (r0) await r0; await Promise.all(Object.keys(calFetching).map(function (k) { return calFetching[k]; })); } while (q0 !== queue || s0 !== saving || r0 !== reloading); if (snapT) writeSnap(); }
   function today() { return K.todayYmd_(book.tz); }
 
+  // 상세 글을 저장·열기 직전: 그 줄을 시트에서 다시 읽어 화면의 메모리 줄에 반영한다 (못 보낸 변경이 있는 줄은 건드리지 않는다)
+  async function syncTaskRow(taskId) {
+    if (!book || !taskId) return;
+    await saving; // 보내는 중인 변경이 끝난 뒤 읽는다: 내가 방금 보낸 것을 '다른 곳의 변경'으로 오해하지 않게 (체크박스 연타)
+    var sh = book.api.getSheetByName(K.KIT.TASK_SHEET), s = sh && sh._s;
+    if (!s || !s.data[0]) return;
+    var hdr = s.data[0].map(function (h) { return String(h === undefined || h === null ? '' : h).trim(); }), idc = hdr.indexOf('ID');
+    if (idc < 0) return;
+    var r = 0; for (var i = 1; i < s.data.length; i++) if (String((s.data[i] || [])[idc] === undefined || (s.data[i] || [])[idc] === null ? '' : s.data[i][idc]).trim() === taskId) { r = i + 1; break; }
+    if (!r || s.dirty[r] || inflight.some(function (m) { return m.s === s && m.dirty[r]; })) return;
+    var L = colName(idc + 1), width = 0; s.data.forEach(function (x) { width = Math.max(width, x.length); });
+    try {
+      var ids = (await readRanges(book.id, [q(s.name) + '!' + L + '1:' + L]))[0] || [], rr = 0;
+      for (var j = 0; j < ids.length; j++) if (String((ids[j] || [])[0] === undefined ? '' : ids[j][0]).trim() === taskId) { rr = j + 1; break; }
+      if (!rr) return;
+      var row = (await readRanges(book.id, [q(s.name) + '!A' + rr + ':' + colName(Math.max(width, 1)) + rr]))[0];
+      row = (row && row[0]) || [];
+      if (s.dirty[r] || sending > 0 || saveQueued) return; // 읽는 사이 앱에서 고쳤거나 저장이 시작됐다
+      var cur = s.data[r - 1] = s.data[r - 1] || [];
+      for (var c = 0; c < Math.max(width, row.length); c++) cur[c] = row[c] === undefined ? '' : row[c];
+      cache = {};
+    } catch (e) { /* 못 읽으면 화면의 모습 그대로: 저장 직전 확인(flush)이 한 번 더 막는다 */ }
+  }
+
   async function call(fn, args) {
     await ready;
     return serial(async function () {
@@ -2830,6 +3406,7 @@ function installFromEditor() {
         return { ok: true, view: clone(K.getAppData()) };
       }
       if (fn === 'notify' || fn === 'sendWeekly') throw new Error('메일 알림은 곧 지원해요. 지금은 캘린더 알림을 써 주세요.');
+      if (fn === 'saveDetail' || fn === 'getTaskDetail') await syncTaskRow(String(args[0] || '')); // 상세 글은 읽고 쓰기 직전에 시트의 최신 글로 맞춘다
       var name = WEB[fn]; if (!name) throw new Error('알 수 없는 요청입니다: ' + fn);
       var res = K.fn(name).apply(null, [''].concat(args || []));
       if (fn === 'setCalendars' || fn === 'setWriteCalendar') { dropCal(); await preloadCal(K.weekStartYmd_(t), 7); res = { ok: true, view: clone(K.getAppData()) }; }
@@ -2882,6 +3459,8 @@ function installFromEditor() {
     /** 창을 닫거나 다른 앱으로 갈 때: 이 기기 저장본을 바로 쓴다 */
     persist: function () { writeSnap(); },
     saveFailed: function () { return !!saveFailed; },
+    /** 저장 직전 확인에서 '다른 곳에서 먼저 바뀌어' 저장하지 않은 줄 (가져가면 비운다) */
+    takeConflicts: function () { var c = conflictLog; conflictLog = []; return c; },
     /** 저장 실패 뒤 다시 시도 */
     retrySave: function () { saveLater(); return idle(); },
     /** 아직 구글 시트에 못 보낸 변경이 있는지 (창을 닫기 전 확인용) */

@@ -95,7 +95,8 @@
     onUnauthorized: function () { tok = { email: tok && tok.email }; store.set('kitTok', JSON.stringify(tok)); return token(); },
     onSaveError: function () { saveNote(true); }, onSaved: function () { saveNote(false); },
     // 뒤에서 새로 받은 시트·캘린더가 화면과 다르면 화면(App.html)이 다시 그린다
-    onChange: function () { try { window.dispatchEvent(new Event('kit:changed')); } catch (e) {} }
+    onChange: function () { try { window.dispatchEvent(new Event('kit:changed')); } catch (e) {} },
+    onConflict: function (c) { try { window.dispatchEvent(new CustomEvent('kit:conflict', { detail: c })); } catch (e) {} }
   });
   // 저장은 뒤에서 한다 → 실패하면 화면 위에 알리고 다시 시도 버튼을 준다
   function saveNote(on) {
