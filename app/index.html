@@ -25,7 +25,7 @@
   #kitGate.kg-bar .kg-btn { width: auto; min-height: 44px; padding: 0 14px; font-size: 15px; margin-left: auto; }
   #kitGate.kg-bar .kg-msg { width: 100%; min-height: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=8bf582f4b1"></script><script src="auth.js?v=8bf582f4b1"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE"};</script><script src="engine.js?v=d72e21aa2d"></script><script src="auth.js?v=d72e21aa2d"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -607,6 +607,7 @@
     .sendp .sec .lnk { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; padding: 4px 2px; margin: 0; }
     .sendp .pjtg { display: flex; align-items: center; gap: 6px; width: 100%; font-size: 13.5px; font-weight: 800; color: var(--t2); }
     .sendp .pjtg em { font-style: normal; color: var(--g); } .sendp .pjtg .sp { flex: 1; }
+    .sendp .rmwho { margin-left: 4px; padding: 0 6px; border-radius: 6px; font-size: 15px; line-height: 1.3; color: var(--t4); opacity: 0; transition: opacity .15s; } .sendp .drow:hover .rmwho, .sendp .rmwho:focus-visible { opacity: 1; } .sendp .rmwho:hover { color: var(--red); background: var(--redt); } @media (hover: none) { .sendp .rmwho { opacity: 1; } }
     .sendp .pjtg .chev { display: inline-flex; color: var(--t3); transition: transform .2s; } .sendp .pjtg .chev.on { transform: rotate(90deg); }
     .dcard .row { padding-top: 11px; padding-bottom: 11px; } .dcard .row .t { font-size: 14.5px; } .dcard .row .m { font-size: 12px; }
     .dcard .newpj { width: 100%; text-align: left; color: var(--t3); }
@@ -1274,13 +1275,41 @@
   }
 
   // ── 끌어다 놓는 곳 ──
+  // 맡길 사람 목록은 이 브라우저(localStorage)에만 둔다. 지운 이름은 kitPeopleHide에 넣어 위임 중인 일이 있어도 다시 안 보이게 한다.
+  function lsList(k) { var l = []; try { l = JSON.parse(localStorage.getItem(k) || '[]'); } catch (e) {} return (Array.isArray(l) ? l : []).map(function (n) { return String(n || '').trim(); }).filter(Boolean); }
   function people() {
     var seen = {}, out = [], add = function (n) { n = String(n || '').trim(); if (n && !seen[n]) { seen[n] = 1; out.push(n); } };
-    try { JSON.parse(localStorage.getItem('kitPeople') || '[]').forEach(add); } catch (e) {}
+    lsList('kitPeopleHide').forEach(function (n) { seen[n] = 1; });
+    lsList('kitPeople').forEach(add);
     ((data && data.delegated) || []).forEach(function (t) { add(t.delegatee); });
     return out.slice(0, 8);
   }
-  function addPerson(n) { var l = []; try { l = JSON.parse(localStorage.getItem('kitPeople') || '[]'); } catch (e) {} l = [n].concat(l.filter(function (x) { return x !== n; })).slice(0, 12); try { localStorage.setItem('kitPeople', JSON.stringify(l)); } catch (e) {} }
+  function addPerson(n) {
+    n = String(n || '').trim(); if (!n) return;
+    var l = [n].concat(lsList('kitPeople').filter(function (x) { return x !== n; })).slice(0, 12);
+    var h = lsList('kitPeopleHide').filter(function (x) { return x !== n; });
+    try { localStorage.setItem('kitPeople', JSON.stringify(l)); localStorage.setItem('kitPeopleHide', JSON.stringify(h)); } catch (e) {}
+  }
+  function removePerson(n) {
+    n = String(n || '').trim(); if (!n) return;
+    var l = lsList('kitPeople').filter(function (x) { return x !== n; });
+    var h = lsList('kitPeopleHide').filter(function (x) { return x !== n; }).concat([n]).slice(-40);
+    try { localStorage.setItem('kitPeople', JSON.stringify(l)); localStorage.setItem('kitPeopleHide', JSON.stringify(h)); } catch (e) {}
+  }
+  function openAddWho() {
+    var list = people();
+    openSheet('<div class="st">자주 맡기는 사람</div><div class="ss">여기에 할 일을 끌어다 놓으면 그 사람에게 맡겨져요</div><input class="field" id="awName" placeholder="예) 여소정" maxlength="20"><button class="cta" id="awOk">추가</button>' +
+      (list.length ? '<div class="card" style="margin-top:14px">' + list.map(function (n) {
+        return '<div class="row" style="justify-content:space-between"><div class="tx"><div class="t">' + esc(n) + '</div></div><button type="button" class="lnk" data-rmwho="' + esc(n) + '" aria-label="' + esc(n) + ' 목록에서 빼기">삭제</button></div>';
+      }).join('') + '</div>' : ''));
+  }
+  function rmWho(e, b) {
+    e.preventDefault(); e.stopPropagation();
+    var rn = b.getAttribute('data-rmwho'); if (!rn) return;
+    removePerson(rn); animNext = false; renderToday();
+    if ($('sheet').classList.contains('on') && $('awName')) openAddWho();
+    toast(rn + '님을 목록에서 뺐어요 · 맡긴 일은 그대로예요');
+  }
   function pjOpen0() { try { return localStorage.getItem('kitPjOpen') === '1'; } catch (e) { return false; } }
   function pjSet(on) { try { localStorage.setItem('kitPjOpen', on ? '1' : '0'); } catch (e) {} }
   function openPjList(d) { return (d.projects || []).filter(function (p) { return !p.finished || p.empty; }).sort(function (a, b) { return (b.important || 0) - (a.important || 0) || (b.open || 0) - (a.open || 0); }); }
@@ -1306,7 +1335,7 @@
     h += '<div class="sec"><span>맡기기</span><button class="lnk" data-addwho>' + svg('plus', 14) + '사람</button></div><div class="card dcard">' +
       (people().length ? people().map(function (n) {
         var mine = dl.filter(function (t) { return t.delegatee === n; });
-        return drow('who:' + n, 'user', 'blue', esc(n), mine.length ? '맡긴 일 ' + mine.length + '개' : '놓으면 3일 뒤 확인으로 맡겨요', 0, function () { return xlist(mine, '맡긴 일이 없어요', function (t) { return t.followUp ? rel(t.followUp) + ' 확인' : ''; }); });
+        return drow('who:' + n, 'user', 'blue', esc(n) + ' <button type="button" class="rmwho" data-rmwho="' + esc(n) + '" aria-label="' + esc(n) + ' 목록에서 빼기" title="목록에서 빼기">×</button>', mine.length ? '맡긴 일 ' + mine.length + '개' : '놓으면 3일 뒤 확인으로 맡겨요', 0, function () { return xlist(mine, '맡긴 일이 없어요', function (t) { return t.followUp ? rel(t.followUp) + ' 확인' : ''; }); });
       }).join('') : '<div class="xe" style="padding:16px 14px">자주 맡기는 사람을 추가해 두세요</div>') + '</div>';
     h += '<div class="sec"><button class="pjtg" data-pjtoggle aria-expanded="' + (pjo ? 'true' : 'false') + '"><span>프로젝트</span>' + (list.length ? '<em>' + list.length + '</em>' : '') + '<span class="sp"></span>' + chev(pjo) + '</button></div>';
     if (pjo) h += '<div class="card dcard">' + list.map(function (p) {
@@ -1765,7 +1794,8 @@
     if ((b = e.target.closest('[data-allpj]'))) { go('more'); return openProjects(); }
     if ((b = e.target.closest('[data-pjtoggle]'))) { pjSet(!pjOpen0()); animNext = false; return renderToday(); }
     if ((b = e.target.closest('[data-newpj]'))) return newProject();
-    if ((b = e.target.closest('[data-addwho]'))) { openSheet('<div class="st">자주 맡기는 사람</div><div class="ss">여기에 할 일을 끌어다 놓으면 그 사람에게 맡겨져요</div><input class="field" id="awName" placeholder="예) 여소정" maxlength="20"><button class="cta" id="awOk">추가</button>'); return; }
+    if ((b = e.target.closest('[data-rmwho]'))) return rmWho(e, b);
+    if ((b = e.target.closest('[data-addwho]'))) return openAddWho();
     if ((b = e.target.closest('[data-xid]'))) { var xt = b.getAttribute('data-xid'); return xt && openTask(xt); }
     if ((b = e.target.closest('[data-xp]'))) { var xk = b.getAttribute('data-xp'); sendOpen[xk] = !sendOpen[xk]; $('todayC').innerHTML = projRailHtml(data); return; }
     if ((b = e.target.closest('[data-pjid]'))) return openProjectSheet(b.getAttribute('data-pjid'));
@@ -2085,6 +2115,7 @@
       return (b ? Promise.resolve() : call('setProject', sp, '').catch(function () {})).then(function () { return sendTo(t.id, 'pj:' + sp); });
     }
     if (e.target.id === 'npOk') { var np = $('npName').value.trim(); if (!np) return toast('프로젝트 이름을 적어 주세요'); closeSheet(); pjSet(true); return call('setProject', np, '').then(function (r) { setView(r.view); toast('\'' + np + '\' 프로젝트를 만들었어요 · 할 일을 끌어다 놓으세요'); }).catch(fail); }
+    if ((b = e.target.closest('[data-rmwho]'))) return rmWho(e, b);
     if (e.target.id === 'awOk') { var aw = $('awName').value.trim(); if (!aw) return toast('이름을 적어 주세요'); addPerson(aw); closeSheet(); animNext = false; renderToday(); return toast(aw + '님을 추가했어요 · 할 일을 끌어다 놓으면 맡겨져요'); }
     if (e.target.id === 'capNmOk') { var nm = $('capNm').value.trim(); try { localStorage.setItem('kitCapName', nm); } catch (x) {} closeSheet(); if (capAfterName) return capturePlan(); toast(nm ? '캡처에 \'' + nm + '\'(으)로 넣어요' : '캡처에 이름을 넣지 않아요'); return renderMore(); }
     if (e.target.id === 'sdKeep') { closeSheet(); return toast('수고했어요. 내일 봐요!'); }
