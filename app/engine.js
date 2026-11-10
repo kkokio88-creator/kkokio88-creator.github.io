@@ -305,7 +305,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.7.5',       // 코드 버전 (화면 표시용)
+  VERSION: '1.7.6',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 6,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -1334,6 +1334,10 @@ function handleEdit_(e) {
 
 var PROJECT_HEADERS = ['프로젝트', '완료 모습', '만든 날'];
 
+/** 합쳐서 없앤 프로젝트는 행을 지우지 않고 '완료 모습' 칸 앞에 이 표시를 붙인다 (열을 새로 만들지 않기 위해) */
+var PROJECT_DROPPED_TAG = '[버림]';
+function isDroppedOutcome_(v) { return String(v || '').indexOf(PROJECT_DROPPED_TAG) === 0; }
+
 /** { 프로젝트 이름: 완료 모습 } */
 function readProjectOutcomes_(ss) {
   var sh = ss.getSheetByName(KIT.PROJECT_SHEET);
@@ -1354,9 +1358,9 @@ function readProjectOutcomes_(ss) {
 function withOutcomes_(ss, projects) {
   var o = readProjectOutcomes_(ss);
   var have = {};
-  var out = (projects || []).map(function (p) { have[p.name] = 1; p.outcome = o[p.name] || ''; return p; });
-  // 할 일이 아직 없는 새 프로젝트 폴더도 보이게
-  Object.keys(o).forEach(function (n) { if (!have[n]) out.push({ name: n, open: 0, done: 0, next: 0, waiting: 0, important: 0, nextDue: '', items: [], stalled: false, finished: false, empty: true, outcome: o[n] }); });
+  var out = (projects || []).map(function (p) { have[p.name] = 1; p.outcome = isDroppedOutcome_(o[p.name]) ? '' : (o[p.name] || ''); return p; });
+  // 할 일이 아직 없는 새 프로젝트 폴더도 보이게 (합쳐서 버린 프로젝트는 숨김)
+  Object.keys(o).forEach(function (n) { if (!have[n] && !isDroppedOutcome_(o[n])) out.push({ name: n, open: 0, done: 0, next: 0, waiting: 0, important: 0, nextDue: '', items: [], stalled: false, finished: false, empty: true, outcome: o[n] }); });
   return out;
 }
 
@@ -1411,6 +1415,46 @@ function addAction(title, d) {
     appendTasks_(ctx, [{ title: title, status: due ? STATUS.SCHEDULED : STATUS.NEXT, due: due, created: today,
       project: String(d.project || '').trim(), context: String(d.context || '').trim() }]);
     return { ok: true };
+  });
+}
+
+/**
+ * 프로젝트 합치기: from 프로젝트의 할 일 전부를 to 프로젝트로 옮긴다.
+ * [업무]의 '프로젝트' 칸만 한 칸씩 고치고(다른 열·행은 그대로), 행은 지우지 않는다.
+ * from의 [프로젝트] 줄은 '완료 모습' 앞에 [버림]을 붙여 목록에서만 숨긴다.
+ * 확인은 화면에서 이미 받았다고 본다. 같은 이름끼리는 합칠 수 없다.
+ */
+function mergeProject(from, to) {
+  from = String(from || '').trim(); to = String(to || '').trim();
+  if (!from || !to) throw new Error('합칠 프로젝트를 골라 주세요.');
+  if (from === to) throw new Error('같은 프로젝트로는 합칠 수 없어요.');
+  return withLock_(function () {
+    var ctx = taskContext_();
+    if (!ctx.map.project) throw new Error('먼저 업데이트를 적용해 주세요.');
+    var tasks = readAllTasks_(ctx);
+    var toExists = tasks.some(function (t) { return t.project === to; }) || readProjectOutcomes_(ctx.ss).hasOwnProperty(to);
+    if (!toExists) throw new Error('합칠 대상 프로젝트를 찾지 못했어요.');
+    var moved = 0;
+    tasks.forEach(function (t) {
+      if (t.project !== from) return;
+      ctx.sheet.getRange(t.row, ctx.map.project).setValue(to);
+      moved++;
+    });
+    var sh = ctx.ss.getSheetByName(KIT.PROJECT_SHEET);
+    if (sh && sh.getLastRow() >= 2) {
+      var width = Math.max(sh.getLastColumn(), 2);
+      var head = sh.getRange(1, 1, 1, width).getValues()[0].map(function (h) { return String(h).trim(); });
+      var cName = head.indexOf(PROJECT_HEADERS[0]) + 1, cOut = head.indexOf(PROJECT_HEADERS[1]) + 1;
+      if (cName && cOut) {
+        var names = sh.getRange(2, cName, sh.getLastRow() - 1, 1).getValues();
+        for (var i = 0; i < names.length; i++) {
+          if (String(names[i][0]).trim() !== from) continue;
+          var cell = sh.getRange(i + 2, cOut), cur = String(cell.getValue() || '').trim();
+          if (!isDroppedOutcome_(cur)) cell.setValue(PROJECT_DROPPED_TAG + ' ' + to + '(으)로 합침' + (cur ? ' · ' + cur : ''));
+        }
+      }
+    }
+    return { ok: true, moved: moved };
   });
 }
 
@@ -1627,8 +1671,9 @@ function projectStats_(tasks) {
   var by = {}, order = [];
   tasks.forEach(function (t) {
     if (!t.project) return;
-    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, someday: 0, nextDue: '', items: [] }; order.push(t.project); }
+    if (!by[t.project]) { by[t.project] = { name: t.project, open: 0, done: 0, next: 0, waiting: 0, important: 0, someday: 0, total: 0, nextDue: '', items: [] }; order.push(t.project); }
     var g = by[t.project];
+    g.total++; // 합치기 확인창용: 이 프로젝트 줄 전체(버림·참고 포함)
     if (t.status === STATUS.DONE) g.done++;
     // 나중에(언젠가) 할 일도 프로젝트 안에 보이게 (프로젝트가 '끝남'으로 사라지지 않게)
     else if (t.status === STATUS.SOMEDAY) { g.someday++; if (g.items.length < 12) g.items.push({ id: t.id, title: t.title, status: t.status, due: t.due || '', delegatee: '', project: t.project, priority: t.priority || '', context: t.context || '' }); }
@@ -2136,6 +2181,7 @@ function webSkip(k, id) { checkKey_(k); var r = skipTask(id); return withView_(r
 function webAddAction(k, title, d) { checkKey_(k); appContext_(); var r = addAction(title, d); return withView_(r); }
 function webFocusMany(k, ids, focus) { checkKey_(k); var r = setFocusMany(ids, focus); return withView_(r); }
 function webSetProject(k, name, outcome) { checkKey_(k); appContext_(); var r = setProjectOutcome(name, outcome); return withView_(r); }
+function webMergeProject(k, from, to) { checkKey_(k); appContext_(); var r = mergeProject(from, to); return withView_(r); }
 // 바꾼 직후의 화면은 캐시를 읽지 않고 시트에서 새로 만든다 (방금 바꾼 내용이 반드시 보이게). 만든 화면은 캐시에 넣어 다음 열기에 쓴다.
 function withView_(r) { r = r || {}; r.view = getAppData(true); return r; }
 
@@ -2152,7 +2198,7 @@ function doPost(e) {
     getAll: webAll, getWeekly: webWeekly, sendWeekly: webSendWeekly,
     getCalendar: webCalendar, addRoutine: webAddRoutine, reviewDone: webReviewDone,
     updateTask: webUpdate, planDay: webPlanDay, undoTask: webUndo, notify: webNotify,
-    addAction: webAddAction, setProject: webSetProject, focusMany: webFocusMany,
+    addAction: webAddAction, setProject: webSetProject, mergeProject: webMergeProject, focusMany: webFocusMany,
     getCalendars: webCalendars, setCalendars: webSetCalendars, timebox: webTimebox,
     placeTask: webPlaceTask, unplaceTask: webUnplaceTask, reopenTask: webReopen, setWriteCalendar: webSetWriteCalendar, moveEvent: webMoveEvent
   };
@@ -2688,7 +2734,7 @@ function installFromEditor() {
   // ── 앱 화면이 부르는 함수 (App.html 의 call(fn) 이름과 같다) ────
   var WEB = { getAppData: 'webData', getInbox: 'webInbox', addTasks: 'webAdd', clarifyTask: 'webClarify', completeTask: 'webComplete', postponeFollowUp: 'webPostpone', skipTask: 'webSkip',
     getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', getAll: 'webAll',
-    getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen', setWriteCalendar: 'webSetWriteCalendar' };
+    getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen', setWriteCalendar: 'webSetWriteCalendar' };
   var queue = Promise.resolve(); // 시트 쓰기는 한 번에 하나씩
   function serial(job) { var p = queue.then(job, job); queue = p.catch(function () {}); return p; }
   function clone(x) { return x === undefined ? null : JSON.parse(JSON.stringify(x)); }

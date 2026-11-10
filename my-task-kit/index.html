@@ -714,7 +714,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.7.5" };
+  var KIT = { name: "GTD 워크", version: "1.7.6" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -807,7 +807,7 @@
         .then(function (j) { if (!j.ok) throw new Error(j.error === '알 수 없는 요청입니다.' ? '이 기능은 새 버전에서 쓸 수 있어요. 시트의 코드를 업데이트해 주세요' : j.error || '알 수 없는 오류'); return j.result; });
     }
     var WEB = { getAppData: 'webData', getInbox: 'webInbox', addTasks: 'webAdd', clarifyTask: 'webClarify', completeTask: 'webComplete', postponeFollowUp: 'webPostpone', skipTask: 'webSkip',
-      getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', notify: 'webNotify', getAll: 'webAll', getWeekly: 'webWeekly', sendWeekly: 'webSendWeekly', addAction: 'webAddAction', setProject: 'webSetProject', focusMany: 'webFocusMany', getCalendars: 'webCalendars', setCalendars: 'webSetCalendars', timebox: 'webTimebox', placeTask: 'webPlaceTask', unplaceTask: 'webUnplaceTask' };
+      getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', notify: 'webNotify', getAll: 'webAll', getWeekly: 'webWeekly', sendWeekly: 'webSendWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', getCalendars: 'webCalendars', setCalendars: 'webSetCalendars', timebox: 'webTimebox', placeTask: 'webPlaceTask', unplaceTask: 'webUnplaceTask' };
     return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(ok).withFailureHandler(no); r[WEB[fn]].apply(r, [KEY].concat(args)); });
   }
   function addDays(ymd, n) { var p = ymd.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10); }
@@ -1943,6 +1943,7 @@
       '<button class="cta" id="msOk">저장</button><button class="txtlink" id="msRef">' + svg('clip', 15) + ' 할 일이 아니라 참고자료로 보관</button>');
   }
 
+  $('sheetBody').addEventListener('keydown', function (e) { if (e.target.id === 'pjAddIn' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); pjAddInline(e.target.getAttribute('data-pjname')); } });
   $('sheetBody').addEventListener('keydown', function (e) { if (e.target.id === 'tTitle' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); e.target.blur(); } });
   $('sheetBody').addEventListener('focusout', function (e) {
     if (e.target.id !== 'tTitle' || !sheetTask) return;
@@ -2080,6 +2081,15 @@
       if (!pa) return toast('첫 번째 할 일을 적어 주세요');
       var pnx = pjSame(pn); if (pnx) return ibSave({ status: STATUS.NEXT, title: pa, project: pnx }, '이미 있는 \'' + pnx + '\' 프로젝트에 넣었어요', po ? { name: pnx, outcome: po } : null);
       return ibSave({ status: STATUS.NEXT, title: pa, project: pn }, pn + ' 프로젝트를 만들었어요', { name: pn, outcome: po });
+    }
+    if (e.target.id === 'pjAddOk') return pjAddInline(e.target.getAttribute('data-name'));
+    if (e.target.id === 'pjMerge') return openMergePick(e.target.getAttribute('data-name'));
+    if ((b = e.target.closest('[data-mgto]')) && !e.target.id) return openMergeConfirm(b.getAttribute('data-mgfrom'), b.getAttribute('data-mgto'));
+    if (e.target.id === 'mgNo') return openProjectSheet(e.target.getAttribute('data-name'));
+    if (e.target.id === 'mgOk') {
+      var mf = e.target.getAttribute('data-mgfrom'), mt = e.target.getAttribute('data-mgto'); if (mf === mt) return toast('같은 프로젝트로는 합칠 수 없어요');
+      e.target.disabled = true;
+      return call('mergeProject', mf, mt).then(function (r) { closeSheet(); setView(r.view); toast('\'' + mf + '\'의 할 일 ' + r.moved + '개를 \'' + mt + '\'(으)로 옮겼어요'); if (pjOpen) openProjects(); }).catch(function (err) { e.target.disabled = false; toast(err.message); });
     }
     // 프로젝트 완료 모습 고치기
     if (e.target.id === 'poOk') {
@@ -2756,8 +2766,30 @@
       '<div class="lbl" style="margin-top:16px">할 일</div><div class="card" id="pjTasks" style="background:var(--fill);box-shadow:none">' + (its.length ? its.map(function (it) {
         return '<div class="row" style="background:transparent" tabindex="0" role="button" data-pjtask="' + esc(it.id) + '"><div class="tx"><div class="t">' + esc(it.title) + '</div>' + (tag(it) ? '<div class="m">' + esc(tag(it)) + '</div>' : '') + '</div>' + CHEV + '</div>';
       }).join('') + (more > 0 ? '<div class="xe" style="padding:10px 14px">외 ' + more + '개</div>' : '') : '<div class="xe" style="padding:14px">아직 할 일이 없어요</div>') + '</div>' +
-      '<div class="ss" style="margin:12px 0 0;font-size:13.5px">이 프로젝트의 할 일은 오늘 화면 담기 칸에 적고, 이 폴더로 끌어다 놓거나 할 일 ▸ 프로젝트로 묶어요</div>' +
-      '<button class="cta" id="poOk" data-name="' + esc(p.name) + '">저장</button>');
+      // 담기는 맨 위 칸 하나가 원칙이지만, 이 창에서만 예외: 여기서 적은 할 일은 처음부터 이 프로젝트에 묶인다 (운영자 결정, 2026-11-10)
+      '<div style="display:flex;gap:8px;margin-top:10px"><input class="field" id="pjAddIn" data-pjname="' + esc(p.name) + '" placeholder="이 프로젝트에 할 일 바로 담기" maxlength="120" style="margin:0;flex:1"><button class="pillbtn" id="pjAddOk" data-name="' + esc(p.name) + '">담기</button></div>' +
+      '<button class="cta" id="poOk" data-name="' + esc(p.name) + '">저장</button>' +
+      '<button class="pillbtn" id="pjMerge" data-name="' + esc(p.name) + '" style="display:block;margin:14px auto 0;background:var(--fill);color:var(--t2);box-shadow:none">다른 프로젝트로 합치기</button>');
+  }
+  // 합치기 ①: 어느 프로젝트로 합칠지 고른다 (자기 자신은 목록에 없다)
+  function openMergePick(name) {
+    var others = (data.projects || []).filter(function (x) { return x.name !== name && !x.finished; });
+    if (!others.length) { toast('합칠 다른 프로젝트가 없어요'); return; }
+    openSheet('<div class="st">어느 프로젝트로 합칠까요?</div><div class="ss">\'' + esc(name) + '\'의 할 일이 고른 프로젝트로 옮겨져요</div><div class="chips" id="pjMergeList">' +
+      others.map(function (x) { return '<button class="chip" data-mgto="' + esc(x.name) + '" data-mgfrom="' + esc(name) + '">' + esc(x.name) + '</button>'; }).join('') + '</div>');
+  }
+  // 합치기 ②: 무엇이 어디로 몇 개 옮겨지는지 보여 주고, 확인했을 때만 옮긴다
+  function openMergeConfirm(from, to) {
+    var p = (data.projects || []).filter(function (x) { return x.name === from; })[0] || {}, n = p.total || 0, oth = Math.max(0, n - (p.open || 0) - (p.someday || 0) - (p.done || 0));
+    openSheet('<div class="st">정말 합칠까요?</div><div class="ss">\'' + esc(from) + '\' 프로젝트의 할 일 <b id="mgCount">' + n + '</b>개(남은 일 ' + (p.open || 0) + ' · 나중에 ' + (p.someday || 0) + ' · 끝낸 일 ' + (p.done || 0) + (oth ? ' · 지운 일·참고 ' + oth : '') + ')가 \'' + esc(to) + '\' 프로젝트로 옮겨져요. \'' + esc(from) + '\'은(는) 목록에서 사라지고, 할 일은 하나도 지워지지 않아요.</div>' +
+      '<button class="cta" id="mgOk" data-mgfrom="' + esc(from) + '" data-mgto="' + esc(to) + '">합치기</button>' +
+      '<button class="pillbtn" id="mgNo" data-name="' + esc(from) + '" style="display:block;margin:14px auto 0;background:var(--fill);color:var(--t2);box-shadow:none">취소</button>');
+  }
+  function pjAddInline(name) {
+    var inp = $('pjAddIn'), title = inp ? inp.value.trim() : ''; if (!title) return toast('할 일을 적어 주세요');
+    inp.disabled = true; var ok = $('pjAddOk'); if (ok) ok.disabled = true;
+    return call('addAction', title, { project: name }).then(function (r) { setView(r.view); openProjectSheet(name); toast('\'' + name + '\'에 담았어요'); var i2 = $('pjAddIn'); if (i2) i2.focus(); })
+      .catch(function (err) { inp.disabled = false; if (ok) ok.disabled = false; toast(err.message); });
   }
   function onWaiting() { var h = document.querySelector('#moreBody .h1'); return $('p-more').classList.contains('on') && h && /맡긴 일/.test(h.textContent); }
   function openWaiting() {
@@ -3084,7 +3116,7 @@
     L.push('');
     L.push('## 탭');
     L.push('- [업무]: 할 일 목록. 1행이 머리글, 2행부터 할 일 1개 = 1줄. 할 일은 여기만 고친다.');
-    L.push('- [프로젝트]: 프로젝트 · 완료 모습 · 만든 날. 프로젝트의 목표(완료 모습)를 적을 때만 고친다.');
+    L.push('- [프로젝트]: 프로젝트 · 완료 모습 · 만든 날. 프로젝트의 목표(완료 모습)를 적을 때만 고친다. 완료 모습이 "[버림]"으로 시작하면 다른 프로젝트로 합쳐서 없앤 프로젝트이니 쓰지 마.');
     L.push('- [오늘], [_설정]: 앱이 쓰는 탭. 읽지도 고치지도 마.');
     L.push('');
     L.push('## [업무] 열 — 열 위치는 반드시 1행 머리글 이름으로 찾아 (순서가 바뀌어 있을 수 있음)');
