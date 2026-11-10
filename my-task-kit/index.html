@@ -351,7 +351,7 @@
   .wkl { font-size: 11px; font-weight: 700; color: var(--t3); text-align: right; padding: 6px 8px 0 0; }
   .wkac { display: flex; flex-direction: column; gap: 3px; padding: 0 2px; border-radius: 10px; min-height: 22px; }
   .wch { font-size: 11.5px; font-weight: 700; padding: 4px 6px; border-radius: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .wch.ev { background: var(--bluet); color: var(--blue); } .wch.tk { background: var(--gt); color: var(--g); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .wch.ev { background: var(--bluet); color: var(--blue); } .wch.wfold { background: var(--bluet); color: var(--blue); cursor: pointer; } .wch.tk { background: var(--gt); color: var(--g); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
   .wkgw { max-height: calc(100vh - 290px); min-height: 360px; overflow: auto; overscroll-behavior: contain; }
   .wkb { position: relative; padding-right: 8px; }
   .wkt { position: relative; } .wkt span { position: absolute; right: 8px; transform: translateY(-50%); font-size: 11px; font-weight: 600; color: var(--t3); }
@@ -714,7 +714,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.7.3" };
+  var KIT = { name: "GTD 워크", version: "1.7.4" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -2030,7 +2030,8 @@
       var cids = [].map.call(document.querySelectorAll('#calList [data-calid]:checked'), function (x) { return x.getAttribute('data-calid'); });
       if (!cids.length) return toast('하나 이상 골라 주세요');
       var wsel = document.querySelector('#calWrite [aria-checked="true"]'), wid = wsel ? wsel.getAttribute('data-wcal') : '', wname = wsel ? wsel.querySelector('.t').textContent : '';
-      closeSheet();
+      closeSheet(); calsGen++;
+      if (calsShown) saveCals(calsShown.map(function (c) { var c2 = Object.assign({}, c); c2.on = cids.indexOf(c.id) > -1; if (wid) c2.write = c.id === wid; return c2; }));
       return call('setCalendars', cids).then(function (r) {
         if (!wid || wid === calWrite0) { setView(r.view); return toast('캘린더 ' + cids.length + '개를 보여 드려요'); }
         return call('setWriteCalendar', wid).then(function (r2) { setView(r2.view); toast('이제 할 일은 \'' + wname + '\' 캘린더에 넣어요'); });
@@ -2238,7 +2239,7 @@
 
   // ════════ 캘린더 ════════
   // 캘린더는 주간 시간표 하나 (일간은 오늘 화면 시간표, 지난 기록은 인사이트)
-  var cMode = 'week', cAnchor = '', cWeekend = true, cLast = null, cSel = '';
+  var cMode = 'week', cAnchor = '', cWeekend = true, cLast = null, cSel = '', cExp = {};
   try { cWeekend = localStorage.getItem('kitCalWeekend') !== '0'; } catch (e) {}
   $('cToday').onclick = function () { cAnchor = ''; loadCal(); };
   $('cWeekend').checked = cWeekend;
@@ -2296,8 +2297,12 @@
     // 종일 일정 · 날짜만 있는 할 일 (시간표에 넣지 않은 것)
     h += '<div class="wka" style="' + tpl + '"><div class="wkl">종일</div>' + cols.map(function (d) {
       var all = evs.filter(function (e) { return e.date === d && e.allDay; }), tks = (c.tasks || []).filter(function (t) { return t.date === d && !placedOn[t.id + '|' + d] && t.status !== STATUS.DONE; });
+      // 같은 날 확인할 맡긴 일이 3개 이상이면 한 줄로 접는다 (누르면 펼침)
+      var dl = tks.filter(function (t) { return t.status === STATUS.DELEGATED; }), many = dl.length >= 3, fold = many && !cExp[d];
+      if (fold) tks = tks.filter(function (t) { return t.status !== STATUS.DELEGATED; });
       return '<div class="wkac" data-wday="' + d + '">' + all.map(function (e) { return '<div class="wch ev">' + esc(e.title) + '</div>'; }).join('') +
-        tks.map(function (t) { return '<div class="wch tk" data-wdrag="t:' + esc(t.id) + '" data-title="' + esc(t.title) + '" data-day="' + d + '" title="끌어서 다른 날이나 시간에 놓기">' + (t.status === STATUS.DELEGATED ? svg('user', 11) + ' ' : '') + esc(t.title) + '</div>'; }).join('') + '</div>';
+        (fold ? '<div class="wch wfold" role="button" tabindex="0" data-wexp="' + d + '" title="누르면 펼쳐요">' + svg('user', 11) + ' 맡긴 일 확인 ' + dl.length + '개</div>' : '') +
+        tks.map(function (t) { return '<div class="wch tk" data-wdrag="t:' + esc(t.id) + '" data-title="' + esc(t.title) + '" data-day="' + d + '" title="끌어서 다른 날이나 시간에 놓기">' + (t.status === STATUS.DELEGATED ? svg('user', 11) + ' ' : '') + esc(t.title) + '</div>'; }).join('') + (many && !fold ? '<div class="wch wfold" role="button" tabindex="0" data-wexp="' + d + '">접기</div>' : '') + '</div>';
     }).join('') + '</div>';
     h += '<div class="wkgw" id="wkGridWrap"><div class="wkb" style="' + tpl + ';height:' + Math.round((WE - WS) * WX) + 'px"><div class="wkt">';
     for (var m = WS; m <= WE; m += 60) h += '<span style="top:' + Math.round((m - WS) * WX) + 'px">' + (m / 60) + '시</span>';
@@ -2380,7 +2385,9 @@
     }
     document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
   })();
+  $('cBody').addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('[data-wexp]')) { e.preventDefault(); e.target.closest('[data-wexp]').click(); } });
   $('cBody').addEventListener('click', function (e) {
+    var x = e.target.closest('[data-wexp]'); if (x) { var xd = x.getAttribute('data-wexp'); cExp[xd] = !cExp[xd]; return cLast && renderCal(cLast); }
     var b = e.target.closest('[data-cday]'); if (!b || !cLast) return;
     var d = b.getAttribute('data-cday');
     if (swipedAt && Date.now() - swipedAt < 400) return;
@@ -2507,7 +2514,7 @@
     h += '<div class="ikts">' +
       kt('check', 'green', '끝낸 일', done.length, 'n', donePrev.length ? '이전 ' + donePrev.length + '개' : '이 기간', wDone, 'var(--g)') +
       kt('star', 'amber', '중요한 일에 쓴 시간', imp, 'h', tot ? '전체의 ' + pct + '%' : '시간표로 끝내면 기록돼요', wImp, '#D08400') +
-      kt('user', 'blue', '맡긴 일 돌아옴', back.length, 'n', deleg.length ? '맡긴 ' + deleg.length + '개 중 · 기다리는 ' + waiting.length : '기다리는 ' + waiting.length + '개', wBack, 'var(--blue)') +
+      kt('user', 'blue', '맡긴 일 돌아옴', back.length, 'n', (deleg.length ? P.label + ' 맡긴 ' + deleg.length + '개 중' : P.label + ' 맡긴 일 없음') + '<br>지금 기다리는 일 ' + waiting.length + '개(전체)', wBack, 'var(--blue)') +
       kt('flag', postponed.length ? 'red' : 'green', '미룬 일', postponed.length, 'n', postponed.length ? '모두 ' + postponed.reduce(function (a, t) { return a + t.postponed; }, 0) + '번 미뤘어요' : '깔끔해요 👏', null) + '</div>';
     // 3. 활동 잔디 (16주)
     var start = addDays(weekStartOf(today), -7 * 15), cells = '', mons = '', total16 = 0, bestDay = null, lastMon = '';
@@ -2688,23 +2695,44 @@
     stagger($('moreBody'));
   }
   // 캘린더 설정: ① 할 일을 넣을 캘린더(내가 만든 캘린더 중 하나) ② 오늘·캘린더·시간표에 보이는 캘린더
-  var calWrite0 = '';
+  // 마지막으로 받은 목록을 이 기기에 기억해 바로 보여 주고, 새 목록은 뒤에서 받아 바뀐 것만 다시 그린다 (로그아웃하면 지워짐: kitCal:)
+  var calWrite0 = '', calsShown = null, calsGen = 0, CALS_KEY = 'kitCal:list';
+  function saveCals(l) { calsShown = l; try { localStorage.setItem(CALS_KEY, JSON.stringify(l)); } catch (e) {} }
   function openCals() {
-    openSheet('<div class="st">캘린더 설정</div><div class="ss">불러오는 중…</div>');
+    var cached = null, gen = ++calsGen; try { cached = JSON.parse(localStorage.getItem(CALS_KEY) || 'null'); } catch (e) {}
+    var wOf = function (l) { return (l.filter(function (c) { return c.write; })[0] || {}).id || ''; };
+    var ready = function () { var bt = $('calOk'); if (bt) { bt.disabled = false; bt.textContent = '저장'; } };
+    // 기억해 둔 목록은 바로 보여 주되, 최신 목록을 받기 전에는 저장을 막는다 (다른 기기에서 바꾼 설정을 옛 값으로 되돌리지 않게)
+    if (cached && cached.length) { calWrite0 = wOf(cached); drawCals(cached, true); }
+    else { cached = null; openSheet('<div class="st">캘린더 설정</div><div class="ss">불러오는 중…</div>'); }
     call('getCalendars').then(function (l) {
-      var dot = function (c) { return '<span class="tile" style="background:' + esc(c.color || '#5B5CF6') + ';width:14px;height:14px;min-width:14px;border-radius:50%;padding:0"></span>'; };
-      var w = l.filter(function (c) { return c.write; })[0]; calWrite0 = w ? w.id : '';
-      var mine = l.filter(function (c) { return c.canWrite || c.primary; });
-      openSheet('<div class="st">캘린더 설정</div>' +
-        '<div class="lbl" style="margin-top:6px">할 일을 넣을 캘린더</div><div class="ss" style="margin:-2px 0 8px;font-size:13.5px">시간표에 놓은 할 일이 이 캘린더에 일정으로 들어가요. 나만 보는 업무용 캘린더를 고르면 좋아요</div>' +
-        '<div class="card" style="background:var(--fill);box-shadow:none" id="calWrite">' + mine.map(function (c) {
-          return '<div class="row" style="background:transparent" tabindex="0" role="radio" aria-checked="' + (c.write ? 'true' : 'false') + '" data-wcal="' + esc(c.id) + '">' + dot(c) + '<div class="tx"><div class="t">' + esc(c.name) + '</div>' + (c.primary ? '<div class="m">기본 캘린더</div>' : '') + '</div><span class="chk' + (c.write ? ' on' : '') + '">' + svg('check', 15) + '</span></div>';
-        }).join('') + '</div>' +
-        '<div class="lbl" style="margin-top:18px">보이는 캘린더</div><div class="ss" style="margin:-2px 0 8px;font-size:13.5px">오늘 · 캘린더 · 시간표에 함께 보여요</div>' +
-        '<div class="card" style="background:var(--fill);box-shadow:none" id="calList">' + l.map(function (c) {
-          return '<label class="row" style="background:transparent;cursor:pointer">' + dot(c) + '<div class="tx"><div class="t">' + esc(c.name) + '</div>' + (c.primary ? '<div class="m">기본 캘린더</div>' : '') + '</div><span class="sw"><input type="checkbox" data-calid="' + esc(c.id) + '"' + (c.on ? ' checked' : '') + '><i></i></span></label>';
-        }).join('') + '</div><button class="cta" id="calOk">저장</button>');
-    }).catch(function (e) { closeSheet(); toast(e.message); });
+      if (gen !== calsGen) return; // 그사이 저장했거나 다시 열었으면 늦게 온 목록은 버린다
+      calWrite0 = wOf(l);
+      try { localStorage.setItem(CALS_KEY, JSON.stringify(l)); } catch (e) {}
+      if (!cached) return drawCals(l);
+      if (!$('calOk')) return; // 그새 창을 닫았으면 그대로
+      if (JSON.stringify(cached) === JSON.stringify(l)) { calsShown = l; return ready(); }
+      // 이 창에서 사용자가 바꾼 것만 유지하고, 나머지는 최신 값으로
+      var was = {}, on = {}, wr = document.querySelector('#calWrite [aria-checked="true"]'), wid = wr ? wr.getAttribute('data-wcal') : '';
+      cached.forEach(function (c) { was[c.id] = !!c.on; });
+      [].forEach.call(document.querySelectorAll('#calList [data-calid]'), function (x) { on[x.getAttribute('data-calid')] = x.checked; });
+      var keepW = wid && wid !== wOf(cached) && l.some(function (y) { return y.id === wid; });
+      drawCals(l.map(function (c) { var c2 = Object.assign({}, c); if (c.id in on && c.id in was && on[c.id] !== was[c.id]) c2.on = on[c.id]; if (keepW) c2.write = c.id === wid; return c2; }));
+    }).catch(function (e) { if (gen !== calsGen) return; if (!cached) closeSheet(); else ready(); toast(e.message); });
+  }
+  function drawCals(l, pending) {
+    calsShown = l;
+    var dot = function (c) { return '<span class="tile" style="background:' + esc(c.color || '#5B5CF6') + ';width:14px;height:14px;min-width:14px;border-radius:50%;padding:0"></span>'; };
+    var mine = l.filter(function (c) { return c.canWrite || c.primary; });
+    openSheet('<div class="st">캘린더 설정</div>' +
+      '<div class="lbl" style="margin-top:6px">할 일을 넣을 캘린더</div><div class="ss" style="margin:-2px 0 8px;font-size:13.5px">시간표에 놓은 할 일이 이 캘린더에 일정으로 들어가요. 나만 보는 업무용 캘린더를 고르면 좋아요</div>' +
+      '<div class="card" style="background:var(--fill);box-shadow:none" id="calWrite">' + mine.map(function (c) {
+        return '<div class="row" style="background:transparent" tabindex="0" role="radio" aria-checked="' + (c.write ? 'true' : 'false') + '" data-wcal="' + esc(c.id) + '">' + dot(c) + '<div class="tx"><div class="t">' + esc(c.name) + '</div>' + (c.primary ? '<div class="m">기본 캘린더</div>' : '') + '</div><span class="chk' + (c.write ? ' on' : '') + '">' + svg('check', 15) + '</span></div>';
+      }).join('') + '</div>' +
+      '<div class="lbl" style="margin-top:18px">보이는 캘린더</div><div class="ss" style="margin:-2px 0 8px;font-size:13.5px">오늘 · 캘린더 · 시간표에 함께 보여요</div>' +
+      '<div class="card" style="background:var(--fill);box-shadow:none" id="calList">' + l.map(function (c) {
+        return '<label class="row" style="background:transparent;cursor:pointer">' + dot(c) + '<div class="tx"><div class="t">' + esc(c.name) + '</div>' + (c.primary ? '<div class="m">기본 캘린더</div>' : '') + '</div><span class="sw"><input type="checkbox" data-calid="' + esc(c.id) + '"' + (c.on ? ' checked' : '') + '><i></i></span></label>';
+      }).join('') + '</div><button class="cta" id="calOk"' + (pending ? ' disabled>최신 목록 확인 중…' : '>저장') + '</button>');
   }
   function openProjectSheet(name) {
     var p = (data.projects || []).filter(function (x) { return x.name === name; })[0] || { name: name, outcome: '' };
@@ -2769,7 +2797,7 @@
     var beats = [].slice.call(document.querySelectorAll('.story .beat')), shown = 0, fired = false;
     var update = function () {
       var n = beats.filter(function (b) { return b.classList.contains('in'); }).length;
-      if (n !== shown) { shown = n; var el = $('stN'); el.setAttribute('data-n', el.textContent); countUp(el, n, 350); bump(el); $('stBar').style.width = (n / total * 100) + '%'; }
+      if (n !== shown) { shown = n; $('stBar').style.width = (n / total * 100) + '%'; }
     };
     if (!('IntersectionObserver' in window)) { beats.forEach(function (b) { b.classList.add('in'); }); $('stEnd').classList.add('in'); return update(); }
     storyIO = new IntersectionObserver(function (es) {
@@ -2807,7 +2835,7 @@
     var h = '';
     if (key === 'done') {
       if (w.done.length) {
-        $('moreBody').innerHTML = head + '<div class="story"><div class="pin"><div class="n" id="stN">0</div><div class="l">이번 주에 끝낸 일</div><div class="bar"><i id="stBar"></i></div></div>' +
+        $('moreBody').innerHTML = head + '<div class="story"><div class="pin"><div class="n" id="stN">' + w.done.length + '</div><div class="l">이번 주에 끝낸 일</div><div class="bar"><i id="stBar"></i></div></div>' +
           w.done.map(function (t) { return '<div class="beat"><div class="row" style="cursor:default"><span class="chk on">' + svg('check', 15) + '</span><div class="tx"><div class="t">' + esc(t.title) + '</div>' + (t.completed ? '<div class="m">' + rel(t.completed) + '</div>' : '') + '</div></div></div>'; }).join('') +
           '<div class="end" id="stEnd">' + (w.done.length >= 5 ? '대단해요! 한 주 멋졌어요' : '잘하고 있어요') + '</div></div>' + next;
         return storyObserve(w.done.length);
@@ -2829,7 +2857,7 @@
         return '<div class="card" style="padding:16px 18px;margin-bottom:10px"><div class="t" style="font-size:16.5px;font-weight:700;display:flex;align-items:center;gap:8px">' + svg('folder', 18, 'var(--purple)') + esc(p.name) + '</div>' +
           (p.outcome ? '<div class="m" style="margin:4px 0 0;color:var(--t2);font-size:14px">' + esc(p.outcome) + '</div>' : '') + '<div class="m" style="margin:6px 0 0;color:var(--t3);font-size:13px">다음 할 일을 담기 칸에 적고 이 프로젝트로 묶어 주세요</div></div>';
       }).join('') + (ops.length > st.length ? '<div class="card">' + ops.filter(function (p) { return !p.stalled; }).map(projRow).join('') + '</div>' : ''); }
-    if (key === 'next') { var c = uniq(w.next.concat(w.upcoming)).slice(0, 12); h = '<div class="h1" style="margin-bottom:18px">다음 주 꼭 할 일 3개</div>' + (c.length ? '<div class="card" id="wkPick">' + c.map(function (t) { return '<div class="row" data-pick="' + esc(t.id) + '"><span class="chk">' + svg('check', 15) + '</span><div class="tx"><div class="t">' + esc(t.title) + '</div></div></div>'; }).join('') + '</div>' : empty('sun', 'amber', '고를 일이 없어요')) + (window.KIT_ENGINE ? '' : '<button class="txtlink" data-wks="mail">' + svg('mail', 15) + ' 이번 주 요약 메일로 받기</button>'); }
+    if (key === 'next') { var c = uniq(w.next.concat(w.upcoming)).slice(0, 12); h = '<div class="h1" style="margin-bottom:8px">다음 주 꼭 할 일 고르기</div><div class="sub2" style="margin-bottom:16px">' + (c.length ? '후보 ' + c.length + '개 중 3개까지 골라요 · 고른 일은 다음 주 월요일 할 일로 올라와요' : '') + '</div>' + (c.length ? '<div class="card" id="wkPick">' + c.map(function (t) { return '<div class="row" data-pick="' + esc(t.id) + '"><span class="chk">' + svg('check', 15) + '</span><div class="tx"><div class="t">' + esc(t.title) + '</div></div></div>'; }).join('') + '</div>' : empty('sun', 'amber', '고를 일이 없어요')) + (window.KIT_ENGINE ? '' : '<button class="txtlink" data-wks="mail">' + svg('mail', 15) + ' 이번 주 요약 메일로 받기</button>'); }
     $('moreBody').innerHTML = head + h + next;
     stagger($('moreBody'));
   }
@@ -3084,12 +3112,13 @@
     var draw = function (copied) {
       openSheet('<div class="st">AI 연결</div><div class="ss">내가 쓰는 AI(Claude·ChatGPT 등)에게 말로 할 일을 맡겨요.</div>' +
         '<div class="card" style="margin-top:14px">' +
-        '<label class="row" style="cursor:pointer;align-items:flex-start"><span class="tile purple" style="font-weight:800">1</span><div class="tx"><div class="t">AI에 구글 시트 연결하기</div><div class="m">AI 앱 설정의 커넥터에서 구글 시트를 켜요 · 처음 한 번만</div></div>' +
-        '<span class="sw"><input type="checkbox" id="aiLinked"' + (linked ? ' checked' : '') + ' aria-label="연결했어요"><i></i></span></label>' +
-        (linked ? '<div class="row" style="cursor:default;align-items:flex-start"><span class="tile purple" style="font-weight:800">2</span><div class="tx"><div class="t">AI에게 메시지 보내기</div><div class="m">' + (copied ? '복사했어요 · AI 채팅창에 붙여넣고(' + key + ') 보내세요' : '아래 버튼으로 복사해서 AI 채팅창에 붙여넣어요') + '</div></div></div>' : '') +
+        '<div class="row" style="cursor:default;align-items:flex-start"><span class="tile purple" style="font-weight:800">1</span><div class="tx"><div class="t">AI 앱에서 구글 시트 켜기</div><div class="m">AI 앱(Claude·ChatGPT 등) 설정 ▸ 커넥터에서 구글 시트를 켜요 · 처음 한 번만</div></div></div>' +
+        '<label class="row" style="cursor:pointer;align-items:flex-start"><span class="tile purple" style="font-weight:800">2</span><div class="tx"><div class="t">켰으면 여기 스위치 켜기</div><div class="m">' + (linked ? '켰어요 · 이 기기에 기억해 둘게요' : '1번을 했으면 오른쪽 스위치를 켜 주세요') + '</div></div>' +
+        '<span class="sw"><input type="checkbox" id="aiLinked"' + (linked ? ' checked' : '') + ' aria-label="AI 앱에서 구글 시트를 켰어요"><i></i></span></label>' +
+        (linked ? '<div class="row" style="cursor:default;align-items:flex-start"><span class="tile purple" style="font-weight:800">3</span><div class="tx"><div class="t">AI에게 메시지 보내기</div><div class="m">' + (copied ? '복사했어요 · AI 채팅창에 붙여넣고(' + key + ') 보내세요' : '아래 버튼으로 복사해서 AI 채팅창에 붙여넣어요') + '</div></div></div>' : '') +
         '</div>' +
         (linked ? '<button class="cta' + (copied ? ' ghost' : '') + '" id="aiCopy" type="button" style="display:flex;align-items:center;justify-content:center;gap:8px">' + svg(copied ? 'check' : 'copy', 18) + (copied ? '복사했어요' : '메시지 복사') + '</button>'
-          : '<div class="ss" style="margin-top:12px;text-align:center">연결했으면 위에서 켜 주세요</div>') +
+          : '') +
         '<textarea id="aiText" readonly rows="6" hidden style="width:100%;margin-top:12px;font-size:12.5px;line-height:1.5;border-radius:12px;border:1px solid var(--line);background:var(--fill);color:var(--t1);padding:10px;resize:vertical"></textarea>');
       $('aiLinked').onchange = function () { linked = this.checked; try { localStorage.setItem('kitAiLinked', linked ? '1' : ''); } catch (e) {} draw(false); };
       if ($('aiCopy')) $('aiCopy').onclick = function () {
