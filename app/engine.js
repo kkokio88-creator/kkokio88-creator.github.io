@@ -493,7 +493,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.9.2',       // 코드 버전 (화면 표시용)
+  VERSION: '1.10.0',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 8,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다)
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -501,7 +501,7 @@ var KIT = {
   PROJECT_SHEET: '프로젝트', // 프로젝트 이름 · 완료 모습 (처음 적을 때 생긴다)
   AI_LOG_SHEET: 'AI기록',     // v8: AI가 시트를 바꿀 때마다 한 줄씩 추가(되돌리기용). 앱이 만든다
   AI_PROPOSAL_SHEET: 'AI제안', // v8: AI가 올리는 제안(적용·거절은 앱에서). 앱이 만든다
-  AI_RULES_VERSION: 1,        // AI 규칙 파일 버전: AI 안내(규칙 파일·요청 팩)를 바꾸면 올린다 (요청 팩이 이 번호와 맞는지 AI에게 확인시킨다)
+  AI_RULES_VERSION: 2,        // AI 규칙 파일 버전: AI 안내(규칙 파일·요청 팩)를 바꾸면 올린다 (요청 팩이 이 번호와 맞는지 AI에게 확인시킨다)
   RULE_MARK: 'N("kit")=0', // 키트가 만든 조건부 서식을 구분하는 표식
   WEEKLY_HANDLER: 'sendWeeklyReview',
   WEEKLY_HOUR: 16,
@@ -610,6 +610,14 @@ function colLetter_(n) {
   }
   return s;
 }
+
+/** 시트가 수식으로 읽지 않게: =,+,-,@로 시작하는 글 앞에 공백 (상세 글·AI 경로와 같은 방식) */
+function textCell_(v, key) {
+  if (typeof v !== 'string') return v;
+  // 상황 칸의 '@컴퓨터'는 앱이 쓰는 정식 표기라 @는 막지 않는다
+  return (key === 'context' ? /^[=+\-]/ : /^[=+\-@]/).test(v) ? ' ' + v : v;
+}
+var TEXT_KEYS_ = { title: 1, memo: 1, context: 1, delegatee: 1, project: 1 };
 
 /** 셀 값(Date 또는 문자열)을 'yyyy-MM-dd' 문자열로. 날짜가 아니면 '' */
 function ymd_(value, tz) {
@@ -1240,7 +1248,7 @@ function appendTasks_(ctx, tasks) {
   var rows = tasks.map(function (t, i) {
     var r = new Array(width);
     for (var k = 0; k < width; k++) r[k] = '';
-    Object.keys(t).forEach(function (key) { if (ctx.map[key] && t[key] !== undefined) r[ctx.map[key] - 1] = t[key]; });
+    Object.keys(t).forEach(function (key) { if (ctx.map[key] && t[key] !== undefined) r[ctx.map[key] - 1] = TEXT_KEYS_[key] ? textCell_(t[key], key) : t[key]; });
     if (ctx.map.id) r[ctx.map.id - 1] = t.id || newId_(i + 1);
     return r;
   });
@@ -1322,7 +1330,7 @@ function clarifyTask(id, d) {
     // 이미 '완료'인 줄을 또 완료하면(연타·두 기기) 아무것도 쓰지 않는다: 완료일을 덮지 않고 다음 회차도 또 만들지 않는다
     if (d.onlyIfOpen && before.status === STATUS.DONE) return { ok: true, noop: true, next: '', nextId: '', askNext: null };
     var set = function (key, val) {
-      if (ctx.map[key] && val !== undefined) ctx.sheet.getRange(row, ctx.map[key]).setValue(val);
+      if (ctx.map[key] && val !== undefined) ctx.sheet.getRange(row, ctx.map[key]).setValue(TEXT_KEYS_[key] ? textCell_(val, key) : val);
     };
     if (d.title !== undefined && String(d.title).trim()) set('title', String(d.title).trim());
     set('status', d.status);
@@ -1395,7 +1403,7 @@ function updateTask(id, patch) {
     var row = findRowById_(ctx, id);
     if (!row) throw new Error('항목을 찾지 못했습니다. 시트에서 지워졌을 수 있습니다.');
     var today = todayYmd_(ctx.tz);
-    var set = function (key, val) { if (ctx.map[key]) ctx.sheet.getRange(row, ctx.map[key]).setValue(val); };
+    var set = function (key, val) { if (ctx.map[key]) ctx.sheet.getRange(row, ctx.map[key]).setValue(TEXT_KEYS_[key] ? textCell_(val, key) : val); };
     if (patch.title !== undefined && String(patch.title).trim()) set('title', String(patch.title).trim());
     if (patch.focus !== undefined) set('focus', patch.focus === true ? today : ymd_(patch.focus));
     if (patch.est !== undefined) set('est', Number(patch.est) > 0 ? Math.round(Number(patch.est)) : '');
@@ -1476,7 +1484,7 @@ function undoTask(u) {
     var row = findRowById_(ctx, u.id);
     if (!row) throw new Error('항목을 찾지 못했습니다.');
     var set = function (key, val) { if (ctx.map[key]) ctx.sheet.getRange(row, ctx.map[key]).setValue(val); };
-    set('status', u.status); set('completed', '');
+    set('status', u.status); set('completed', u.completed !== undefined ? ymd_(u.completed) : '');
     if (u.focus !== undefined) set('focus', ymd_(u.focus));
     if (u.nextMark !== undefined) set('nextMark', u.nextMark);
     if (u.untriage) set('triaged', '');
@@ -1502,7 +1510,8 @@ function reopenTask(id) {
     nextId = sib ? sib.id : '';
   }
   undoTask({ id: id, status: STATUS.NEXT, focus: today, nextId: nextId });
-  return { ok: true, undo: { id: id, status: STATUS.DONE, focus: t.focus || '' } };
+  // 되돌리기로 완료 상태를 복구할 때 완료일도 원래대로 (없으면 오늘)
+  return { ok: true, undo: { id: id, status: STATUS.DONE, focus: t.focus || '', completed: t.completed || today } };
 }
 
 /** 루틴 이번 회차 건너뛰기: 이번 회차는 '버림'으로 남기고 다음 회차를 만든다 */
@@ -1620,11 +1629,13 @@ var PROJECT_STATES = ['진행', '보류', '끝남'];
 var PROJECT_DROPPED_TAG = '[버림]';
 function isDroppedOutcome_(v) { return String(v || '').indexOf(PROJECT_DROPPED_TAG) === 0; }
 var PROJECT_MERGED_MARK = '(으)로 합침';
+var PROJECT_REVERTED_MARK = 'AI 제안 되돌림';
 /** '[버림] 대상(으)로 합침 · 원래 목표' 에서 원래 목표 글만. 대상 이름 안에 ' · '가 있어도 '(으)로 합침' 바로 뒤의 ' · '만 경계로 본다 */
 function droppedOriginalGoal_(outcome) {
-  var s = String(outcome || ''), i = s.indexOf(PROJECT_MERGED_MARK);
+  var s = String(outcome || ''), mark = PROJECT_MERGED_MARK, i = s.indexOf(mark);
+  if (i < 0) { mark = PROJECT_REVERTED_MARK; i = s.indexOf(mark); }
   if (i < 0) return '';
-  var rest = s.slice(i + PROJECT_MERGED_MARK.length);
+  var rest = s.slice(i + mark.length);
   return rest.indexOf(' · ') === 0 ? rest.slice(3) : '';
 }
 
@@ -1744,7 +1755,7 @@ function ensureProjectRow_(ss, ref, outcome, byId) {
       if (!dead.id) { dead.id = newProjectId_(rows); info.sh.getRange(dead.row, info.col['ID']).setValue(dead.id); }
       // 새 목표를 줄 때만 그 글로, 아니면 [버림] 표시 뒤에 남아 있던 원래 목표 글로 되돌린다 (목표를 빈칸으로 덮지 않는다)
       var keptGoal = droppedOriginalGoal_(dead.outcome);
-      info.sh.getRange(dead.row, info.col['완료 모습']).setValue(outcome ? outcome : keptGoal);
+      info.sh.getRange(dead.row, info.col['완료 모습']).setValue(textCell_(outcome ? outcome : keptGoal));
       return { row: dead.row, id: dead.id, name: dead.name, info: info, created: false };
     }
   }
@@ -1753,8 +1764,8 @@ function ensureProjectRow_(ss, ref, outcome, byId) {
     return { row: hit.row, id: hit.id, name: hit.name, info: info, created: false };
   }
   var id = newProjectId_(rows), row = info.sh.getLastRow() + 1;
-  info.sh.getRange(row, info.col['프로젝트']).setValue(ref);
-  info.sh.getRange(row, info.col['완료 모습']).setValue(outcome || '');
+  info.sh.getRange(row, info.col['프로젝트']).setValue(textCell_(ref)); // 읽을 때는 앞뒤 공백을 자르므로 이름은 그대로 맞는다
+  info.sh.getRange(row, info.col['완료 모습']).setValue(textCell_(outcome || ''));
   info.sh.getRange(row, info.col['만든 날']).setValue(todayYmd_(ss.getSpreadsheetTimeZone()));
   info.sh.getRange(row, info.col['ID']).setValue(id);
   info.sh.getRange(row, info.col['상태']).setValue('진행');
@@ -1783,11 +1794,13 @@ function withOutcomes_(ss, projects, rowsOpt) {
     p.links = r ? r.links : [];
     p.paused = p.state === '보류';
     if (p.state === '끝남') p.finished = true;
-    // 멈춤 = 진행 중인데 '다음' 표시가 하나도 없음 (맡겨 놓고 기다리는 중이면 멈춤이 아니다)
-    p.halted = p.state === '진행' && !p.finished && !p.hasNext && !(p.delegated > 0);
+    // v1.10: '멈춤' 상태는 없앴다(할 일이 없으면 그냥 비어 있는 프로젝트). 지금 할 일은 projectStats_가 자동으로 정한다
     return p;
   };
-  var out = (projects || []).map(function (p) { var r = ix.byName[p.name] || null; have[p.name] = 1; return enrich(p, r); });
+  // 합치거나 AI 제안을 되돌려 숨긴([버림]) 프로젝트 이름은 남은 '버림' 할 일 때문에 다시 나타나지 않게 한다
+  var hidden = {};
+  rows.forEach(function (r) { if (r.dropped && !ix.byName[r.name]) hidden[r.name] = 1; });
+  var out = (projects || []).filter(function (p) { return !hidden[p.name]; }).map(function (p) { var r = ix.byName[p.name] || null; have[p.name] = 1; return enrich(p, r); });
   // 할 일이 아직 없는 새 프로젝트 폴더도 보이게 (합쳐서 버린 프로젝트는 숨김)
   rows.forEach(function (r) {
     if (r.dropped || have[r.name]) return;
@@ -1808,12 +1821,12 @@ function setProjectOutcome(name, outcome) {
     var any = rows.filter(function (r) { return r.name === name; })[0];
     if (any && any.dropped) {
       var info = projectSheetInfo_(ctx.ss, true);
-      info.sh.getRange(any.row, info.col['완료 모습']).setValue(outcome);
+      info.sh.getRange(any.row, info.col['완료 모습']).setValue(textCell_(outcome));
       if (!any.id) info.sh.getRange(any.row, info.col['ID']).setValue(newProjectId_(rows));
       return { ok: true };
     }
     var hit = ensureProjectRow_(ctx.ss, name, outcome);
-    if (!hit.created) hit.info.sh.getRange(hit.row, hit.info.col['완료 모습']).setValue(outcome);
+    if (!hit.created) hit.info.sh.getRange(hit.row, hit.info.col['완료 모습']).setValue(textCell_(outcome));
     return { ok: true, id: hit.id };
   });
 }
@@ -1829,7 +1842,7 @@ function setProjectInfo(ref, patch) {
     var ctx = taskContext_();
     // 앱은 프로젝트를 이름으로 부른다. 'P-2026Q4' 같은 번호 모양 이름이라도 할 일이나 프로젝트 줄에 그 이름이 있으면 이름이다(번호로 오해해 오류 내지 않음)
     var asName = readAllTasks_(ctx).some(function (t) { return t.project === String(ref || '').trim(); });
-    var hit = ensureProjectRow_(ctx.ss, ref, undefined, !asName), put = function (h, v) { hit.info.sh.getRange(hit.row, hit.info.col[h]).setValue(v); };
+    var hit = ensureProjectRow_(ctx.ss, ref, undefined, !asName), put = function (h, v) { hit.info.sh.getRange(hit.row, hit.info.col[h]).setValue(textCell_(v)); };
     if (patch.outcome !== undefined) put('완료 모습', String(patch.outcome).trim());
     if (patch.state !== undefined) put('상태', patch.state);
     if (patch.due !== undefined) put('기한', ymd_(patch.due));
@@ -1909,7 +1922,7 @@ function mergeProject(from, to) {
     var moved = 0;
     tasks.forEach(function (t) {
       if (t.project !== from) return;
-      ctx.sheet.getRange(t.row, ctx.map.project).setValue(to);
+      ctx.sheet.getRange(t.row, ctx.map.project).setValue(textCell_(to));
       if (ctx.map.projectId) ctx.sheet.getRange(t.row, ctx.map.projectId).setValue(toId);
       if (t.nextMark && ctx.map.nextMark) ctx.sheet.getRange(t.row, ctx.map.nextMark).setValue(''); // 프로젝트당 '다음'은 하나
       moved++;
@@ -2157,6 +2170,7 @@ function revertAiChange(row, stamp) {
       if (st === STATUS.DROPPED) return done('이미 버려져 있음');
       if (st === STATUS.DONE) return { ok: false, reason: '이미 끝낸 일이라 되돌리지 않았어요.' };
       ctx.sheet.getRange(r, ctx.map.status).setValue(STATUS.DROPPED);
+      hideAiOnlyProject_(ctx, id);
       return done('버림 처리');
     }
     if (action === '수정') {
@@ -2171,6 +2185,26 @@ function revertAiChange(row, stamp) {
     }
     return { ok: false, reason: '알 수 없는 작업이에요: ' + action };
   });
+}
+
+/**
+ * AI 제안으로 새로 생긴 프로젝트를 되돌려 할 일이 모두 '버림'이 되면, 빈 프로젝트가 남지 않게 [프로젝트] 줄을 목록에서 숨긴다.
+ * 줄은 지우지 않고 '완료 모습' 앞에 [버림] 표시만 붙인다(합치기와 같은 방식). 그 프로젝트에 AI가 만들지 않은 할 일이 하나라도 있으면 그대로 둔다.
+ */
+function hideAiOnlyProject_(ctx, taskId) {
+  var all = readAllTasks_(ctx), t = all.filter(function (x) { return x.id === taskId; })[0];
+  if (!t || !t.project) return;
+  var mine = all.filter(function (x) { return t.pid ? x.pid === t.pid : x.project === t.project; });
+  var allAi = mine.every(function (x) { return x.status === STATUS.DROPPED && /^AI/.test(String(x.source || '')); });
+  if (!allAi) return;
+  // AI 제안이 이 프로젝트를 '새로 만들었다'고 기록에 남은 경우에만 숨긴다 (본부장님이 미리 만든 같은 이름의 빈 프로젝트는 그대로 둔다)
+  var mark = '새 프로젝트 ' + t.pid, madeByAi = !!t.pid && readAiLog_(ctx.ss).items.some(function (c) { return c.action === '추가' && c.why.indexOf(mark) >= 0; });
+  if (!madeByAi) return;
+  var rows = readProjectRows_(ctx.ss), r = rows.filter(function (p) { return !p.dropped && (t.pid ? p.id === t.pid : p.name === t.project); })[0];
+  if (!r) return;
+  var info = projectSheetInfo_(ctx.ss, false);
+  if (!info || !info.col['완료 모습']) return;
+  info.sh.getRange(r.row, info.col['완료 모습']).setValue(PROJECT_DROPPED_TAG + ' ' + PROJECT_REVERTED_MARK + (r.outcome ? ' · ' + r.outcome : ''));
 }
 
 function newAiTaskId_(ctx) {
@@ -2211,7 +2245,7 @@ function addSourceLinks_(detail, links) {
  *  - 할일: [업무] 맨 아래에 새 줄(ID=AI-…, 출처=AI:…, 분류일 빈칸 → 분류 대기). 제안 내용 첫 줄=제목, 나머지=상세 마크다운. 대상ID=프로젝트ID(선택)
  *  - 자료후보: 대상ID의 상세 '## 출처'에 링크 추가
  *  - 독촉초안: 시트는 바꾸지 않는다(화면이 글을 복사). 적용으로만 표시
- *  - 프로젝트: [프로젝트] 줄(이름·완료 모습)과 '- 할 일' 줄마다 [업무] 새 줄. 프로젝트에 '다음'이 없으면 첫 줄에 ★다음. (체크로 고르는 화면은 3단계)
+ *  - 프로젝트: [프로젝트] 줄(이름·완료 모습)과 '- 할 일' 줄마다 [업무] 새 줄. ★다음은 붙이지 않는다(지금 할 일은 앱이 목록 맨 위로 자동 정함). (체크로 고르는 화면은 3단계)
  * 적용한 시트 변경은 [AI기록]에도 한 줄 남겨 되돌릴 수 있게 한다.
  */
 function applyAiProposal(row, stamp) {
@@ -2261,12 +2295,11 @@ function applyAiProposal(row, stamp) {
       if (pl[1] !== undefined && pl[1] && !/^[-*+]\s+/.test(pl[1])) { goal = pl[1].replace(/^(완료 모습|목표)\s*[:：]\s*/, '').trim(); from = 2; }
       var titles = pl.slice(from).filter(function (x) { return /^[-*+]\s+/.test(x); }).map(function (x) { return x.replace(/^[-*+]\s+(\[[ xX]\]\s*)?/, '').trim(); }).filter(String).slice(0, 30);
       if (!titles.length) return { ok: false, reason: '제안에 할 일 줄("- 할 일")이 없어요.' };
-      var prj = ensureProjectRow_(ss, pname, goal), hasNext = readAllTasks_(ctx).some(function (x) { return x.nextMark && x.pid === prj.id; }), ids = [];
+      var prj = ensureProjectRow_(ss, pname, goal), ids = [];
       titles.forEach(function (tt, i) {
         var nt = { title: tt, status: STATUS.NEXT, created: todayYmd_(tz), source: aiSourceTag_(who), project: prj.name, projectId: prj.id, id: newAiTaskId_(ctx) };
-        if (i === 0 && !hasNext && ctx.map.nextMark) nt.nextMark = '★';
         appendTasks_(ctx, [nt]); ids.push(nt.id);
-        appendAiLog_(ss, { who: who, action: '추가', id: nt.id, why: '프로젝트 제안 적용: ' + pname });
+        appendAiLog_(ss, { who: who, action: '추가', id: nt.id, why: '프로젝트 제안 적용' + (prj.created ? ' · 새 프로젝트 ' + prj.id : '') + ': ' + pname });
       });
       result.id = ids[0]; result.added = ids.length; result.projectId = prj.id;
     } else {
@@ -2498,8 +2531,7 @@ function buildWeeklySummary_(tasks, today, projectRows) {
 }
 
 /**
- * 프로젝트별 현황. '다음 행동'이 하나도 없는 열린 프로젝트는 멈춘 프로젝트(stalled)로 표시한다.
- * (일정·위임만 있으면 기다리는 중이므로 멈춘 것으로 보지 않는다)
+ * 프로젝트별 현황. v1.10부터 '멈춤' 개념은 화면·메일에 쓰지 않는다(stalled는 옛 호환용 값). 지금 할 일(nextTask)은 아래에서 자동으로 정한다.
  */
 function projectStats_(tasks, projectRows) {
   var by = {}, order = [];
@@ -2522,6 +2554,13 @@ function projectStats_(tasks, projectRows) {
       if (t.status === STATUS.NEXT) g.next++;
       if (t.status === STATUS.DELEGATED || t.status === STATUS.SCHEDULED) g.waiting++;
     }
+  });
+  // v1.10: '지금 할 일'은 사용자가 정하지 않는다. '먼저 하기'(★다음)를 누른 일이 있으면 그 일, 없으면 맨 위의 안 끝낸 일
+  order.forEach(function (k) {
+    var g = by[k];
+    if (g.nextTask) return;
+    var first = g.items.filter(function (it) { return it.status !== STATUS.SOMEDAY && it.status !== STATUS.DELEGATED; })[0]; // 남에게 맡긴 일은 내가 지금 할 일이 아니다
+    if (first) g.nextTask = { id: first.id, title: first.title, status: first.status, delegatee: first.delegatee || '', auto: true };
   });
   return order.map(function (k) { var g = by[k]; g.stalled = g.open > 0 ? g.next === 0 && g.waiting === 0 : false; g.finished = g.open === 0 && !g.someday; return g; });
 }
@@ -2568,7 +2607,6 @@ function renderWeeklyHtml_(s, sheetUrl) {
     block('③ 마감 지남', '#b91c1c', s.overdue, function (t) { return li(t, t.due); }, '마감 지난 일이 없습니다.') +
     block('④ 다음 2주 마감', '#1d4ed8', s.upcoming, function (t) { return li(t, t.due); }, '다가오는 마감이 없습니다.') +
     block('⑤ 다음 행동', '#5b5cf6', s.next, function (t) { return li(t, [t.due, t.context].filter(String).join(' · ')); }, '다음 행동이 없습니다.') +
-    block('📁 다음 행동이 없는 프로젝트', '#6B4FBB', s.projects.filter(function (p) { return p.stalled; }), function (p) { return '<li>' + escapeHtml_(p.name) + ' <span style="color:#888">남은 일 ' + p.open + '건 — 다음 행동을 하나 정하세요</span></li>'; }, '멈춘 프로젝트가 없습니다.') +
     block('🔁 이번 주 루틴', '#5b5cf6', s.routineDone, function (r) { return li(r, r.repeat + ' · 완료 ' + r.done + '회' + (r.skipped ? ' · 건너뜀 ' + r.skipped + '회' : '') + (r.nextDue ? ' · 다음 ' + r.nextDue : '')); }, '등록된 루틴이 없습니다.') +
     block('이번 주에 끝낸 일', '#555', s.done, function (t) { return li(t, t.completed); }, '이번 주 완료 기록이 없습니다.', 30) +
     '<p style="margin:22px 0 0;font-size:13px;color:#666">언젠가 목록 ' + s.someday.length + '건 · 맡긴 일 ' + s.delegated.length + '건</p>' +
@@ -3438,6 +3476,8 @@ function buildTodayView_(tasks, today, ext) {
   var isCarry = function (t) {
     if (!isActionable_(t.status) || t.repeat || t.status === STATUS.DELEGATED || isDueToday(t)) return false;
     if (t.focus) return t.focus < today;
+    // 프로젝트에 넣은 날짜 없는 일은 프로젝트 안에서 기다리는 일이다(어제 못 끝낸 일이 아님)
+    if (t.project && t.status === STATUS.NEXT) return false;
     return t.status === STATUS.INBOX || (t.status === STATUS.NEXT && !(t.due && t.due > today));
   };
   var focus = tasks.filter(isFocus).sort(byPrio);
