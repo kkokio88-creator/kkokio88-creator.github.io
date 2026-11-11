@@ -493,7 +493,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.17.0',       // 코드 버전 (화면 표시용)
+  VERSION: '1.17.1',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 9,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다), v9: [업무] 맨 끝 'AI 처리' 열(요청/처리중/완료/막힘)
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -501,7 +501,7 @@ var KIT = {
   PROJECT_SHEET: '프로젝트', // 프로젝트 이름 · 완료 모습 (처음 적을 때 생긴다)
   AI_LOG_SHEET: 'AI기록',     // v8: AI가 시트를 바꿀 때마다 한 줄씩 추가(되돌리기용). 앱이 만든다
   AI_PROPOSAL_SHEET: 'AI제안', // v8: AI가 올리는 제안(적용·거절은 앱에서). 앱이 만든다
-  AI_RULES_VERSION: 4,        // AI 규칙 파일 버전: AI 안내(규칙 파일·요청 팩)를 바꾸면 올린다 (요청 팩이 이 번호와 맞는지 AI에게 확인시킨다)
+  AI_RULES_VERSION: 5,        // AI 규칙 파일 버전: AI 안내(규칙 파일·요청 팩)를 바꾸면 올린다 (요청 팩이 이 번호와 맞는지 AI에게 확인시킨다)
   RULE_MARK: 'N("kit")=0', // 키트가 만든 조건부 서식을 구분하는 표식
   WEEKLY_HANDLER: 'sendWeeklyReview',
   WEEKLY_HOUR: 16,
@@ -579,7 +579,7 @@ var COLUMNS = [
   { key: 'energy',    header: '에너지',     width: 70,  since: 7, aliases: [], list: ['높음', '보통', '낮음'],
     note: '이 일에 드는 에너지.' },
   { key: 'checks',    header: '확인 횟수',  width: 80,  since: 7, aliases: [], type: 'number',
-    note: '맡긴 일을 확인하거나 독촉한 횟수. 자동으로 셉니다.' },
+    note: '맡긴 일을 확인한 횟수. 자동으로 셉니다.' },
   { key: 'aiProcess', header: 'AI 처리',    width: 80,  since: 9, aliases: [], list: ['요청', '처리중', '완료', '막힘'],
     note: 'AI에게 맡긴 일의 상태. 빈칸 = 요청 아님. 요청(앱의 AI 버튼) → 처리중 → 완료 / 막힘(사람 확인이 필요해 초안만 남김). AI 에이전트가 정기적으로 시트를 볼 때 "요청"인 일을 스스로 처리합니다.' }
 ];
@@ -1559,7 +1559,6 @@ function planDay(ids) {
  */
 function undoTask(u) {
   u = u || {};
-  if (u.nudge) return restoreNudge_(u.nudge);
   if (u.triage) return restoreTriage_(u.triage);
   if (u.ai) return undoAiApply_(u.ai);
   if (!u.id || STATUS_LIST.indexOf(u.status) === -1) throw new Error('되돌릴 정보가 없어요.');
@@ -1580,21 +1579,6 @@ function undoTask(u) {
       }
     }
     return { ok: true };
-  });
-}
-
-/** '독촉 글 복사' 되돌리기: 아직 맡긴 일인 줄의 확인일·확인 횟수 두 칸만 원래 값으로 */
-function restoreNudge_(list) {
-  return withLock_(function () {
-    var ctx = taskContext_(), n = 0;
-    var by = {}; (list || []).forEach(function (x) { by[String(x.id)] = x; });
-    readAllTasks_(ctx).forEach(function (t) {
-      var x = by[t.id]; if (!x || t.status !== STATUS.DELEGATED) return;
-      if (ctx.map.followUp) ctx.sheet.getRange(t.row, ctx.map.followUp).setValue(x.followUp ? ymd_(x.followUp) : '');
-      if (ctx.map.checks) ctx.sheet.getRange(t.row, ctx.map.checks).setValue(Number(x.checks) > 0 ? Number(x.checks) : '');
-      n++;
-    });
-    return { ok: true, count: n };
   });
 }
 
@@ -1709,61 +1693,6 @@ function handleEdit_(e) {
       all = readAllTasks_(ctx);
     });
   }
-}
-
-// ── 맡긴 일 모아서 독촉 초안 (v1.11) ─────────────────────────────
-// 한 사람에게 맡긴 여러 건을 한 통으로. 앱은 글만 만들고 보내지 않는다(복사해서 내가 직접 보낸다).
-// 보낸 뒤 '보냈어요'를 누르면 그 건들의 확인일만 미루고 확인 횟수를 +1 한다.
-
-/** 호칭: 이름이 이미 '님'으로 끝나면(박부장님) 또 붙이지 않는다 */
-function honor_(name) { name = String(name || '').trim(); return /님$/.test(name) ? name : name + '님'; }
-/** 순수 함수(테스트 대상): 사람 + 맡긴 일들 → { text(고정 문구), ask(Claude에 다듬어 달라는 요청), items } */
-function buildNudgeDraft_(person, items, today) {
-  person = String(person || '').trim();
-  var days = function (t) { var from = t.delegatedOn || t.created; return from ? Math.max(0, Math.round((Date.parse(today) - Date.parse(from)) / 864e5)) : 0; };
-  var list = (items || []).slice().sort(function (a, b) { return (a.delegatedOn || a.followUp || '9999') < (b.delegatedOn || b.followUp || '9999') ? -1 : 1; });
-  var rows = list.map(function (t) { return { id: t.id, title: t.title, days: days(t), followUp: t.followUp || '', checks: t.checks || 0 }; });
-  var one = rows.length === 1;
-  var lines = [person ? honor_(person) + ', 안녕하세요.' : '안녕하세요.', one ? '맡겨 드린 일의 진행 상황을 확인하고 싶어 연락드립니다.' : '맡겨 드린 일 ' + rows.length + '건의 진행 상황을 확인하고 싶어 한 번에 연락드립니다.', ''];
-  rows.forEach(function (r, i) { lines.push((one ? '- ' : (i + 1) + '. ') + r.title + (r.days ? ' (맡긴 지 ' + r.days + '일)' : '')); });
-  lines.push('', '편하실 때 진행 상황을 짧게 알려 주시면 감사하겠습니다. 도움이 필요한 부분이 있으면 말씀해 주세요.');
-  var ask = (person ? honor_(person) + '께 ' : '') + '맡긴 일 ' + rows.length + '건을 한 통으로 확인하는 정중한 메시지 초안을 써 줘. 보내지 말고 초안만. 재촉하는 느낌이 나지 않게 해 줘.\n' +
-    rows.map(function (r) { return '- ' + r.title + (r.days ? ' (맡긴 지 ' + r.days + '일' + (r.checks ? ', 이미 ' + r.checks + '번 확인' : '') + ')' : ''); }).join('\n');
-  return { person: person, items: rows, text: lines.join('\n'), ask: ask };
-}
-
-/** 그 사람에게 맡긴 일(상태=위임) 목록. ids가 있으면 그것만, 없으면 확인일이 된 것 · 하나도 없으면 전부 */
-function getNudgeDraft(person, ids) {
-  var ctx = taskContext_(), today = todayYmd_(ctx.tz), p = String(person || '').trim();
-  if (p === '(이름 없음)') p = ''; // 화면은 맡은 사람이 빈 줄을 '(이름 없음)' 묶음으로 보여 준다
-  var mine = readAllTasks_(ctx).filter(function (t) { return t.status === STATUS.DELEGATED && String(t.delegatee || '').trim() === p; });
-  if (!mine.length) throw new Error('그 사람에게 맡긴 일이 없어요.');
-  var want = Array.isArray(ids) ? ids.map(String) : null, pick;
-  if (want) pick = mine.filter(function (t) { return want.indexOf(t.id) >= 0; });
-  else { pick = mine.filter(function (t) { return t.followUp && t.followUp <= today; }); if (!pick.length) pick = mine; }
-  var out = buildNudgeDraft_(p, pick, today);
-  out.all = mine.map(function (t) { return { id: t.id, title: t.title, due: !!(t.followUp && t.followUp <= today) }; });
-  out.picked = pick.map(function (t) { return t.id; });
-  return out;
-}
-
-/** '보냈어요': 고른 맡긴 일들의 확인일을 days일 뒤로 미루고 확인 횟수 +1 (그 두 칸만 쓴다). 맡긴 일(위임)이 아닌 줄은 건드리지 않는다 */
-function markNudged(ids, days) {
-  ids = (Array.isArray(ids) ? ids : []).map(String);
-  if (!ids.length) throw new Error('보낸 맡긴 일을 골라 주세요.');
-  return withLock_(function () {
-    var ctx = taskContext_();
-    if (!ctx.map.followUp) throw new Error('먼저 업데이트를 적용해 주세요.');
-    var d = addDaysYmd_(todayYmd_(ctx.tz), Math.min(30, Math.max(1, Math.round(Number(days)) || 3))), n = 0, before = [];
-    readAllTasks_(ctx).forEach(function (t) {
-      if (ids.indexOf(t.id) < 0 || t.status !== STATUS.DELEGATED) return;
-      before.push({ id: t.id, followUp: t.followUp || '', checks: t.checks || 0 });
-      ctx.sheet.getRange(t.row, ctx.map.followUp).setValue(d);
-      applyTrack_(ctx, t.row, { check: true });
-      n++;
-    });
-    return { ok: true, count: n, followUp: d, undo: before.length ? { id: before[0].id, nudge: before } : undefined };
-  });
 }
 
 /* ── 35_Projects.gs ── */
@@ -2455,7 +2384,7 @@ function pickIndexes_(picks, n) {
  * AI 제안 적용. 종류별로 한다:
  *  - 할일: [업무] 맨 아래에 새 줄(ID=AI-…, 출처=AI:…, 분류일 빈칸 → 분류 대기). 제안 내용 첫 줄=제목, 나머지=상세 마크다운. 대상ID=프로젝트ID(선택)
  *  - 자료후보: 대상ID의 상세 '## 출처'에 링크 추가
- *  - 독촉초안: 시트는 바꾸지 않는다(화면이 글을 복사). 적용으로만 표시
+ *  - 독촉초안(v1.17.1에서 기능 제거, 시트에 남은 옛 제안 호환용): 시트는 바꾸지 않는다. 적용으로만 표시
  *  - 프로젝트: [프로젝트] 줄(이름)과 체크한 '- 할 일' 줄마다 [업무] 새 줄(picks=체크한 번호들, 없으면 전부). ★다음은 붙이지 않는다(지금 할 일은 앱이 목록 맨 위로 자동 정함)
  *  - 자료후보도 picks=체크한 링크 번호들
  * 적용한 시트 변경은 [AI기록]에도 한 줄 남겨 되돌릴 수 있게 한다.
@@ -2543,7 +2472,7 @@ function applyAiProposal_(ctx, row, stamp, picks) {
     info.sh.getRange(row, info.col['상태']).setValue('적용');
     var doneAt = nowStamp_(tz);
     if (info.col['처리시각']) info.sh.getRange(row, info.col['처리시각']).setValue(doneAt);
-    // 되돌리기 정보: 시트를 바꾼 제안만 (독촉 글은 시트를 안 바꿔 되돌릴 것이 없다)
+    // 되돌리기 정보: 시트를 바꾼 제안만 (옛 독촉초안은 시트를 안 바꿔 되돌릴 것이 없다)
     if (logs.length) result.undo = { ai: [{ row: row, stamp: g('시각').trim(), doneAt: doneAt, logs: logs }] };
     return result;
   }
@@ -3446,9 +3375,7 @@ function webSetProjectInfo(k, ref, patch) { checkKey_(k); appContext_(); var r =
 // v1.9: AI가 바꾼 것 되돌리기 · AI 제안 적용·거절 (row = [AI기록]/[AI제안] 줄 번호, stamp = 그 줄의 시각)
 function webRevertAi(k, row, stamp) { checkKey_(k); appContext_(); var r = revertAiChange(row, stamp); return withView_(r); }
 function webApplyAi(k, row, stamp, picks) { checkKey_(k); appContext_(); var r = applyAiProposal(row, stamp, picks); return withView_(r); }
-// v1.11: 맡긴 일 모아서 독촉 초안 · 오늘 정리
-function webNudgeDraft(k, person, ids) { checkKey_(k); appContext_(); return getNudgeDraft(person, ids); }
-function webMarkNudged(k, ids, days) { checkKey_(k); appContext_(); var r = markNudged(ids, days); return withView_(r); }
+// v1.11: 오늘 정리
 function webCloseDay(k) { checkKey_(k); appContext_(); var r = closeDay(); return withView_(r); }
 function webNowPicks(k, opts) { checkKey_(k); appContext_(); return getNowPicks(opts); }
 function webTriageMany(k, ids, mode) { checkKey_(k); appContext_(); var r = triageMany(ids, mode); return withView_(r); }
@@ -3481,7 +3408,7 @@ function doPost(e) {
     updateTask: webUpdate, planDay: webPlanDay, undoTask: webUndo, notify: webNotify,
     addAction: webAddAction, setProject: webSetProject, mergeProject: webMergeProject, focusMany: webFocusMany,
     getTaskDetail: webTaskDetail, saveDetail: webSaveDetail, setNext: webSetNext, setProjectInfo: webSetProjectInfo, inboxSeen: webInboxSeen, revertAi: webRevertAi, applyAi: webApplyAi, rejectAi: webRejectAi,
-    nudgeDraft: webNudgeDraft, markNudged: webMarkNudged, closeDay: webCloseDay, nowPicks: webNowPicks, triageMany: webTriageMany, applyAiMany: webApplyAiMany,
+    closeDay: webCloseDay, nowPicks: webNowPicks, triageMany: webTriageMany, applyAiMany: webApplyAiMany,
     getCalendars: webCalendars, setCalendars: webSetCalendars, timebox: webTimebox,
     placeTask: webPlaceTask, unplaceTask: webUnplaceTask, reopenTask: webReopen, setWriteCalendar: webSetWriteCalendar, moveEvent: webMoveEvent
   };
@@ -3858,7 +3785,7 @@ function buildTodayView_(tasks, today, ext) {
     if (t.energy) o.energy = t.energy;
     if (t.aiProcess) o.aiProcess = t.aiProcess;
     if (t.checks) o.checks = t.checks;
-    if (t.status === STATUS.DELEGATED && !t.delegatedOn && t.created) o.created = t.created; // 독촉 글의 '맡긴 지 N일' 계산용
+    if (t.status === STATUS.DELEGATED && !t.delegatedOn && t.created) o.created = t.created; // 맡긴 일 화면의 '맡긴 지 N일' 계산용
     if (pendingIds[t.id]) o.pending = true;
     return o;
   };
@@ -4066,7 +3993,7 @@ function installFromEditor() {
     getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', getAll: 'webAll',
     getWeekly: 'webWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', setCalendars: 'webSetCalendars', reopenTask: 'webReopen', setWriteCalendar: 'webSetWriteCalendar',
     getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen', revertAi: 'webRevertAi', applyAi: 'webApplyAi', rejectAi: 'webRejectAi',
-    nudgeDraft: 'webNudgeDraft', markNudged: 'webMarkNudged', closeDay: 'webCloseDay', nowPicks: 'webNowPicks', triageMany: 'webTriageMany', applyAiMany: 'webApplyAiMany' };
+    closeDay: 'webCloseDay', nowPicks: 'webNowPicks', triageMany: 'webTriageMany', applyAiMany: 'webApplyAiMany' };
   var queue = Promise.resolve(); // 시트 쓰기는 한 번에 하나씩
   function serial(job) { var p = queue.then(job, job); queue = p.catch(function () {}); return p; }
   function clone(x) { return x === undefined ? null : JSON.parse(JSON.stringify(x)); }

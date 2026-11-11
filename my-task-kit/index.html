@@ -128,7 +128,7 @@
   .aibtn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; color: var(--t4); } .aibtn:hover { background: var(--fill); color: var(--g); } .aibtn.on { color: var(--g); }
   .aichip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 12px; font-weight: 800; background: var(--gt); color: var(--g); white-space: nowrap; } .aichip.ai-완료 { background: #E3F7EE; color: #0B6B45; } .aichip.ai-막힘 { background: var(--redt); color: var(--red); } html[data-theme="dark"] .aichip.ai-완료 { background: #12332A; color: #5FD3A0; }
   /* 터치·클릭 영역(U13): 보이는 모양은 그대로, 눌리는 영역만 넓힌다 — 모바일 44px, PC 32px 이상 */
-  #cToday, .ishare, .capb, .vtg button, button[data-nudge], .pjmore summary, .pjtg, label.sw { min-height: 44px; }
+  #cToday, .ishare, .capb, .vtg button, .pjmore summary, .pjtg, label.sw { min-height: 44px; }
   #cToday { padding: 0 10px; } .ishare { padding-top: 12px; padding-bottom: 12px; } .h2 .capb { padding: 12px; margin: -10px 0; } .pjmore summary { display: flex; align-items: center; }
   label.sw { display: inline-flex; align-items: center; gap: 8px; }
   /* 프로필 카드(사이드바 아래 · 모바일 더보기) */
@@ -644,7 +644,7 @@
     .sendp .h2 { margin-top: 6px; }
     .sendp .sec { display: flex; align-items: center; justify-content: space-between; margin: 16px 4px 8px; font-size: 13.5px; font-weight: 800; color: var(--t2); }
     .sendp .sec .lnk { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; padding: 4px 6px; margin: 0; min-height: 32px; }
-    #cToday, .ishare, .capb, .vtg button, [data-nudge], .pjmore summary, .pjtg, label.sw { min-height: 32px; } .sendp .pjtg { min-height: 32px; }
+    #cToday, .ishare, .capb, .vtg button, .pjmore summary, .pjtg, label.sw { min-height: 32px; } .sendp .pjtg { min-height: 32px; }
     .sendp .pjtg { display: flex; align-items: center; gap: 6px; width: 100%; font-size: 13.5px; font-weight: 800; color: var(--t2); }
     .sendp .pjtg em { font-style: normal; color: var(--g); } .sendp .pjtg .sp { flex: 1; }
     .sendp .rmwho { margin-left: 4px; padding: 0 6px; border-radius: 6px; font-size: 15px; line-height: 1.3; color: var(--t4); opacity: 0; transition: opacity .15s; } .sendp .drow:hover .rmwho, .sendp .rmwho:focus-visible { opacity: 1; } .sendp .rmwho:hover { color: var(--red); background: var(--redt); } @media (hover: none) { .sendp .rmwho { opacity: 1; } }
@@ -901,7 +901,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.17.0" };
+  var KIT = { name: "GTD 워크", version: "1.17.1" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -995,7 +995,7 @@
         .then(function (j) { if (!j.ok) throw new Error(j.error === '알 수 없는 요청입니다.' ? '이 기능은 새 버전에서 쓸 수 있어요. 시트의 코드를 업데이트해 주세요' : j.error || '알 수 없는 오류'); return j.result; });
     }
     var WEB = { getAppData: 'webData', getInbox: 'webInbox', addTasks: 'webAdd', clarifyTask: 'webClarify', completeTask: 'webComplete', postponeFollowUp: 'webPostpone', skipTask: 'webSkip',
-      getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', notify: 'webNotify', getAll: 'webAll', getWeekly: 'webWeekly', sendWeekly: 'webSendWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', getCalendars: 'webCalendars', setCalendars: 'webSetCalendars', timebox: 'webTimebox', placeTask: 'webPlaceTask', unplaceTask: 'webUnplaceTask', getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen', revertAi: 'webRevertAi', applyAi: 'webApplyAi', rejectAi: 'webRejectAi', nudgeDraft: 'webNudgeDraft', markNudged: 'webMarkNudged', closeDay: 'webCloseDay', nowPicks: 'webNowPicks', triageMany: 'webTriageMany', applyAiMany: 'webApplyAiMany' };
+      getCalendar: 'webCalendar', addRoutine: 'webAddRoutine', reviewDone: 'webReviewDone', updateTask: 'webUpdate', planDay: 'webPlanDay', undoTask: 'webUndo', notify: 'webNotify', getAll: 'webAll', getWeekly: 'webWeekly', sendWeekly: 'webSendWeekly', addAction: 'webAddAction', setProject: 'webSetProject', mergeProject: 'webMergeProject', focusMany: 'webFocusMany', getCalendars: 'webCalendars', setCalendars: 'webSetCalendars', timebox: 'webTimebox', placeTask: 'webPlaceTask', unplaceTask: 'webUnplaceTask', getTaskDetail: 'webTaskDetail', saveDetail: 'webSaveDetail', setNext: 'webSetNext', setProjectInfo: 'webSetProjectInfo', inboxSeen: 'webInboxSeen', revertAi: 'webRevertAi', applyAi: 'webApplyAi', rejectAi: 'webRejectAi', closeDay: 'webCloseDay', nowPicks: 'webNowPicks', triageMany: 'webTriageMany', applyAiMany: 'webApplyAiMany' };
     return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(ok).withFailureHandler(no); r[WEB[fn]].apply(r, [KEY].concat(args)); });
   }
   function addDays(ymd, n) { var p = ymd.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10); }
@@ -1066,7 +1066,7 @@
       b.onclick = function () {
         t.classList.remove('on');
         if (before && viewGen === genAt + 1) { data = before; viewGen++; renderToday(); }
-        call('undoTask', undo).then(function (r) { toast('되돌렸어요'); setView(r.view); if (!undoShown(undo)) load(); if (undo.nudge && onWaiting()) openWaiting(); })
+        call('undoTask', undo).then(function (r) { toast('되돌렸어요'); setView(r.view); if (!undoShown(undo)) load(); })
           .catch(function (e) { toast(e.message); load(); });
       };
       t.appendChild(b);
@@ -2296,7 +2296,6 @@
         [['내일', 1], ['3일 뒤', 3], ['1주 뒤', 7], ['2주 뒤', 14]].map(function (x) { return '<button class="chip" data-wfol="' + addDays(td, x[1]) + '">' + x[0] + '</button>'; }).join('') +
         '</div><div class="lbl">직접 고르기</div><input class="field" type="date" id="wFolIn" value="' + esc(t.followUp || '') + '"><button class="cta" id="wFolOk">정하기</button>');
       if (a === 'w-who') { openSheet('<div class="st">누가 맡았나요?</div><div class="ss">' + esc(t.title) + '</div><input class="field" id="wWhoIn" value="' + esc(t.delegatee || '') + '"><button class="cta" id="wWhoOk">바꾸기</button>'); return setTimeout(function () { $('wWhoIn') && $('wWhoIn').select(); }, 300); }
-      if (a === 'w-remind') { closeSheet(); return nudgeCopy(t.delegatee || '(이름 없음)', [t.id]); }
     }
     if ((b = e.target.closest('[data-wfol]')) || e.target.id === 'wFolOk') {
       var wf = b ? b.getAttribute('data-wfol') : $('wFolIn').value; if (!wf) return toast('날짜를 골라 주세요');
@@ -2624,52 +2623,6 @@
   $('helpForm').addEventListener('submit', function (e) { e.preventDefault(); var i = $('helpIn'), q = i.value; if (!q.trim() || helpBusy) return; i.value = ''; helpAsk(q); });
   $('helpMsgs').addEventListener('click', function (e) { var b = e.target.closest('[data-hv]'); if (b) helpVote(+b.getAttribute('data-hi'), b.getAttribute('data-hv')); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('helpP').classList.contains('on') && !$('sheet').classList.contains('on')) helpOpen(false); });
-
-  // ════════ 맡긴 일 독촉 글 (v1.11): 한 사람에게 맡긴 여러 건을 한 통으로. 글만 만들고 보내지 않는다 ════════
-  var ndSeq = 0;
-  // 서버 buildNudgeDraft_(30_Tasks.gs)와 같은 글을 화면에서 바로 만든다(복사는 누르는 순간에 해야 브라우저가 막지 않는다). 둘은 tests/v112-tests.js가 같은 글인지 비교한다.
-  function nudgeTextOf(person, items, today) {
-    person = String(person || '').trim();
-    var days = function (t) { var from = t.delegatedOn || t.created; return from ? Math.max(0, Math.round((Date.parse(today) - Date.parse(from)) / 864e5)) : 0; };
-    var list = (items || []).slice().sort(function (a, b) { return (a.delegatedOn || a.followUp || '9999') < (b.delegatedOn || b.followUp || '9999') ? -1 : 1; });
-    var rows = list.map(function (t) { return { title: t.title, days: days(t) }; }), one = rows.length === 1;
-    var lines = [person ? honor(person) + ', 안녕하세요.' : '안녕하세요.', one ? '맡겨 드린 일의 진행 상황을 확인하고 싶어 연락드립니다.' : '맡겨 드린 일 ' + rows.length + '건의 진행 상황을 확인하고 싶어 한 번에 연락드립니다.', ''];
-    rows.forEach(function (r, i) { lines.push((one ? '- ' : (i + 1) + '. ') + r.title + (r.days ? ' (맡긴 지 ' + r.days + '일)' : '')); });
-    lines.push('', '편하실 때 진행 상황을 짧게 알려 주시면 감사하겠습니다. 도움이 필요한 부분이 있으면 말씀해 주세요.');
-    return lines.join('\n');
-  }
-  function nudgeDeferOn() { try { return localStorage.getItem('kitNudgeDefer') !== '0'; } catch (e) { return true; } }
-  function nudgeMine(person) { var p = person === '(이름 없음)' ? '' : String(person || '').trim(); return (data.delegated || []).filter(function (t) { return String(t.delegatee || '').trim() === p; }); }
-  // 독촉 글 복사: 글을 복사하고(성공했을 때만) 그 건들의 확인일을 3일 뒤로 미룬다. 되돌리기 토스트. 앱은 보내지 않는다
-  function nudgeCopy(person, ids) {
-    var mine = nudgeMine(person), items = ids ? mine.filter(function (t) { return ids.indexOf(t.id) >= 0; }) : mine.filter(function (t) { return t.followUp && t.followUp <= data.today; });
-    if (!ids && !items.length) items = mine;
-    if (!items.length) return toast('그 사람에게 맡긴 일이 없어요');
-    var text = nudgeTextOf(person === '(이름 없음)' ? '' : person, items, data.today), picked = items.map(function (t) { return t.id; });
-    copyText(text, function () { nudgeMark(picked); }, function () { openNudge(person, picked); toast('자동 복사가 안 돼요. 글을 직접 복사해 주세요'); });
-  }
-  function nudgeMark(picked, closeIt) {
-    if (!nudgeDeferOn()) { toast('복사했어요 · 메신저나 메일에 붙여넣어 직접 보내세요'); return Promise.resolve(); }
-    return call('markNudged', picked, 3).then(function (r) { toast('복사했어요 · 확인일을 ' + md(r.followUp) + '로 미뤘어요', r.undo); setView(r.view); if (closeIt) closeSheet(); if (onWaiting()) openWaiting(); }).catch(function (err) { toast('복사는 했지만 확인일은 못 미뤘어요 · ' + err.message); });
-  }
-  // again=true: 체크를 바꿔 다시 그리는 것(그 사이 시트를 닫았으면 다시 열지 않는다). keep=직접 고친 글(있으면 그대로 둔다)
-  function openNudge(person, ids, again, keep) {
-    var seq = ++ndSeq;
-    call('nudgeDraft', person, ids).then(function (dr) {
-      if (seq !== ndSeq || (again && !$('ndList'))) return;
-      var picked = dr.picked || [], noName = person === '(이름 없음)';
-      openSheet('<div class="st">' + (noName ? '맡은 사람이 없는 일 독촉 글' : esc(honor(person)) + '께 보낼 독촉 글') + '</div><div class="ss">보낼 일을 고르면 한 통의 글이 만들어져요. 앱은 보내지 않아요 · 복사해서 직접 보내세요.</div>' +
-        '<div class="card" style="margin-top:10px" id="ndList">' + dr.all.map(function (x) { return '<label class="row" style="cursor:pointer"><span class="pkr" style="padding:0"><input type="checkbox" data-nid="' + esc(x.id) + '"' + (picked.indexOf(x.id) >= 0 ? ' checked' : '') + '></span><div class="tx"><div class="t">' + esc(x.title) + '</div>' + (x.due ? '<div class="m">확인할 때가 됐어요</div>' : '') + '</div></label>'; }).join('') + '</div>' +
-        '<div class="lbl">보낼 글 (고쳐도 돼요)</div><textarea id="ndText" rows="9" style="width:100%;font:inherit;font-size:14.5px;line-height:1.55;border-radius:12px;border:1px solid var(--line);background:var(--fill);color:var(--t1);padding:12px;resize:vertical">' + esc(keep !== undefined ? keep : dr.text) + '</textarea>' + (keep !== undefined ? '<div class="m" id="ndKeep" style="margin:4px 4px 0">직접 고친 글은 그대로 뒀어요. 보낼 일을 바꿨다면 글도 확인해 주세요.</div>' : '') +
-        '<div class="ctas" style="flex-wrap:wrap"><button class="cta" id="ndCopy" type="button"' + (picked.length ? '' : ' disabled') + '>독촉 글 복사</button>' + (isPC() ? '<button class="cta ghost" id="ndAsk" type="button"' + (picked.length ? '' : ' disabled') + '>Claude에 다듬어 달라고 복사</button>' : '') + '</div>' +
-        '<label class="m" style="display:flex;gap:8px;align-items:center;margin:10px 4px 0;min-height:44px"><input type="checkbox" id="ndDefer"' + (nudgeDeferOn() ? ' checked' : '') + '> 복사하면 3일 뒤 다시 확인 (확인 횟수도 1 올라가요)</label>', true);
-      $('ndDefer').onchange = function () { try { localStorage.setItem('kitNudgeDefer', this.checked ? '1' : '0'); } catch (e) {} };
-      [].forEach.call(document.querySelectorAll('#ndList input[data-nid]'), function (cb) { cb.onchange = function () { var ta = $('ndText'); openNudge(person, [].map.call(document.querySelectorAll('#ndList input[data-nid]:checked'), function (x) { return x.getAttribute('data-nid'); }), true, ta && ta.value !== dr.text ? ta.value : undefined); }; });
-      $('ndCopy').onclick = function () { copyText($('ndText').value, function () { nudgeMark(picked, true); }, function () { $('ndText').focus(); $('ndText').select(); toast('자동 복사가 안 돼요. 글을 직접 복사해 주세요'); }); };
-      if ($('ndAsk')) $('ndAsk').onclick = function () { copyNote(aiPackWith('맡긴 일 독촉 글', dr.ask), '복사했어요 · Claude 프로젝트 대화창에 붙여넣으세요', null); };
-    }).catch(function (err) { toast(err.message); });
-  }
-  $('moreBody').addEventListener('click', function (e) { var b = e.target.closest('[data-nudgecopy]'); if (b) { e.stopPropagation(); return nudgeCopy(b.getAttribute('data-nudgecopy')); } b = e.target.closest('[data-nudge]'); if (b) { e.stopPropagation(); openNudge(b.getAttribute('data-nudge')); } }, true);
 
   // ════════ 수집함 ════════
   var ib = { items: [], i: 0 }, names = [];
@@ -3504,7 +3457,6 @@
       var k = wPerson;
       $('moreBody').innerHTML = '<button class="eyebrow" data-wback style="display:inline-flex;align-items:center;gap:2px;padding:10px 12px 8px 0;min-height:44px">' + svg('chevL', 18) + '맡긴 일</button>' +
         '<div class="h1" id="wDetail" data-who="' + esc(k) + '" style="margin-bottom:12px">' + esc(k) + ' <em>' + by[k].length + '</em><em>건</em></div>' +
-        '<div class="actrow2" style="margin-bottom:14px"><button type="button" class="pillbtn" data-nudgecopy="' + esc(k) + '">독촉 글 복사</button><button type="button" class="txtlink" data-nudge="' + esc(k) + '" style="margin:0 0 0 6px;font-size:13px">고르기·고쳐 쓰기</button></div>' +
         '<div class="card qcard">' + by[k].map(function (t) { var w = waitInfo(t), a = waitAge(t);
           return '<div class="row qrow" tabindex="0" role="button" data-wid="' + esc(t.id) + '" style="align-items:flex-start"><div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">' + (a ? a : '') + (a && w ? '<span class="dot"></span>' : '') + (w || '') + '</div>' + qbtns('w', t, '연기 +3일') + '</div></div>';
         }).join('') + '</div>';
@@ -4071,7 +4023,7 @@
     return '<div class="topcard" id="nowCard" data-nowid="' + esc(p.id) + '"><div class="tl2">지금 할 일</div><div class="tt">' + esc(p.title) + '</div><div class="tm2">' + esc(why + (p.project ? ' · ' + p.project : '')) + '</div>' +
       '<div class="tb"><button type="button" class="go" data-nowgo="' + esc(p.id) + '">' + svg('play', 15) + ' 집중 시작</button><button type="button" data-nowdone="' + esc(p.id) + '">끝냈어요</button>' + (left.length > 1 ? '<button type="button" data-nowskip="' + esc(p.id) + '">다른 거</button>' : '') + '</div></div>';
   }
-  // AI가 올린 할 일: 할 일 제안만 다룬다(프로젝트·자료 후보·독촉 글은 체크나 복사가 필요해 알림함에서). '모두 적용'은 사람이 누를 때만, 비슷한 일(dup)은 뺀다
+  // AI가 올린 할 일: 할 일 제안만 다룬다(프로젝트·자료 후보는 체크가 필요해 알림함에서). '모두 적용'은 사람이 누를 때만, 비슷한 일(dup)은 뺀다
   function aiTodoProps(d) { return (((d && d.ai) || {}).proposals || []).filter(function (p) { return p.kind === '할일'; }); }
   function aiCardHtml(d) {
     var all = aiTodoProps(d); if (!all.length) return '';
@@ -4126,8 +4078,7 @@
   }
   function waitSheet(t) {
     sheetTask = t;
-    var noNudge = $('p-more').classList.contains('on') && !!$('moreBody').querySelector('[data-wks]'); // 주간 정리에서 연 창에는 독촉 버튼을 두지 않는다(운영자 결정). 맡긴 일 탭에서 연 창은 그대로
-    openSheet('<div class="st">' + esc(t.title) + '</div><div class="ss">' + esc(t.delegatee || '') + '</div>' + act('check', 'green', '받았어요', 'w-got') + (noNudge ? '' : act('copy', 'blue', '독촉 글 복사', 'w-remind')) + act('bell', 'amber', '3일 뒤 다시 확인', 'w-later') + act('calendar', 'purple', '확인일 정하기', 'w-date') + act('user', 'gray', '맡은 사람 바꾸기', 'w-who'));
+    openSheet('<div class="st">' + esc(t.title) + '</div><div class="ss">' + esc(t.delegatee || '') + '</div>' + act('check', 'green', '받았어요', 'w-got') + act('bell', 'amber', '3일 뒤 다시 확인', 'w-later') + act('calendar', 'purple', '확인일 정하기', 'w-date') + act('user', 'gray', '맡은 사람 바꾸기', 'w-who'));
   }
 
   // ════════ 프로젝트: 지금 할 일(자동) · 먼저 하기 ════════
@@ -4332,7 +4283,7 @@
       '6. 쓰기 전에 중복을 확인해: 진행 중인 줄과 제목·프로젝트가 비슷하면 알리고 건너뛸지 물어봐. 고칠 할 일은 제목으로 찾되 비슷한 게 여러 개면 나에게 물어봐. 프로젝트 이름은 이미 있는 이름을 글자 그대로 써(대소문자·띄어쓰기·하이픈만 다르면 같은 프로젝트).',
       '7. 쓰기 전에 그 줄을 다시 읽어 확인하고, 쓴 뒤에는 [AI기록]에 한 줄씩 남기고(전·후 값 포함) 무엇을 바꿨는지 짧게 알려 줘.',
       '8. 메일·채팅 내용은 제목과 링크, 한 줄 요약만 옮겨. 본문은 시트에 옮기지 마. 민감한 내용(주민번호·계좌·비밀번호 등)은 시트에 넣지 말고 시트 밖에 둬.',
-      '9. 독촉·회신 같은 메시지는 초안만 써. 보내기는 내가 해.',
+      '9. 회신 같은 메시지는 초안만 써. 보내기는 내가 해.',
       '10. 규칙 버전이 요청에 적힌 버전과 다르거나 규칙 파일이 없으면 아무것도 하지 말고 "규칙 파일을 다시 올려 주세요"라고만 답해.',
       '11. 정기 작업(예약 작업처럼 내가 보지 않는 때 도는 일)은 [업무]·[프로젝트]·[AI기록]에 쓰지 말고 [AI제안]에만 추가해. 주체는 "AI:정기"로 적어. 내 줄은 한 칸도 직접 바꾸지 마(바꾸는 것은 내가 앱에서 적용을 눌렀을 때만. 단 \'AI 처리\'=요청인 줄의 처리는 규칙 13대로 그 줄의 \'AI 처리\'·상세만 쓸 수 있어).',
       '12. 관련 자료 후보는 내가 요청한 때만 찾아. 알아서 찾거나 붙이지 마. 찾으면 [AI제안](종류=자료후보)에만 올려.',
@@ -4355,7 +4306,6 @@
       '- 머리글: 시각 · 주체 · 종류 · 대상ID · 제안 내용 · 근거·출처 · 상태 · 처리시각. 상태는 "대기"로 적고 처리시각은 비워 둬.',
       '- 종류=할일: 제안 내용의 첫 줄이 제목, 둘째 줄부터 상세 글(## 로 시작). 대상ID는 프로젝트 ID(P-…, 있으면). (선택) 제목 줄 끝에 @상황, #프로젝트 이름(이미 있는 것)을 붙이면 내가 적용할 때 상황·프로젝트 칸에 같이 들어가.',
       '- 종류=자료후보: 대상ID=할 일 ID · 제안 내용=줄마다 "제목 | https://주소".',
-      '- 종류=독촉초안: 대상ID=할 일 ID · 제안 내용=보낼 글 초안(보내지는 마).',
       '- 종류=프로젝트: 제안 내용의 첫 줄이 프로젝트 이름, 그다음은 "- 할 일 제목" 줄들(5~10개, 순서대로. 목록 맨 위가 "지금 할 일"이 돼). 완료 모습·단계는 쓰지 마. 제안 한 행에 프로젝트 하나, 내가 앱에서 체크한 할 일만 시트에 들어가.',
       '- 정기 작업이 올리는 제안은 주체를 "AI:정기"로 적어(앱이 정기 작업 점검에 써).',
       '- 근거·출처: 이유와 출처 링크 한 줄(메일 본문은 옮기지 마).'
@@ -4435,8 +4385,6 @@
       ask: '새 프로젝트를 만들고 싶어.\n프로젝트 이름: %이름%\n기한·같이 하는 사람·제약을 한두 가지 먼저 물어봐. 그다음 할 일 후보(첫 줄 이름, 이어서 "- 할 일" 줄들, 5~10개를 순서대로)를 [AI제안](종류=프로젝트)에 올려 줘. 내 [업무]·[프로젝트] 탭은 직접 고치지 마(앱에서 내가 체크해서 넣을게).' },
     { k: 'weekly', t: '주간 정리 진행', m: '이번 주를 돌아보고 정리할 것을 알려 줘요',
       ask: '주간 정리를 같이 해 줘. [업무]·[프로젝트]를 읽고 ① 이번 주 끝낸 일 ② 오래 기다리는 맡긴 일 ③ 할 일이 하나도 없는 진행 중 프로젝트 ④ 언젠가 목록에서 꺼낼 만한 것을 정리해서 알려 줘. 바꿀 게 있으면 변경안 표로 먼저 보여 줘.' },
-    { k: 'delegated', t: '맡긴 일 점검 · 독촉 글', m: '확인할 맡긴 일을 사람별로 묶어 독촉 글 초안을 써요 (앱의 맡긴 일 화면에서도 돼요)',
-      ask: '상태가 위임이고 확인일이 오늘 이전인 줄을 사람별로 묶어 알려 줘. 사람마다 보낼 독촉 메시지 초안을 한 통씩 써 줘(보내지 말고 초안만). 시트에 남기고 싶으면 [AI제안](종류=독촉초안)에 올려 줘.' },
     { k: 'inbox', t: '메일 · 캘린더 · 드라이브 → 할 일 후보', m: '최근 메일·일정·문서에서 할 일 후보를 제안해요',
       ask: '최근 메일·캘린더·드라이브에서 내가 해야 할 일 후보를 찾아 [AI제안](종류=할일)에 올려 줘. 내용은 제목·링크·한 줄 요약만(본문은 옮기지 마). 이미 [업무]에 있는 것과 비슷하면 빼고, 내 [업무] 줄은 직접 고치지 마.' },
     { k: 'aiwork', t: 'AI 처리 요청 일 처리', m: "할 일 줄의 AI 버튼으로 표시한 일(AI 처리=요청)을 AI가 처리해요 · 정기 작업에 붙여넣어도 돼요",
@@ -4466,7 +4414,7 @@
   }
   // ════════ v1.9 AI 알림함 묶음: 'AI가 바꾼 것'(되돌리기) · 'AI 제안'(적용·거절) ════════
   function aiTitles(list, n) { var seen = {}, out = []; (list || []).forEach(function (c) { var k = c.title || c.id; if (!seen[k]) { seen[k] = 1; out.push(k); } }); return out.slice(0, n).join(' / '); }
-  function aiKindLabel(k) { return k === '독촉초안' ? '독촉 글' : (k || '제안'); } // 화면 표시만. 시트에 적는 값(독촉초안)은 그대로
+  function aiKindLabel(k) { return k === '독촉초안' ? '제안' : (k || '제안'); } // 화면 표시만. 옛 종류값(독촉초안, v1.17.1에서 기능 제거)은 일반 '제안'으로만 보인다
   function aiPropTitle(p) { if (p.kind === '할일') return String(p.content || '').split(/\r?\n/).filter(function (x) { return x.trim(); })[0] || '할 일 제안'; if (p.kind === '프로젝트') return '프로젝트 · ' + (String(p.content || '').split(/\r?\n/)[0] || ''); return aiKindLabel(p.kind) + (p.targetTitle ? ' · ' + p.targetTitle : ''); }
   function aiChangeHtml(c) {
     var what = c.action === '추가' ? '새 줄을 넣었어요' : '<b>' + esc(c.col) + '</b> ' + (c.before ? '<del>' + esc(c.before) + '</del> ' : '(빈칸) ') + '→ ' + (c.after ? esc(c.after) : '(빈칸)');
@@ -4491,7 +4439,7 @@
     }
     return '';
   }
-  function aiOkLabel(p, n) { return p.kind === '프로젝트' ? '선택한 ' + n + '개 프로젝트에 넣기' : p.kind === '자료후보' ? '선택한 ' + n + '개 붙이기' : p.kind === '독촉초안' ? '복사하고 적용' : '적용'; }
+  function aiOkLabel(p, n) { return p.kind === '프로젝트' ? '선택한 ' + n + '개 프로젝트에 넣기' : p.kind === '자료후보' ? '선택한 ' + n + '개 붙이기' : '적용'; }
   function aiPropHtml(p, from) {
     var lines = String(p.content || '').replace(/\r\n?/g, '\n').split('\n'), body = aiPickHtml(p), picks = !!body, nOn = 0;
     if (picks) nOn = (body.match(/data-pick="\d+" checked/g) || []).length;
@@ -4503,7 +4451,7 @@
     return '<div class="aib" data-prow="' + p.row + '"><div class="aih">' + esc(aiKindLabel(p.kind)) + '<span class="srcchip ai">' + esc(p.who || 'AI') + '</span></div>' + body + (p.why ? '<div class="aid"><span class="hint2">' + esc(p.why) + '</span></div>' : '') +
       '<div class="aia"><button type="button" data-aiok="' + p.row + '" data-stamp="' + esc(p.at) + '" data-kind="' + esc(p.kind) + '" data-from="' + (from || 'props') + '">' + aiOkLabel(p, nOn) + '</button><button type="button" class="sub" data-aino="' + p.row + '" data-stamp="' + esc(p.at) + '" data-from="' + (from || 'props') + '">거절</button></div></div>';
   }
-  // which: 없으면 전부 · 'proj' 프로젝트 제안 · 'mat' 자료 후보 · 'rest' 그 밖(할 일·독촉 글)
+  // which: 없으면 전부 · 'proj' 프로젝트 제안 · 'mat' 자료 후보 · 'rest' 그 밖(할 일)
   var aiWhich = '';
   function aiPropsOf(which) {
     var list = ((data && data.ai) || {}).proposals || [];
@@ -4548,7 +4496,6 @@
       aiAfter(r, reopen, function (x) { return kind === '할일' ? '오늘 할 일에 넣었어요' : kind === '프로젝트' ? '\'' + pname + '\'에 ' + (x.added || 0) + '개 넣었어요' + (x.skipped ? ' · 체크 안 한 ' + x.skipped + '개는 넣지 않았어요' : '') : kind === '자료후보' ? '자료 ' + (x.added || 0) + '개를 상세 글에 붙였어요' : '적용했어요'; });
     };
     var go = function () { return call('applyAi', row, stamp, picks).then(done).catch(fail); };
-    if (kind === '독촉초안' && p) return copyText(p.content, go, go);
     go();
   });
   // ════════ Claude와 프로젝트 만들기 (PC): 이름 → 요청 복사 → Claude가 [AI제안]에 올림 → 여기서 체크 → 넣기 ════════
