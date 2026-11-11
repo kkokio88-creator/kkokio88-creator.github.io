@@ -25,7 +25,7 @@
   #kitGate.kg-bar .kg-btn { width: auto; min-height: 44px; padding: 0 14px; font-size: 15px; margin-left: auto; }
   #kitGate.kg-bar .kg-msg { width: 100%; min-height: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":""};</script><script src="engine.js?v=a3a8558a90"></script><script src="auth.js?v=a3a8558a90"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":""};</script><script src="engine.js?v=6d964ea2eb"></script><script src="auth.js?v=6d964ea2eb"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -145,7 +145,6 @@
     .helpP { left: auto; right: 0; top: 0; bottom: 0; width: 400px; height: auto; border-radius: 22px 0 0 22px; box-shadow: -8px 0 40px rgba(0, 0, 0, .14); transform: translateX(105%); }
     .helpP.on { transform: none; }
   }
-  .wkshift { display: flex; align-items: center; justify-content: space-between; margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--t2); } .wkshift button { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 12px; border-radius: 14px; background: var(--card); box-shadow: var(--sh); font-weight: 700; color: var(--g); } .wkshift button:disabled { opacity: .35; }
   .dtprev { margin: 4px 0 8px; padding: 10px 12px; border-radius: 14px; background: var(--fill); } .dtprev .dtp { font-size: 14px; line-height: 1.5; color: var(--t2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: keep-all; overflow-wrap: anywhere; } .dtprev .txtlink { margin: 4px 0 0; min-height: 36px; }
   .carryrow, .carrymore { display: flex; gap: 8px; margin-top: 10px; } .cybtn { flex: 1; min-height: 44px; padding: 0 12px; border-radius: 14px; background: var(--fill); color: var(--t2); font-weight: 700; font-size: 15px; } .cybtn.pri { background: var(--g); color: #fff; } .cybtn.no { color: var(--red); } .cybtn.mo { flex: none; width: 56px; }
   @media (max-width: 1023px) { body .hbtns .pillbtn { min-height: 44px; } body .chip, body .pillbtn, body [data-pc], body .calbar .nav button, body .vtg button, body .seg button { min-height: 44px; } body .sheet .shx { width: 44px; height: 44px; } body .pend [data-pc] { min-width: 44px; } }
@@ -921,7 +920,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = "";
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.16.0·v2" };
+  var KIT = { name: "GTD 워크", version: "1.16.1·v2" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -3286,7 +3285,7 @@
     var cn = $('capNameRow'); if (cn) cn.onclick = function () { askCapName(false); };
   }
   // 끝낸 일 날짜 문구: '지남'은 못 한 일에만 쓰므로 완료 항목은 '끝냄'으로 말한다(v1.16)
-  function doneAgo(ymd) { var d = diff(ymd); return d === 0 ? '오늘 끝냄' : d === -1 ? '어제 끝냄' : d < 0 ? (-d) + '일 전 끝냄' : rel(ymd) + ' 끝냄'; }
+  function doneAgo(ymd) { var d = diff(ymd); return d === 0 ? '오늘 끝냄' : d === -1 ? '어제 끝냄' : d < 0 ? (-d) + '일 전 끝냄' : ymd + ' 끝냄'; }
   function waitInfo(t) {
     if (!t.followUp) return '';
     var over = -diff(t.followUp);

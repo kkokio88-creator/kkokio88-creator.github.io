@@ -17,26 +17,37 @@
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   };
 
-  var SOON = 5 * 60e3, timer = null, tryAt = 0, failAt = 0, silent = false, silentTimer = null, loginAt = 0, fetching = false;
+  var SOON = 5 * 60e3, timer = null, tryAt = 0, failAt = 0, hiddenAt = 0, silent = false, silentTimer = null, loginAt = 0, fetching = false, warmWait = false, closedTimer = null;
   function expiring() { return !tok || !tok.t || tok.exp < Date.now() + SOON; }
-  // 조용한 갱신: 이메일을 알고 로그인 스크립트가 로드됐을 때만. 팝업 없이 새 토큰을 받는다
-  function canSilent() { return !!(tok && tok.email && CFG.clientId && window.google && google.accounts && google.accounts.oauth2); }
-  function refresh() {
-    if (!expiring() || Date.now() - tryAt < 30e3 || Date.now() - failAt < 120e3 || Date.now() - loginAt < 120e3) return;
-    if (!canSilent()) { if (!valid() && started) showGate(true); return; }
+  function visible() { return document.visibilityState !== 'hidden'; }
+  // 조용한 갱신: 이메일을 알고 로그인 스크립트가 로드됐고 창이 보일 때만. 숨은 창에서는 구글이 답을 안 주거나 실패해서 보내지 않는다
+  function canSilent() { return !!(tok && tok.email && CFG.clientId && window.google && google.accounts && google.accounts.oauth2 && visible()); }
+  function cooling() { return Date.now() - failAt < 120e3 || Date.now() - loginAt < 120e3; }
+  // force: 창이 다시 보일 때·포커스·401 처럼 사람이 돌아온 순간. 이전 실패·시도 간격을 무시하고 새로 시도한다
+  function refresh(force) {
+    if (!expiring() || Date.now() - loginAt < 120e3) return;
+    if (!force && (Date.now() - tryAt < 30e3 || Date.now() - failAt < 120e3)) return;
+    if (!canSilent()) { if (!valid() && started && visible()) showGate(true); return; }
+    if (silent) {
+      if (!force || (hiddenAt < tryAt && Date.now() - tryAt < 5e3)) return; // 방금 보낸 요청이 진행 중
+      silent = false; clearTimeout(silentTimer); // 숨은 사이 보낸 요청은 버리고 새로 보낸다
+    }
     tryAt = Date.now(); silent = true;
-    // 팝업이 막히면 구글이 아무 응답도 안 줄 수 있다 → 15초 안에 답이 없으면 실패로 보고 막대로 넘긴다
-    clearTimeout(silentTimer); silentTimer = setTimeout(function () { if (silent) silentFail(); }, 15e3);
+    // 팝업이 막히면 구글이 아무 응답도 안 줄 수 있다 → 15초 안에 답이 없으면 실패로 보고 막대로 넘긴다 (숨은 시간이 끼었으면 실패로 보지 않는다)
+    clearTimeout(silentTimer); silentTimer = setTimeout(function () { if (!silent) return; if (hiddenAt >= tryAt) { silent = false; return; } silentFail(); }, 15e3);
     try { getClient().requestAccessToken({ prompt: '', login_hint: tok.email }); } catch (e) { silentFail(); }
   }
   function silentFail() {
     clearTimeout(silentTimer); silent = false;
+    if (!visible()) return; // 숨은 동안의 실패는 확정하지 않는다: 다시 보일 때 새로 시도
     failAt = Date.now();
     if (valid()) { // 아직 토큰이 살아 있으면 막대를 띄우지 않고, 만료되는 때 확인한다
       showGate(false); clearTimeout(timer);
-      timer = setTimeout(function () { if (!valid()) showGate(true); else schedule(); }, Math.max(1000, tok.exp - 60e3 - Date.now() + 1000));
+      timer = setTimeout(function () { if (!visible()) return; if (!valid()) showGate(true); else schedule(); }, Math.max(1000, tok.exp - 60e3 - Date.now() + 1000));
       return;
     }
+    // 만료된 토큰은 정리하되 이메일·프로필은 남긴다(다음에 열 때 처음 화면이 아니라 저장본 + '계속하기' 막대)
+    if (tok) { tok = { email: tok.email, name: tok.name, picture: tok.picture, pf: tok.pf }; store.set('kitTok', JSON.stringify(tok)); }
     showGate(true);
   }
   function schedule() {
@@ -44,13 +55,17 @@
     if (!tok || !tok.t) return;
     timer = setTimeout(refresh, Math.max(0, tok.exp - SOON - Date.now()));
   }
-  function token() {
+  // 토큰이 필요할 때: 만료면 막대부터 띄우지 않고 먼저 조용히 갱신하고, 실패했을 때만 막대
+  function token(force) {
     if (valid()) return Promise.resolve(tok.t);
-    if (started && canSilent() && Date.now() - failAt >= 120e3) refresh(); else showGate(true);
-    return new Promise(function (res) { waiters.push(res); });
+    var p = new Promise(function (res) { waiters.push(res); });
+    if (silent) return p;
+    if (started && canSilent() && Date.now() - failAt >= 120e3 && Date.now() - loginAt >= 120e3) refresh(force === true);
+    else if (visible()) showGate(true);
+    return p;
   }
   function gotToken(r) {
-    var wasSilent = silent; silent = false; loginAt = 0; clearTimeout(silentTimer);
+    var wasSilent = silent; silent = false; loginAt = 0; clearTimeout(silentTimer); clearTimeout(closedTimer);
     if (wasSilent && (!r || r.error || !r.access_token)) return silentFail();
     if (!r || r.error || !r.access_token) { gateMsg(r && r.error === 'access_denied' ? '권한을 허용해야 내 시트를 만들 수 있어요.' : '로그인하지 못했어요. 다시 눌러 주세요.'); return; }
     var granted = String(r.scope || SCOPES);
@@ -89,11 +104,16 @@
   function login() {
     if (!window.google || !google.accounts || !google.accounts.oauth2) { gateMsg('구글 로그인을 불러오는 중이에요. 잠시 뒤 다시 눌러 주세요.'); return; }
     if (!CFG.clientId) { gateMsg('아직 준비 중이에요. 곧 열어요!'); return; }
-    silent = false; clearTimeout(silentTimer); loginAt = Date.now(); // 사람이 누른 로그인: 이 동안 조용한 요청은 보내지 않는다
+    silent = false; clearTimeout(silentTimer); clearTimeout(closedTimer); loginAt = Date.now(); // 사람이 누른 로그인: 이 동안 조용한 요청은 보내지 않는다
     getClient().requestAccessToken({ prompt: tok ? '' : 'consent', login_hint: tok && tok.email ? tok.email : undefined });
   }
   function getClient() {
-    if (!client) client = google.accounts.oauth2.initTokenClient({ client_id: CFG.clientId, scope: SCOPES, include_granted_scopes: true, callback: gotToken, error_callback: function (e) { if (silent) return silentFail(); loginAt = 0; gateMsg(e && e.type === 'popup_closed' ? '로그인 창이 닫혔어요. 다시 눌러 주세요.' : e && e.type === 'popup_failed_to_open' ? '로그인 창이 막혔어요. 팝업을 허용하고 다시 눌러 주세요.' : '로그인하지 못했어요.'); } });
+    if (!client) client = google.accounts.oauth2.initTokenClient({ client_id: CFG.clientId, scope: SCOPES, include_granted_scopes: true, callback: gotToken, error_callback: function (e) {
+      if (silent) return silentFail();
+      // 동의 화면에서 '계속'을 누르면 팝업이 닫히면서 popup_closed가 토큰보다 먼저 올 수 있다 → 잠시 토큰을 기다렸다가, 끝내 안 오면 진짜 취소로 본다
+      if (e && e.type === 'popup_closed') { clearTimeout(closedTimer); closedTimer = setTimeout(function () { loginAt = 0; gateMsg('로그인 창이 닫혔어요. 다시 눌러 주세요.'); }, 1200); return; }
+      loginAt = 0; gateMsg(e && e.type === 'popup_failed_to_open' ? '로그인 창이 막혔어요. 팝업을 허용하고 다시 눌러 주세요.' : '로그인하지 못했어요.');
+    } });
     return client;
   }
   function logout() {
@@ -139,7 +159,11 @@
   window.KIT_ENGINE = createKitEngine({
     token: token, storage: store, onProgress: progress,
     // 만료돼도 이메일은 남겨 둔다: 다음에 열 때 처음 화면이 아니라 저장본 + '계속하기' 막대로
-    onUnauthorized: function () { tok = { email: tok && tok.email }; store.set('kitTok', JSON.stringify(tok)); return token(); },
+    onUnauthorized: function (bad) {
+      if (tok && tok.t && bad && tok.t !== bad && valid()) return Promise.resolve(tok.t); // 다른 호출이 이미 새 토큰을 받았다
+      if (tok) tok.exp = 0; // 메모리에서만 만료로 표시한다. 저장본은 조용한 갱신이 실패했을 때만 정리한다
+      return token(true);
+    },
     onSaveError: function () { saveNote(true); }, onSaved: function () { saveNote(false); },
     // 뒤에서 새로 받은 시트·캘린더가 화면과 다르면 화면(App.html)이 다시 그린다
     onChange: function () { try { window.dispatchEvent(new Event('kit:changed')); } catch (e) {} },
@@ -158,8 +182,13 @@
   }
   // 앱으로 돌아오면 오래된 시트·캘린더를 미리 새로 받아 둔다 (다음 누름이 기다리지 않게)
   // 다른 앱으로 가거나 창을 닫을 때는 이 기기 저장본을 바로 써 둔다(못 보낸 변경은 다음에 열 때 이어서 보냄)
-  document.addEventListener('visibilitychange', function () { if (!started) return; if (document.visibilityState === 'visible') { refresh(); window.KIT_ENGINE.warm(); } else window.KIT_ENGINE.persist(); });
-  window.addEventListener('focus', function () { if (started) refresh(); });
+  document.addEventListener('visibilitychange', function () { if (!started) return; if (document.visibilityState === 'visible') { refresh(true); warmWhenReady(); } else { hiddenAt = Date.now(); window.KIT_ENGINE.persist(); } });
+  function warmWhenReady() {
+    if (valid()) return window.KIT_ENGINE.warm();
+    if (warmWait) return; warmWait = true; // 새 토큰을 받은 뒤에 미리 받아 둔다
+    waiters.push(function () { warmWait = false; window.KIT_ENGINE.warm(); });
+  }
+  window.addEventListener('focus', function () { if (started) refresh(true); });
   window.addEventListener('pagehide', function () { if (started) window.KIT_ENGINE.persist(); });
   window.addEventListener('beforeunload', function (e) { if (started) window.KIT_ENGINE.persist(); if (started && window.KIT_ENGINE.saveFailed()) { e.preventDefault(); e.returnValue = ''; } });
   window.KIT_AUTH = { login: login, logout: logout, email: function () { return (tok && tok.email) || ''; }, profile: function () { return tok ? { email: tok.email || '', name: tok.name || '', picture: tok.picture || '' } : {}; }, getToken: function () { return token(); } };
