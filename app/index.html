@@ -19,13 +19,13 @@
   #kitGate .kg-prog small { color: var(--t3, #8B95A1); font-weight: 500; font-size: 13px; }
   #kitGate .kg-prog i { display: inline-block; width: 14px; height: 14px; margin: 0 8px -2px 0; border-radius: 50%; border: 2.5px solid #C9CBFF; border-top-color: #5B5CF6; animation: kgspin .8s linear infinite; }
   @keyframes kgspin { to { transform: rotate(360deg); } }
-  #kitGate .kg-msg { color: #F04452; font-weight: 600; min-height: 22px; font-size: 14.5px; }
+  #kitGate .kg-msg { color: #F04452; font-weight: 600; font-size: 14.5px; line-height: 1.5; margin: 12px 0 0; } #kitGate .kg-msg:empty { display: none; } #kitGate .kg-msg.kg-info { color: var(--t2, #4E5968); }
   #kitGate .kg-fine { color: var(--t3, #8B95A1); font-size: 12.5px; margin-top: 18px; } #kitGate .kg-fine a { color: inherit; }
   #kitGate.kg-bar { position: fixed; left: 12px; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 120; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 16px; background: var(--card, #fff); box-shadow: 0 10px 30px rgba(0,0,0,.15); font-size: 14px; font-weight: 600; color: var(--t2, #4E5968); }
   #kitGate.kg-bar .kg-btn { width: auto; min-height: 44px; padding: 0 14px; font-size: 15px; margin-left: auto; }
-  #kitGate.kg-bar .kg-msg { width: 100%; min-height: 0; }
+  #kitGate.kg-bar .kg-msg { width: 100%; margin: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":""};</script><script src="engine.js?v=6d964ea2eb"></script><script src="auth.js?v=6d964ea2eb"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":""};</script><script src="engine.js?v=a52d7b2606"></script><script src="auth.js?v=a52d7b2606"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -920,7 +920,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = "";
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.16.1·v2" };
+  var KIT = { name: "GTD 워크", version: "1.16.2·v2" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
