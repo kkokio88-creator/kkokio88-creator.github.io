@@ -493,7 +493,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.16.2',       // 코드 버전 (화면 표시용)
+  VERSION: '1.17.0',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 9,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다), v9: [업무] 맨 끝 'AI 처리' 열(요청/처리중/완료/막힘)
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -550,7 +550,7 @@ var COLUMNS = [
   { key: 'repeat',    header: '반복',      width: 110, since: 2, aliases: [],
     note: '루틴(반복 업무). 완료하면 다음 회차가 자동으로 생깁니다.\n예) 매일 / 평일 / 매주 월 / 매주 월,수,금 / 매월 25일 / 매월 말일 / 매년 3월 1일 / 7일마다 / 2주마다 / 1개월마다\n(○일마다 = 완료한 날부터 계산)' },
   { key: 'project',   header: '프로젝트',  width: 130, since: 3, aliases: [],
-    note: '2단계 이상 걸리는 일의 묶음 이름. 같은 이름을 적으면 한 프로젝트로 묶입니다.\n주간 검토에서 "다음 행동이 없는 프로젝트"를 알려 줍니다.' },
+    note: '2단계 이상 걸리는 일의 묶음 이름. 같은 이름을 적으면 한 프로젝트로 묶입니다.\n주간 정리에서 "다음 행동이 없는 프로젝트"를 알려 줍니다.' },
   { key: 'focus',     header: '오늘 할 날', width: 100, since: 4, aliases: [], type: 'date',
     note: '★ 오늘로 올린 날. 이 날짜가 되면 [오늘 꼭 할 일]에 맨 위로 올라옵니다.' },
   { key: 'est',       header: '예상(분)',   width: 80,  since: 4, aliases: [], type: 'number',
@@ -1398,21 +1398,24 @@ function clarifyTask(id, d) {
  *  - 그 밖: 오늘 할 날=오늘
  * 모두 분류일=오늘. 분류일이 이미 있는 줄은 건드리지 않는다. 쓴 칸의 원래 값은 undo.triage로 돌려준다.
  */
-function triageMany(ids) {
+function triageMany(ids, mode) {
   ids = (Array.isArray(ids) ? ids : []).map(String);
   if (!ids.length) throw new Error('정리할 일을 골라 주세요.');
   return withLock_(function () {
     var ctx = taskContext_();
     if (!ctx.map.triaged) throw new Error('먼저 업데이트를 적용해 주세요.');
     var today = todayYmd_(ctx.tz), n = 0, before = [];
+    var day = mode === 'tomorrow' ? addDaysYmd_(today, 1) : today; // 'tomorrow': 오늘 정리에서 '모두 내일 할 일로'
     readAllTasks_(ctx).forEach(function (t) {
       if (ids.indexOf(t.id) < 0 || t.triaged || isClosedStatus_(t.status)) return;
       var rec = { id: t.id, status: t.status, focus: t.focus || '' };
       var set = function (key, val) { if (ctx.map[key]) ctx.sheet.getRange(t.row, ctx.map[key]).setValue(val); };
       var loose = t.status === STATUS.INBOX || t.status === '' || t.status === STATUS.SOMEDAY;
       var future = !!t.due && t.due > today && (t.status === STATUS.SCHEDULED || t.status === STATUS.NEXT);
+      // '모두 나중에': 맡긴 일·참고·미래 일정은 분류일만 채우고 상태·오늘 할 날은 그대로(맡긴 일·확인할 것에서 사라지지 않게)
+      if (mode === 'later') { if (!(future || t.status === STATUS.DELEGATED || t.status === STATUS.REFERENCE)) { set('status', STATUS.SOMEDAY); set('focus', ''); } set('triaged', today); before.push(rec); n++; return; }
       if (loose) { set('status', STATUS.NEXT); }
-      if ((loose || (!future && t.status !== STATUS.DELEGATED && t.status !== STATUS.REFERENCE)) && t.focus !== today) set('focus', today);
+      if ((loose || (!future && t.status !== STATUS.DELEGATED && t.status !== STATUS.REFERENCE)) && t.focus !== day) set('focus', day);
       set('triaged', today);
       before.push(rec); n++;
     });
@@ -1511,15 +1514,23 @@ function applyTrack_(ctx, row, p) {
   }
 }
 
-/** 여러 업무의 ★ 날짜를 한 번에 (오늘 마무리 → 내일, 주간 검토 → 다음 주 월요일). 한 번의 왕복으로 끝낸다 */
+/** 여러 업무의 ★ 날짜를 한 번에 (오늘 마무리 → 내일, 주간 정리 → 다음 주 월요일). 한 번의 왕복으로 끝낸다 */
 function setFocusMany(ids, focus) {
   ids = (ids || []).map(String);
   return withLock_(function () {
     var ctx = taskContext_();
     if (!ctx.map.focus) throw new Error('먼저 업데이트를 적용해 주세요.');
-    var val = focus === true ? todayYmd_(ctx.tz) : ymd_(focus);
+    var today = todayYmd_(ctx.tz), val = focus === true ? today : ymd_(focus);
     var n = 0;
-    readAllTasks_(ctx).forEach(function (t) { if (ids.indexOf(t.id) !== -1) { ctx.sheet.getRange(t.row, ctx.map.focus).setValue(val); n++; } });
+    readAllTasks_(ctx).forEach(function (t) {
+      if (ids.indexOf(t.id) === -1) return;
+      ctx.sheet.getRange(t.row, ctx.map.focus).setValue(val);
+      // 오늘(또는 그 이전) ★였던 일을 더 늦은 날로 보내면 미룬 횟수 +1. 같은 날로 다시 지정하거나 ★가 없던 일은 세지 않는다(두 번 불러도 한 번만)
+      if (ctx.map.postponed && t.focus && t.focus <= today && val && val > t.focus) {
+        ctx.sheet.getRange(t.row, ctx.map.postponed).setValue((Number(t.postponed) || 0) + 1);
+      }
+      n++;
+    });
     return { ok: true, count: n };
   });
 }
@@ -2020,7 +2031,7 @@ function setNextAction(id, clear) {
 }
 
 /**
- * 수집함을 거치지 않고 바로 '다음 행동'으로 담기 (주간 검토의 프로젝트 단계, 수집함의 프로젝트 만들기).
+ * 수집함을 거치지 않고 바로 '다음 행동'으로 담기 (주간 정리의 프로젝트 단계, 수집함의 프로젝트 만들기).
  * d: { project, context, due, next } — due가 있으면 그날의 '일정'으로 담는다 (캘린더에서 추가), next=true면 프로젝트의 '다음'으로
  */
 function addAction(title, d) {
@@ -2766,7 +2777,7 @@ function dashboardFormulas_(sheetName, map) {
 
 /**
  * 프로젝트 목록: 열린 일이 있는 프로젝트 이름 · 남은 일 수 · 멈춤 표시.
- * 멈춤 = 다음 행동·일정·위임이 하나도 없음 (주간 검토 projectStats_ 와 같은 기준)
+ * 멈춤 = 다음 행동·일정·위임이 하나도 없음 (주간 정리 projectStats_ 와 같은 기준)
  */
 function projectListFormula_(title, status, project, nonEmpty, open, empty) {
   var c = function (extra) { return 'COUNTIFS(' + project + ',p,' + title + ',"<>"' + extra + ')'; };
@@ -2779,9 +2790,9 @@ function projectListFormula_(title, status, project, nonEmpty, open, empty) {
 }
 
 /* ── 50_Weekly.gs ── */
-/** GTD 워크 — 주간 검토 메일 (매주 금요일, 나에게만) */
+/** GTD 워크 — 주간 정리 메일 (매주 금요일, 나에게만) */
 
-/** 업무 목록 → 주간 검토 요약 (순수 함수 — 테스트 대상) */
+/** 업무 목록 → 주간 정리 요약 (순수 함수 — 테스트 대상) */
 function buildWeeklySummary_(tasks, today, projectRows) {
   var weekStart = weekStartYmd_(today);
   var nextWeekEnd = addDaysYmd_(weekStart, 13);
@@ -2873,7 +2884,7 @@ function renderWeeklyHtml_(s, sheetUrl) {
   };
 
   return '<div style="font-family:Apple SD Gothic Neo,Malgun Gothic,sans-serif;max-width:640px;color:#222;line-height:1.5">' +
-    '<h2 style="margin:0;color:#5b5cf6">이번 주 검토 · ' + s.today + '</h2>' +
+    '<h2 style="margin:0;color:#5b5cf6">이번 주 정리 · ' + s.today + '</h2>' +
     '<p style="margin:6px 0 16px;color:#555">10분만 내서 아래 순서로 보세요: 수집함 비우기 → 확인할 위임 챙기기 → 다음 주 할 일 고르기.</p>' +
     '<table style="border-collapse:separate;border-spacing:6px"><tr>' +
     stat('이번 주 완료', s.done.length) + stat('수집함', s.inbox.length) + stat('마감 지남', s.overdue.length) +
@@ -2906,7 +2917,7 @@ function sendWeeklyReview() {
   if (!to) return { sent: false, reason: '받는 사람 이메일을 확인하지 못했습니다.' };
   MailApp.sendEmail({
     to: to,
-    subject: '[내 업무] 주간 검토 · ' + today + ' (수집함 ' + summary.inbox.length + ' · 확인할 위임 ' + summary.followUp.length + ')',
+    subject: '[내 업무] 주간 정리 · ' + today + ' (수집함 ' + summary.inbox.length + ' · 확인할 위임 ' + summary.followUp.length + ')',
     htmlBody: renderWeeklyHtml_(summary, ss.getUrl()),
     name: KIT.NAME
   });
@@ -2983,7 +2994,7 @@ function setDailyTrigger_(on) {
   writeSetting_(SpreadsheetApp.getActiveSpreadsheet(), '아침알림', on ? '켜짐' : '꺼짐');
 }
 
-// ── 하루 닫기 (v1.11) ───────────────────────────────────────────
+// ── 오늘 정리 (v1.11) ───────────────────────────────────────────
 // 끝낸 일 요약 → 못 끝낸 일 하나씩 → 분류 대기 3개 → 확인할 것 → 내일 가장 중요한 한 가지 → '오늘은 여기까지'(닫기 기록·연속).
 // 앱 화면이 단계별로 기존 함수(clarifyTask·postponeFollowUp·updateTask)를 부르고, 마지막에 closeDay만 [_설정]에 닫은 날을 적는다.
 
@@ -3047,7 +3058,7 @@ function pickNow_(tasks, today, opts, projectRows) {
     var late = !!t.due && t.due < today, dueToday = t.due === today, star = !!t.focus && t.focus <= today;
     var inProject = !!t.project;
     if (t.repeat && t.due && t.due > today) return;
-    if (t.focus && t.focus > today) return;                            // 내일 이후로 정해 둔 일(하루 닫기에서 내일로 보낸 일 포함)은 아직
+    if (t.focus && t.focus > today) return;                            // 내일 이후로 정해 둔 일(오늘 정리에서 내일로 보낸 일 포함)은 아직
     if (t.due && t.due > today && !star) return;                       // 미래 일정은 아직
     if (inProject && !late && !dueToday && !star && !nextIds[t.id]) return; // 프로젝트 일은 그 프로젝트의 '지금 할 일'만
     var te = ENERGY_RANK_[t.energy] || 0;
@@ -3090,9 +3101,9 @@ function onOpen(e) {
     .addItem('🔑 휴대폰 링크 새로 만들기', 'menuRotateWebLink')
     .addItem('🔄 [오늘] 시트 새로 그리기', 'menuRefreshDashboard')
     .addSeparator()
-    .addItem('📧 주간 검토 메일 지금 받기', 'menuWeeklyNow')
-    .addItem('⏰ 주간 검토 메일 켜기 (매주 금요일)', 'menuWeeklyOn')
-    .addItem('🔕 주간 검토 메일 끄기', 'menuWeeklyOff')
+    .addItem('📧 주간 정리 메일 지금 받기', 'menuWeeklyNow')
+    .addItem('⏰ 주간 정리 메일 켜기 (매주 금요일)', 'menuWeeklyOn')
+    .addItem('🔕 주간 정리 메일 끄기', 'menuWeeklyOff')
     .addSeparator()
     .addItem('⚙️ 처음 설정 / 업데이트 적용', 'menuSetup')
     .addItem('🧪 예시 업무 넣기 (빈 시트일 때만)', 'menuInsertSamples')
@@ -3216,12 +3227,12 @@ function menuWeeklyNow() {
 
 function menuWeeklyOn() {
   setWeeklyTrigger_(true);
-  SpreadsheetApp.getUi().alert('주간 검토 메일을 켰습니다.\n매주 금요일 ' + KIT.WEEKLY_HOUR + '시쯤 나에게만 보냅니다.');
+  SpreadsheetApp.getUi().alert('주간 정리 메일을 켰습니다.\n매주 금요일 ' + KIT.WEEKLY_HOUR + '시쯤 나에게만 보냅니다.');
 }
 
 function menuWeeklyOff() {
   setWeeklyTrigger_(false);
-  SpreadsheetApp.getUi().alert('주간 검토 메일을 껐습니다.');
+  SpreadsheetApp.getUi().alert('주간 정리 메일을 껐습니다.');
 }
 
 /** 메뉴: 제보 게시판 열기 (버전을 미리 채워서) */
@@ -3249,7 +3260,7 @@ function menuAbout() {
     '2) 하루 한 번 [정리하기]로 수집함을 비웁니다.\n' +
     '   2분 안에 끝나면 바로 하고 완료, 남이 할 일은 위임, 날짜가 정해진 일은 일정.\n' +
     '3) [오늘] 시트에서 지금 할 일과 확인할 위임을 봅니다.\n' +
-    '4) 금요일엔 주간 검토 메일로 한 주를 정리합니다.\n\n' +
+    '4) 금요일엔 주간 정리 메일로 한 주를 정리합니다.\n\n' +
     '새 버전으로 업데이트해도 이 시트의 데이터는 그대로 유지됩니다.',
     ui.ButtonSet.OK);
 }
@@ -3414,7 +3425,7 @@ function webUpdate(k, id, patch) { checkKey_(k); var r = updateTask(id, patch); 
 function webPlanDay(k, ids) { checkKey_(k); var r = planDay(ids); return withView_(r); }
 function webUndo(k, u) { checkKey_(k); var r = undoTask(u); return withView_(r); }
 function webReopen(k, id) { checkKey_(k); var r = reopenTask(id); return withView_(r); }
-/** 알림 켜고 끄기: kind = 'daily'(아침 브리핑) | 'weekly'(주간 검토 메일) | 'test'(아침 브리핑 지금 받기) */
+/** 알림 켜고 끄기: kind = 'daily'(아침 브리핑) | 'weekly'(주간 정리 메일) | 'test'(아침 브리핑 지금 받기) */
 function webNotify(k, kind, on) {
   checkKey_(k); appContext_();
   if (kind === 'test') return sendDailyBriefing(true);
@@ -3435,12 +3446,12 @@ function webSetProjectInfo(k, ref, patch) { checkKey_(k); appContext_(); var r =
 // v1.9: AI가 바꾼 것 되돌리기 · AI 제안 적용·거절 (row = [AI기록]/[AI제안] 줄 번호, stamp = 그 줄의 시각)
 function webRevertAi(k, row, stamp) { checkKey_(k); appContext_(); var r = revertAiChange(row, stamp); return withView_(r); }
 function webApplyAi(k, row, stamp, picks) { checkKey_(k); appContext_(); var r = applyAiProposal(row, stamp, picks); return withView_(r); }
-// v1.11: 맡긴 일 모아서 독촉 초안 · 하루 닫기
+// v1.11: 맡긴 일 모아서 독촉 초안 · 오늘 정리
 function webNudgeDraft(k, person, ids) { checkKey_(k); appContext_(); return getNudgeDraft(person, ids); }
 function webMarkNudged(k, ids, days) { checkKey_(k); appContext_(); var r = markNudged(ids, days); return withView_(r); }
 function webCloseDay(k) { checkKey_(k); appContext_(); var r = closeDay(); return withView_(r); }
 function webNowPicks(k, opts) { checkKey_(k); appContext_(); return getNowPicks(opts); }
-function webTriageMany(k, ids) { checkKey_(k); appContext_(); var r = triageMany(ids); return withView_(r); }
+function webTriageMany(k, ids, mode) { checkKey_(k); appContext_(); var r = triageMany(ids, mode); return withView_(r); }
 function webApplyAiMany(k, list) { checkKey_(k); appContext_(); var r = applyAiMany(list); return withView_(r); }
 function webRejectAi(k, row, stamp) { checkKey_(k); appContext_(); var r = rejectAiProposal(row, stamp); return withView_(r); }
 /** 알림함 '모두 확인함': 지금 알림 목록(keys)과 시각을 [_설정]에 적는다 (앱 코드가 직접 쓰는 값 — 에이전트는 읽지도 쓰지도 않는다) */
@@ -3701,13 +3712,13 @@ function calendarRange_(ctx, startYmd, days, tasksOpt) {
 
 function webAddRoutine(k, title, rule, start, context) { checkKey_(k); appContext_(); var r = addRoutine(title, rule, start, context); return withView_(r); }
 
-/** 주간 검토 완료 기록 */
+/** 주간 정리 완료 기록 */
 function webReviewDone(k) {
   checkKey_(k);
   var ctx = appContext_();
   var td = todayYmd_(ctx.tz);
   writeSetting_(ctx.ss, '마지막주간검토', td);
-  // 인사이트 배지(주간 검토 연속)용: 검토한 날을 최근 60개까지 남긴다
+  // 인사이트 배지(주간 정리 연속)용: 검토한 날을 최근 60개까지 남긴다
   var hist = String(readSettings_(ctx.ss)['주간검토기록'] || '').split(',').filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x); });
   if (hist.indexOf(td) < 0) hist.push(td);
   writeSetting_(ctx.ss, '주간검토기록', hist.slice(-60).join(','));
@@ -3731,14 +3742,14 @@ function webAll(k) {
   };
 }
 
-/** PC 화면: 주간 검토 */
+/** PC 화면: 주간 정리 */
 function webWeekly(k) {
   checkKey_(k);
   var ctx = appContext_();
   var rows = readProjectRows_(ctx.ss);
   var s = buildWeeklySummary_(readAllTasks_(ctx), todayYmd_(ctx.tz), rows);
   var slim = function (list) {
-    return list.map(function (t) { return { id: t.id, title: t.title, status: t.status, due: t.due, delegatee: t.delegatee, followUp: t.followUp, created: t.created, completed: t.completed, context: t.context, project: t.project, repeat: t.repeat, delegatedOn: t.delegatedOn }; });
+    return list.map(function (t) { return { id: t.id, title: t.title, status: t.status, due: t.due, delegatee: t.delegatee, followUp: t.followUp, created: t.created, completed: t.completed, context: t.context, project: t.project, repeat: t.repeat, delegatedOn: t.delegatedOn, spent: t.spent || 0, focus: t.focus || '', est: t.est || 0, priority: t.priority || '' }; });
   };
   return { today: s.today, weekStart: s.weekStart, done: slim(s.done), next: slim(s.next), overdue: slim(s.overdue),
     followUp: slim(s.followUp), delegated: slim(s.delegated), upcoming: slim(s.upcoming), inbox: slim(s.inbox), someday: slim(s.someday), routineDone: s.routineDone, projects: withOutcomes_(ctx.ss, s.projects, rows), reference: slim(s.reference), pending: buildPending_(readAllTasks_(ctx), ymd_(readSettings_(ctx.ss)['분류도입일'], ctx.tz)).map(function (t) { return { id: t.id, title: t.title, source: t.source, created: t.created }; }),
@@ -3839,6 +3850,7 @@ function buildTodayView_(tasks, today, ext) {
       focus: t.focus || '', est: t.est || 0, priority: t.priority || '', delegatedOn: t.delegatedOn || '', memo: t.memo || '', urgent: !!t.urgent };
     // 새 열은 값이 있을 때만 싣는다 (화면 데이터 크기를 지킨다)
     if (t.detail) o.hasDetail = true;
+    if (t.postponed) o.postponed = t.postponed;
     if (t.source) o.source = t.source;
     if (t.pid) o.pid = t.pid;
     if (t.stage) o.stage = t.stage;
