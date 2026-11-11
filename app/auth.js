@@ -80,10 +80,10 @@
   }
   // 이메일을 몰랐다면(시트 기록만 있던 경우 등) 로그인 뒤에 받아 저장하고 엔진에도 알린다
   function fetchEmail() {
-    if (!tok || tok.email || !tok.t || fetching) return;
+    if (!tok || (tok.email && tok.pf) || !tok.t || fetching) return;
     fetching = true;
     fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + tok.t } }).then(function (r) { return r.json(); })
-      .then(function (u) { fetching = false; if (!tok || !u || !u.email) return; tok.email = u.email; store.set('kitTok', JSON.stringify(tok)); try { window.KIT_ENGINE.setEmail(u.email); } catch (e) {} })
+      .then(function (u) { fetching = false; if (!tok || !u || !u.email) return; var had = tok.email; tok.email = u.email; tok.name = u.name || ''; tok.picture = u.picture || ''; tok.pf = 1; store.set('kitTok', JSON.stringify(tok)); if (!had) { try { window.KIT_ENGINE.setEmail(u.email); } catch (e) {} } try { window.dispatchEvent(new Event('kit:profile')); } catch (e) {} })
       .catch(function () { fetching = false; });
   }
   function login() {
@@ -162,7 +162,7 @@
   window.addEventListener('focus', function () { if (started) refresh(); });
   window.addEventListener('pagehide', function () { if (started) window.KIT_ENGINE.persist(); });
   window.addEventListener('beforeunload', function (e) { if (started) window.KIT_ENGINE.persist(); if (started && window.KIT_ENGINE.saveFailed()) { e.preventDefault(); e.returnValue = ''; } });
-  window.KIT_AUTH = { login: login, logout: logout, email: function () { return (tok && tok.email) || ''; } };
+  window.KIT_AUTH = { login: login, logout: logout, email: function () { return (tok && tok.email) || ''; }, profile: function () { return tok ? { email: tok.email || '', name: tok.name || '', picture: tok.picture || '' } : {}; }, getToken: function () { return token(); } };
 
   // GIS 스크립트
   var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.defer = true; s.onload = function () { if (tok && tok.email) { if (expiring()) refresh(); else schedule(); } }; document.head.appendChild(s);

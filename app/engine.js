@@ -493,15 +493,15 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.13.0',       // 코드 버전 (화면 표시용)
-  SCHEMA_VERSION: 8,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다)
+  VERSION: '1.13.1',       // 코드 버전 (화면 표시용)
+  SCHEMA_VERSION: 9,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다), v9: [업무] 맨 끝 'AI 처리' 열(요청/처리중/완료/막힘)
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
   SETTINGS_SHEET: '_설정',
   PROJECT_SHEET: '프로젝트', // 프로젝트 이름 · 완료 모습 (처음 적을 때 생긴다)
   AI_LOG_SHEET: 'AI기록',     // v8: AI가 시트를 바꿀 때마다 한 줄씩 추가(되돌리기용). 앱이 만든다
   AI_PROPOSAL_SHEET: 'AI제안', // v8: AI가 올리는 제안(적용·거절은 앱에서). 앱이 만든다
-  AI_RULES_VERSION: 3,        // AI 규칙 파일 버전: AI 안내(규칙 파일·요청 팩)를 바꾸면 올린다 (요청 팩이 이 번호와 맞는지 AI에게 확인시킨다)
+  AI_RULES_VERSION: 4,        // AI 규칙 파일 버전: AI 안내(규칙 파일·요청 팩)를 바꾸면 올린다 (요청 팩이 이 번호와 맞는지 AI에게 확인시킨다)
   RULE_MARK: 'N("kit")=0', // 키트가 만든 조건부 서식을 구분하는 표식
   WEEKLY_HANDLER: 'sendWeeklyReview',
   WEEKLY_HOUR: 16,
@@ -579,7 +579,9 @@ var COLUMNS = [
   { key: 'energy',    header: '에너지',     width: 70,  since: 7, aliases: [], list: ['높음', '보통', '낮음'],
     note: '이 일에 드는 에너지.' },
   { key: 'checks',    header: '확인 횟수',  width: 80,  since: 7, aliases: [], type: 'number',
-    note: '맡긴 일을 확인하거나 독촉한 횟수. 자동으로 셉니다.' }
+    note: '맡긴 일을 확인하거나 독촉한 횟수. 자동으로 셉니다.' },
+  { key: 'aiProcess', header: 'AI 처리',    width: 80,  since: 9, aliases: [], list: ['요청', '처리중', '완료', '막힘'],
+    note: 'AI에게 맡긴 일의 상태. 빈칸 = 요청 아님. 요청(앱의 AI 버튼) → 처리중 → 완료 / 막힘(사람 확인이 필요해 초안만 남김). AI 에이전트가 정기적으로 시트를 볼 때 "요청"인 일을 스스로 처리합니다.' }
 ];
 
 var PRIORITY_ORDER = { '높음': 0, '보통': 1, '': 1, '낮음': 2 };
@@ -595,7 +597,9 @@ var MIGRATIONS = {
   // v7: 프로젝트 ID 부여 · 업무 줄의 프로젝트ID 채움 · 기존 줄은 분류일을 채워 '분류 대기'로 쏟아지지 않게 (35_Projects.gs)
   7: function (ctx) { migrateToV7_(ctx); },
   // v8: [AI기록]·[AI제안] 탭 만들기 (없는 탭만. 기존 탭·열·값은 그대로) (37_Ai.gs)
-  8: function (ctx) { ensureAiSheets_(ctx.ss); }
+  8: function (ctx) { ensureAiSheets_(ctx.ss); },
+  // v9: [업무] 맨 끝에 'AI 처리' 열 머리글만 더한다(빈 머리글이 없을 때만. 기존 줄의 값은 비워 둔다 = 요청 아님)
+  9: function (ctx) { if (!ctx.map.aiProcess) { var col = ctx.sheet.getLastColumn() + 1; ctx.sheet.getRange(1, col).setValue('AI 처리'); } }
 };
 
 /* ── 10_Util.gs ── */
@@ -720,7 +724,8 @@ function rowToTask_(values, map, tz, rowNumber) {
     stage: str('stage'),
     nextMark: str('nextMark') === '★',
     energy: str('energy'),
-    checks: Math.max(0, Math.round(Number(get('checks')) || 0))
+    checks: Math.max(0, Math.round(Number(get('checks')) || 0)),
+    aiProcess: str('aiProcess')
   };
 }
 
@@ -1165,8 +1170,17 @@ function withLock_(fn) {
 // ── 사이드바에서 부르는 공개 함수 (이름 바꾸지 말 것) ─────────────────
 
 /** 여러 줄 텍스트 → 줄마다 수집함 항목 1개 */
+/** 등록할 때 넣는 상세 글: 첫 글자가 '## '가 아니면 '## 메모'로 감싼다(=·+·-·@로 시작하면 시트가 수식으로 읽을 수 있음). 4만 자까지 */
+function normDetail_(v) {
+  var d = String(v === null || v === undefined ? '' : v).replace(/\r\n?/g, '\n').trim();
+  if (!d) return '';
+  if (d.length > 40000) throw new Error('상세 글이 너무 길어요(4만 자까지).');
+  return /^##\s/.test(d) ? d : '## 메모\n' + d;
+}
+
 function addTasks(text, opts) {
   var source = (opts && String(opts.source || '').trim()) || '직접';
+  var detailIn = opts && opts.detail !== undefined ? normDetail_(opts.detail) : '';
   var lines = String(text || '').split(/\r?\n/)
     .map(function (s) { return s.replace(/^\s*[-*•·]\s*/, '').trim(); })
     .filter(function (s) { return s !== ''; });
@@ -1186,6 +1200,7 @@ function addTasks(text, opts) {
       // 날짜·@상황·#프로젝트를 직접 적었으면 사람이 정한 것으로 본다: 분류 대기(정리할 것)를 건너뛴다. '!'·'30분'만 있으면 그대로 정리할 것
       if (p.due || p.context || p.project) t.triaged = today;
       if (t.project) t.projectId = projectIdForName_(ctx.ss, t.project);
+      if (detailIn && lines.length === 1) t.detail = detailIn; // 한 건을 담을 때만 상세를 같이 쓴다(여러 줄이면 어느 줄의 상세인지 알 수 없음)
       return t;
     }));
     return { added: lines.length, parsed: parsed };
@@ -1469,6 +1484,7 @@ function updateTask(id, patch) {
     if (patch.delegatee !== undefined && String(patch.delegatee).trim()) set('delegatee', String(patch.delegatee).trim());
     if (patch.stage !== undefined) set('stage', String(patch.stage).trim());
     if (patch.energy !== undefined) set('energy', ['높음', '보통', '낮음'].indexOf(patch.energy) !== -1 ? patch.energy : '');
+    if (patch.aiProcess !== undefined) set('aiProcess', ['요청', '처리중', '완료', '막힘'].indexOf(patch.aiProcess) !== -1 ? patch.aiProcess : '');
     if (patch.triage) set('triaged', today);
     applyTrack_(ctx, row, patch);
     if (patch.memoAppend && ctx.map.memo) {
@@ -1688,6 +1704,8 @@ function handleEdit_(e) {
 // 한 사람에게 맡긴 여러 건을 한 통으로. 앱은 글만 만들고 보내지 않는다(복사해서 내가 직접 보낸다).
 // 보낸 뒤 '보냈어요'를 누르면 그 건들의 확인일만 미루고 확인 횟수를 +1 한다.
 
+/** 호칭: 이름이 이미 '님'으로 끝나면(박부장님) 또 붙이지 않는다 */
+function honor_(name) { name = String(name || '').trim(); return /님$/.test(name) ? name : name + '님'; }
 /** 순수 함수(테스트 대상): 사람 + 맡긴 일들 → { text(고정 문구), ask(Claude에 다듬어 달라는 요청), items } */
 function buildNudgeDraft_(person, items, today) {
   person = String(person || '').trim();
@@ -1695,10 +1713,10 @@ function buildNudgeDraft_(person, items, today) {
   var list = (items || []).slice().sort(function (a, b) { return (a.delegatedOn || a.followUp || '9999') < (b.delegatedOn || b.followUp || '9999') ? -1 : 1; });
   var rows = list.map(function (t) { return { id: t.id, title: t.title, days: days(t), followUp: t.followUp || '', checks: t.checks || 0 }; });
   var one = rows.length === 1;
-  var lines = [person ? person + '님, 안녕하세요.' : '안녕하세요.', one ? '맡겨 드린 일의 진행 상황을 확인하고 싶어 연락드립니다.' : '맡겨 드린 일 ' + rows.length + '건의 진행 상황을 확인하고 싶어 한 번에 연락드립니다.', ''];
+  var lines = [person ? honor_(person) + ', 안녕하세요.' : '안녕하세요.', one ? '맡겨 드린 일의 진행 상황을 확인하고 싶어 연락드립니다.' : '맡겨 드린 일 ' + rows.length + '건의 진행 상황을 확인하고 싶어 한 번에 연락드립니다.', ''];
   rows.forEach(function (r, i) { lines.push((one ? '- ' : (i + 1) + '. ') + r.title + (r.days ? ' (맡긴 지 ' + r.days + '일)' : '')); });
   lines.push('', '편하실 때 진행 상황을 짧게 알려 주시면 감사하겠습니다. 도움이 필요한 부분이 있으면 말씀해 주세요.');
-  var ask = (person ? person + '님께 ' : '') + '맡긴 일 ' + rows.length + '건을 한 통으로 확인하는 정중한 메시지 초안을 써 줘. 보내지 말고 초안만. 재촉하는 느낌이 나지 않게 해 줘.\n' +
+  var ask = (person ? honor_(person) + '께 ' : '') + '맡긴 일 ' + rows.length + '건을 한 통으로 확인하는 정중한 메시지 초안을 써 줘. 보내지 말고 초안만. 재촉하는 느낌이 나지 않게 해 줘.\n' +
     rows.map(function (r) { return '- ' + r.title + (r.days ? ' (맡긴 지 ' + r.days + '일' + (r.checks ? ', 이미 ' + r.checks + '번 확인' : '') + ')' : ''); }).join('\n');
   return { person: person, items: rows, text: lines.join('\n'), ask: ask };
 }
@@ -2016,6 +2034,7 @@ function addAction(title, d) {
     var project = String(d.project || '').trim();
     var task = { title: title, status: due ? STATUS.SCHEDULED : STATUS.NEXT, due: due, created: today, triaged: today, source: '직접',
       project: project, context: String(d.context || '').trim() };
+    if (d.detail !== undefined && String(d.detail).trim()) task.detail = normDetail_(d.detail);
     var pid = '';
     if (project) { pid = projectIdForName_(ctx.ss, project); task.projectId = pid; }
     var nid = newId_(); task.id = nid;
@@ -3416,7 +3435,7 @@ function webSetProjectInfo(k, ref, patch) { checkKey_(k); appContext_(); var r =
 // v1.9: AI가 바꾼 것 되돌리기 · AI 제안 적용·거절 (row = [AI기록]/[AI제안] 줄 번호, stamp = 그 줄의 시각)
 function webRevertAi(k, row, stamp) { checkKey_(k); appContext_(); var r = revertAiChange(row, stamp); return withView_(r); }
 function webApplyAi(k, row, stamp, picks) { checkKey_(k); appContext_(); var r = applyAiProposal(row, stamp, picks); return withView_(r); }
-// v1.11: 맡긴 일 모아서 독촉 초안 · 하루 닫기 · 지금 뭐 하지?
+// v1.11: 맡긴 일 모아서 독촉 초안 · 하루 닫기
 function webNudgeDraft(k, person, ids) { checkKey_(k); appContext_(); return getNudgeDraft(person, ids); }
 function webMarkNudged(k, ids, days) { checkKey_(k); appContext_(); var r = markNudged(ids, days); return withView_(r); }
 function webCloseDay(k) { checkKey_(k); appContext_(); var r = closeDay(); return withView_(r); }
@@ -3458,7 +3477,8 @@ function doPost(e) {
   var out;
   try {
     var req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    var fn = api.hasOwnProperty(req.fn) ? api[req.fn] : null;
+    if (req && typeof req.a === 'string') return helpDispatch_(req); // 도움말 AI (38_Help.gs, 서버 전용). 개인 키 대신 구글 토큰으로 확인한다.
+    var fn =api.hasOwnProperty(req.fn) ? api[req.fn] : null;
     if (!fn) throw new Error('알 수 없는 요청입니다.');
     var args = Array.isArray(req.args) ? req.args : [];
     out = { ok: true, result: fn.apply(null, [String(req.k || '')].concat(args)) };
@@ -3821,6 +3841,7 @@ function buildTodayView_(tasks, today, ext) {
     if (t.stage) o.stage = t.stage;
     if (t.nextMark) o.nextMark = true;
     if (t.energy) o.energy = t.energy;
+    if (t.aiProcess) o.aiProcess = t.aiProcess;
     if (t.checks) o.checks = t.checks;
     if (t.status === STATUS.DELEGATED && !t.delegatedOn && t.created) o.created = t.created; // 독촉 글의 '맡긴 지 N일' 계산용
     if (pendingIds[t.id]) o.pending = true;
