@@ -25,7 +25,7 @@
   #kitGate.kg-bar .kg-btn { width: auto; min-height: 44px; padding: 0 14px; font-size: 15px; margin-left: auto; }
   #kitGate.kg-bar .kg-msg { width: 100%; min-height: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":""};</script><script src="engine.js?v=e80a19d6fd"></script><script src="auth.js?v=e80a19d6fd"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":""};</script><script src="engine.js?v=8b34986e79"></script><script src="auth.js?v=8b34986e79"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -904,7 +904,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = "";
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.13.1·v2" };
+  var KIT = { name: "GTD 워크", version: "1.14.0·v2" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -1209,7 +1209,6 @@
     var a = '', al = '', dw = dowOf(d.today);
     a += nowCardHtml(d) + aiCardHtml(d) + pendingHtml(d); // 맨 위: 지금 할 일 1개 → (있을 때만) AI가 올린 할 일 → 정리할 것 한 줄(첫 화면 안에 들어오게 알림 칩보다 위)
 
-    if ((d.followUp || []).length) al += '<button class="apill" data-goto="waiting">' + tile('user', 'blue', 15) + '맡긴 일 확인 <b>' + d.followUp.length + '</b></button>';
     if (d.reviewDue) al += '<button class="apill" data-goto="weekly">' + tile('calcheck', 'green', 15) + '주간 검토</button>';
     if (al) a += '<div class="alerts">' + al + '</div>';
     a += checkInHtml(d);
@@ -3944,7 +3943,6 @@
   function inboxItems() {
     var d = data; if (!d || !d.counts) return [];
     var out = [], f = d.followUp || [], seen = (d.alertSeen && d.alertSeen.keys) || [];
-    if (f.length) out.push({ key: 'check:' + f.map(function (t) { return t.id; }).sort().join('+'), kind: 'check', text: '확인할 맡긴 일 ' + f.length + '개', sub: f.slice(0, 2).map(function (t) { return (t.delegatee || '') + ' · ' + t.title; }).join(' / '), go: 'check' });
     if (closeMinute() >= 17 * 60 + 30 && !(d.dayClose && d.dayClose.closedToday)) out.push({ key: 'close:' + d.today, kind: 'close', text: '하루 닫기 시간이에요', sub: '오늘 남은 일을 정리하고 마무리해요', go: 'close' });
     if (d.reviewDue) out.push({ key: 'review:' + (d.lastReview || 'none'), kind: 'review', text: '주간 검토 할 때예요', sub: d.lastReview ? '마지막 검토 ' + rel(d.lastReview) : '아직 한 번도 안 했어요', go: 'review' });
     var ai = d.ai || {};
@@ -4186,6 +4184,8 @@
       '- 메일·메시지는 초안만 써. 보내지 마.'].join('\n');
   }
   var AI_PACKS = [
+    { k: 'routine', t: '★ 정기 작업 (평일 아침) · 추천', m: '추천 · 한 번 붙여 두면 메일·회의 일이 아침에 알림함으로 와요 · 제안만 올리고 내 줄은 안 바꿔요',
+      ask: '이 요청은 정기 작업(예약 작업)이야. 평일 아침마다 최근 메일·캘린더·드라이브를 훑어 내가 해야 할 일 후보를 찾아 [AI제안](종류=할일)에만 추가해 줘.\n- 주체는 "AI:정기"로 적어.\n- [업무]·[프로젝트]·[AI기록]은 읽기만 하고 절대 쓰지 마(내 줄은 한 칸도 바꾸지 마).\n- 이미 [업무]에 진행 중인 줄이나 [AI제안]에 대기 중인 제안과 비슷하면 추가하지 마.\n- 한 번에 최대 10개. 제안 내용은 첫 줄 제목 + 상세 글(## 배경 → ## 출처 → ## 다음 단계). 근거·출처에는 링크 한 줄(메일·문서 본문은 옮기지 마).\n- 시트에 쓸 수 없으면 아무것도 하지 말고 "시트 쓰기가 안 돼요"라고만 알려 줘.' },
     { k: 'triage', t: '정리할 것 정리', m: '분류일이 빈 줄을 AI가 정리안으로 제안해요',
       ask: '[업무]에서 분류일이 비어 있고 끝나지 않은 줄(앱의 정리할 것)을 찾아, 줄마다 "오늘 할 일 / 프로젝트로 / 맡기기(누구·확인일) / 날짜 정하기 / 나중에 / 버리기" 중 하나를 제안해 줘. 변경안 표(줄 · 열 · 전 → 후)로 먼저 보여 주고, 내가 확인한 것만 시트에 써. 분류일은 비워 둬(앱에서 내가 눌러 마무리해).' },
     { k: 'project', t: '프로젝트 만들기', m: '이름만 적으면 첫 할 일 후보를 AI가 제안해요',
@@ -4198,8 +4198,6 @@
       ask: '최근 메일·캘린더·드라이브에서 내가 해야 할 일 후보를 찾아 [AI제안](종류=할일)에 올려 줘. 내용은 제목·링크·한 줄 요약만(본문은 옮기지 마). 이미 [업무]에 있는 것과 비슷하면 빼고, 내 [업무] 줄은 직접 고치지 마.' },
     { k: 'aiwork', t: 'AI 처리 요청 일 처리', m: "할 일 줄의 AI 버튼으로 표시한 일(AI 처리=요청)을 AI가 처리해요 · 정기 작업에 붙여넣어도 돼요",
       ask: "[업무]에서 'AI 처리'가 \"요청\"인 줄을 모두 찾아 규칙 13대로 처리해 줘. 줄마다 시작할 때 'AI 처리'=처리중, 끝나면 완료로 바꾸고 결과는 상세 끝에 '## 처리 결과'로 덧붙여. 승인이 필요하거나 막힌 일은 초안만 남기고 '막힘'으로 바꿔(보내기·삭제·완료는 하지 마). 고치는 칸은 'AI 처리'와 상세뿐이고 [AI기록]에 한 줄씩 남겨 줘." },
-    { k: 'routine', t: '정기 작업 (평일 아침)', m: 'Claude 예약 작업에 붙여넣어요 · 제안만 올리고 내 줄은 안 바꿔요',
-      ask: '이 요청은 정기 작업(예약 작업)이야. 평일 아침마다 최근 메일·캘린더·드라이브를 훑어 내가 해야 할 일 후보를 찾아 [AI제안](종류=할일)에만 추가해 줘.\n- 주체는 "AI:정기"로 적어.\n- [업무]·[프로젝트]·[AI기록]은 읽기만 하고 절대 쓰지 마(내 줄은 한 칸도 바꾸지 마).\n- 이미 [업무]에 진행 중인 줄이나 [AI제안]에 대기 중인 제안과 비슷하면 추가하지 마.\n- 한 번에 최대 10개. 제안 내용은 첫 줄 제목 + 상세 글(## 배경 → ## 출처 → ## 다음 단계). 근거·출처에는 링크 한 줄(메일·문서 본문은 옮기지 마).\n- 시트에 쓸 수 없으면 아무것도 하지 말고 "시트 쓰기가 안 돼요"라고만 알려 줘.' },
     { k: 'materials', t: '관련 자료 후보 찾기', m: '할 일 상세 창의 "관련 자료 후보 요청" 버튼에서 눌러요', hidden: true,
       ask: '아래 할 일과 관련된 자료(최근 메일·회의록·문서)를 찾아 [AI제안](종류=자료후보)에 올려 줘.\n할 일 ID: %id%\n제목: %title%\n- 대상ID=위 할 일 ID · 제안 내용=줄마다 "제목 | https://주소" (최대 8개, http·https만).\n- 근거·출처에 어디서 찾았는지 한 줄. 메일·문서 본문은 옮기지 말고 제목과 링크만.\n- 내 [업무] 줄은 직접 고치지 마(앱에서 내가 골라서 붙일게).' }
   ];
