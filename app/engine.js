@@ -493,7 +493,7 @@ function createKitEngine(opts) {
 
 var KIT = {
   NAME: 'GTD 워크',
-  VERSION: '1.14.0',       // 코드 버전 (화면 표시용)
+  VERSION: '1.15.0',       // 코드 버전 (화면 표시용)
   SCHEMA_VERSION: 9,      // 시트 구조 버전 (구조가 바뀔 때만 올림) — v2: '반복' 열, v3: '프로젝트' 열·'참고' 상태, v4: '오늘 할 날'·'예상(분)'·'우선순위' 열, v5: '맡긴 날' 열, v6: '긴급'·'쓴 시간(분)'·'미룬 횟수' 열, v7: '상세'·'출처'·'분류일'·'프로젝트ID'·'단계'·'★다음'·'에너지'·'확인 횟수' 열 + [프로젝트] 탭 새 열, v8: [AI기록]·[AI제안] 탭 (앱이 만든다), v9: [업무] 맨 끝 'AI 처리' 열(요청/처리중/완료/막힘)
   TASK_SHEET: '업무',
   DASH_SHEET: '오늘',
@@ -3726,7 +3726,7 @@ function webAll(k) {
       return { id: t.id, title: t.title, status: t.status, due: t.due, context: t.context, delegatee: t.delegatee,
         followUp: t.followUp, memo: t.memo, created: t.created, completed: t.completed, repeat: t.repeat, project: t.project,
         focus: t.focus, est: t.est, priority: t.priority, delegatedOn: t.delegatedOn, urgent: !!t.urgent, spent: t.spent || 0, postponed: t.postponed || 0,
-        detail: !!t.detail, source: t.source, triaged: t.triaged, projectId: t.pid || '', stage: t.stage, nextMark: !!t.nextMark, energy: t.energy, checks: t.checks };
+        detail: !!t.detail, source: t.source, triaged: t.triaged, aiProcess: t.aiProcess || '', projectId: t.pid || '', stage: t.stage, nextMark: !!t.nextMark, energy: t.energy, checks: t.checks };
     })
   };
 }

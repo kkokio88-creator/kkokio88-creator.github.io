@@ -127,8 +127,6 @@
   @media (max-width: 1023px) { body .hbtns .pillbtn { min-height: 44px; } body .chip, body .pillbtn, body [data-pc], body .calbar .nav button, body .vtg button, body .seg button { min-height: 44px; } body .sheet .shx { width: 44px; height: 44px; } body .pend [data-pc] { min-width: 44px; } }
   .carrymore[hidden] { display: none; }
   .aibtn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; color: var(--t4); } .aibtn:hover { background: var(--fill); color: var(--g); } .aibtn.on { color: var(--g); }
-  .aibtn .aibcap { display: none; position: absolute; right: 100%; top: 50%; transform: translateY(-50%); margin-right: 6px; padding: 5px 9px; border-radius: 999px; background: var(--g); color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
-  .aibtn:hover .aibcap, .aibtn:focus-visible .aibcap { display: block; }
   .aichip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 12px; font-weight: 800; background: var(--gt); color: var(--g); white-space: nowrap; } .aichip.ai-완료 { background: #E3F7EE; color: #0B6B45; } .aichip.ai-막힘 { background: var(--redt); color: var(--red); } html[data-theme="dark"] .aichip.ai-완료 { background: #12332A; color: #5FD3A0; }
   /* 터치·클릭 영역(U13): 보이는 모양은 그대로, 눌리는 영역만 넓힌다 — 모바일 44px, PC 32px 이상 */
   #cToday, .ishare, .capb, .vtg button, button[data-nudge], .pjmore summary, .pjtg, label.sw { min-height: 44px; }
@@ -355,6 +353,7 @@
   .bdg { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
   .bd { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; padding: 16px 10px 12px; border-radius: 18px; background: var(--card); box-shadow: var(--sh); }
   .bd .be { font-size: 32px; line-height: 1.1; filter: grayscale(1); opacity: .35; } .bd b { font-size: 13.5px; font-weight: 800; color: var(--t3); } .bd small { font-size: 12px; color: var(--t3); font-weight: 600; }
+  .bd { position: relative; } .bd .bmed { position: absolute; top: 8px; right: 10px; font-size: 15px; filter: grayscale(1); opacity: .4; } .bd .bmed.on { filter: none; opacity: 1; }
   .bd.on { background: linear-gradient(160deg, #FFF8E1, #F1EDFF); } .bd.on .be { filter: none; opacity: 1; } .bd.on b { color: var(--t1); } .bd.on small { color: var(--t3); }
   html[data-theme="dark"] .bd.on { background: linear-gradient(160deg, #3A3015, #2A2650); } html[data-theme="dark"] .bd, html[data-theme="dark"] .ibanner { box-shadow: none; }
   .bp { width: 70%; height: 5px; border-radius: 3px; background: var(--fill); overflow: hidden; margin-top: 4px; } .bp i { display: block; height: 100%; background: var(--g); opacity: .55; border-radius: 3px; }
@@ -479,7 +478,7 @@
   .row { --hovbg: var(--card); } .swr.sel .row { --hovbg: var(--gt); }
   .hov { position: absolute; top: 0; right: 0; z-index: 2; display: flex; align-items: center; gap: 2px; padding: 8px 12px 8px 36px; background: linear-gradient(90deg, rgba(255,255,255,0), var(--hovbg) 34px); opacity: 0; pointer-events: none; transition: opacity .12s; }
   .swr:hover .hov, .row:focus-within .hov, .row:focus-visible .hov { opacity: 1; pointer-events: auto; }
-  @media (hover: none) { .tags .tg, .hov .tg, .hov .aibtn { width: 40px; height: 44px; } .hov .aibtn .aibcap { display: none !important; } .hov { position: static; z-index: auto; padding: 0; background: none; opacity: 1; pointer-events: auto; flex: none; } .hov:empty { display: none; } .hov .tg { opacity: .55; } }
+  @media (hover: none) { .tags .tg, .hov .tg, .hov .aibtn { width: 40px; height: 44px; } .hov { position: static; z-index: auto; padding: 0; background: none; opacity: 1; pointer-events: auto; flex: none; } .hov:empty { display: none; } .hov .tg { opacity: .55; } }
   .tg { width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; color: var(--t4); }
   .tg:hover { background: var(--fill); } .tg.st.on { color: var(--amber); } .tg.up.on { color: var(--red); }
   .upI { display: inline-flex; color: var(--red); margin-right: 3px; vertical-align: -2px; }
@@ -534,6 +533,20 @@
   .tabbar .dot { position: absolute; top: 4px; left: 50%; margin-left: 7px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--red); color: #fff; font-size: 11px; font-weight: 700; display: none; align-items: center; justify-content: center; }
 
   /* 토스트 */
+  .sdq { display: flex; gap: 6px; flex: none; margin-left: auto; } .sdq .sdqb { min-height: 32px; padding: 0 12px; font-size: 13px; background: var(--fill); color: var(--t2); box-shadow: none; } .sdq .sdqb.pri { background: var(--gt); color: var(--g); } .sdq .sdqb.dg { color: var(--red); } .sdq .sdqb:disabled { opacity: .5; }
+  @media (max-width: 700px) { .row:has(.sdq) { flex-wrap: wrap; } .row:has(.sdq) .sdq { width: 100%; margin: 6px 0 2px; } .row:has(.sdq) .sdq .sdqb { flex: 1; min-height: 40px; } }
+  .mprog { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; } .mprog .mpbar { flex: none; width: 56px; height: 6px; border-radius: 99px; background: var(--fill); overflow: hidden; } .mprog .mpbar i { display: block; height: 100%; border-radius: 99px; background: var(--g); } .mprog.full .mpbar i { background: #14A39A; } .mprog .mpn { font-size: 13px; font-weight: 600; color: var(--t3); }
+  /* 카드 안 할 일 줄(v1.15): 넓은 화면에서는 제목 오른쪽에 버튼을 두어 한 줄. 아주 넓으면 2열. 좁으면(모바일) 지금처럼 두 줄 */
+  .qcard { container-type: inline-size; }
+  @container (min-width: 560px) {
+    .qcard .qrow { align-items: center; } .qcard .qrow .tx { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; align-items: center; }
+    .qcard .qrow .tx .t { grid-column: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .qcard .qrow .tx .m { grid-column: 1; }
+    .qcard .qrow .tx .qb { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; flex-wrap: nowrap; } .qcard .qrow .qbtn { min-height: 36px; white-space: nowrap; }
+  }
+  @container (min-width: 1000px) { .qcard { display: grid; grid-template-columns: 1fr 1fr; } .qcard > .qrow { box-shadow: inset 0 1px 0 var(--fill), inset -1px 0 0 var(--fill); } }
+  .gtip { position: fixed; left: 0; top: 0; z-index: 90; max-width: 260px; padding: 6px 10px; border-radius: 8px; background: rgba(25,31,40,.96); color: #fff; font-size: 12px; font-weight: 600; line-height: 1.4; pointer-events: none; opacity: 0; transform: translateY(2px); transition: opacity .12s, transform .12s; box-shadow: 0 6px 18px rgba(0,0,0,.2); overflow-wrap: anywhere; }
+  .gtip.on { opacity: 1; transform: none; }
+  .aineed h3 { margin: 4px 0 8px; font-size: 20px; } .aineed p { margin: 0; color: var(--t2); font-size: 15px; line-height: 1.6; }
   .toast { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translate(-50%, 14px) scale(.96); opacity: 0; z-index: 70; background: rgba(25,31,40,.95); color: #fff; padding: 14px 18px; border-radius: 16px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 16px; transition: transform .4s var(--spring), opacity .2s; pointer-events: none; width: max-content; max-width: min(420px, calc(100vw - 32px)); box-shadow: 0 10px 30px rgba(0,0,0,.18); }
   .toast.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
   .toast.on.act { pointer-events: auto; }
@@ -880,7 +893,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.14.0" };
+  var KIT = { name: "GTD 워크", version: "1.15.0" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -1131,11 +1144,19 @@
   function aiChipOf(t) { return t && t.aiProcess ? '<span class="aichip ai-' + esc(t.aiProcess) + '" title="AI 처리: ' + esc(t.aiProcess) + '">AI ' + esc(t.aiProcess) + '</span>' : ''; }
   function aiBtn(t) {
     var cur = t.aiProcess || '', tip = cur === '요청' ? '요청을 빼요' : cur === '처리중' ? 'AI가 처리하는 중이에요' : 'AI가 처리하도록 표시해요';
-    return '<button type="button" class="aibtn' + (cur ? ' on' : '') + '" data-aiproc="' + esc(t.id) + '" aria-label="' + esc(t.title) + ' · ' + tip + '" title="' + tip + ' (시트의 \'AI 처리\' 칸을 요청으로 바꿔요)">' + svg('sparkle', 16) + '<span class="aibcap">' + tip + '</span></button>';
+    return '<button type="button" class="aibtn' + (cur ? ' on' : '') + '" data-aiproc="' + esc(t.id) + '" aria-label="' + esc(t.title) + ' · ' + tip + '" title="' + tip + ' (시트의 \'AI 처리\' 칸을 요청으로 바꿔요)">' + svg('sparkle', 16) + '</button>';
+  }
+  // AI 연결 전 안내: 시트는 건드리지 않고, 연결 창으로 안내한다(규칙 버전이 낮아 다시 붙여넣어야 하는 경우도 같음)
+  function openAiNeed() {
+    openSheet('<div class="aineed"><h3>먼저 AI 연결이 필요해요</h3><p>AI가 구글 시트 데이터를 보고 일을 처리하려면 먼저 AI 연결을 해야 해요. 연결하기 전에는 \'AI 처리\'를 요청해도 아무도 처리하지 않아요.</p>' +
+      '<div class="ctas"><button type="button" class="cta ghost" id="aiNeedX">나중에</button><button type="button" class="cta" id="aiNeedGo">AI 연결하기</button></div></div>');
+    $('aiNeedGo').onclick = function () { closeSheet(); openAi(); };
+    $('aiNeedX').onclick = closeSheet;
   }
   function toggleAi(id) {
     var t = findTask(id); if (!t) return; var cur = t.aiProcess || '';
     if (cur === '처리중') return toast('AI가 처리하는 중이에요');
+    if (cur !== '요청' && !aiReady()) return openAiNeed(); // 연결 전에는 '요청'으로 바꾸지 않는다(AI가 알아서 처리해 줄 거라 기다리게 되므로)
     var next = cur === '요청' ? '' : '요청';
     animNext = false; optimistic(id, { aiProcess: next });
     return call('updateTask', id, { aiProcess: next }).then(function (r) { toast(next ? 'AI가 처리하도록 표시했어요 · 에이전트가 정기적으로 확인해요' : 'AI 처리 요청을 뺐어요'); setView(r.view); }).catch(function (e) { toast(e.message); load(); });
@@ -2542,7 +2563,7 @@
       // 앱스 스크립트 웹 앱(doPost)으로. text/plain이라 브라우저가 사전 요청(CORS preflight)을 하지 않는다. 토큰은 주소가 아니라 본문에만 싣는다
       return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: 'helpAsk', token: tok, question: q, screen: helpScreen(), version: KIT.version, history: prior }) });
     }).then(function (r) { return r.json(); }).then(function (j) {
-      fin(j && j.ok ? { r: 'a', t: String(j.answer || ''), id: j.id } : note((j && j.message) || '지금은 도움말을 쓸 수 없어요. 조금 뒤에 다시 시도해 주세요.'));
+      fin(j && j.ok ? (lsSet('kitHelpN', String((Number(lsGet('kitHelpN')) || 0) + 1)), { r: 'a', t: String(j.answer || ''), id: j.id }) : note((j && j.message) || '지금은 도움말을 쓸 수 없어요. 조금 뒤에 다시 시도해 주세요.'));
     }).catch(function () { fin(note('연결이 안 돼요. 잠시 뒤에 다시 시도해 주세요.')); });
   }
   function helpVote(i, v) {
@@ -2969,8 +2990,44 @@
       { e: '🤝', t: '믿고 맡기기', s: '맡긴 일 5개 돌아옴', v: back, g: 5 },
       { e: '🏁', t: '프로젝트 완주', s: '할 일 3개 이상 프로젝트 끝내기', v: pjDone, g: 1 },
       { e: '🧹', t: '미룬 일 0', s: '미뤄 둔 일 모두 정리', v: openPost ? 0 : (n ? 1 : 0), g: 1, cur: openPost ? '미룬 일 ' + openPost + '개 남음' : '' }
-    ].map(function (b) { b.on = b.v >= b.g; return b; });
+    ].concat(insTierBadges(S, r)).map(function (b) { b.on = b.v >= b.g; return b; });
   }
+  // 단계별 배지(v1.15): 한 가지 습관마다 동·은·금 3단계. 새 열을 만들지 않고 이미 있는 필드·검토 기록·이 기기의 도움말 횟수·하루 닫기 연속으로만 센다
+  var BD_TIER = ['동', '은', '금'], BD_MEDAL = ['🥉', '🥈', '🥇'];
+  function insTierBadges(S, r) {
+    var it = S.items, live = (typeof data === 'object' && data) || {}, N = function (f) { return it.filter(f).length; };
+    var live2 = function (t) { return t.status !== STATUS.DROPPED; };
+    var days = Object.keys(S.byDay), maxDay = days.reduce(function (a, d) { return Math.max(a, S.byDay[d]); }, 0);
+    var projects = {}; it.forEach(function (t) { if (t.project && live2(t)) projects[t.project] = 1; });
+    var spentH = Math.floor(it.reduce(function (a, t) { return a + (t.spent || 0); }, 0) / 60);
+    var inboxOpen = N(function (t) { return t.status === STATUS.INBOX; });
+    var fams = [
+      { f: 'cap', e: '📥', t: '담기', u: '개', g: [10, 50, 200], v: it.length, s: function (g) { return '할 일 ' + g + '개 담기'; } },
+      { f: 'tri', e: '🗂️', t: '분류', u: '개', g: [5, 30, 100], v: N(function (t) { return !!t.triaged; }), s: function (g) { return g + '개 분류하기'; } },
+      { f: 'ai', e: '🤖', t: 'AI 처리', u: '개', g: [1, 10, 50], v: N(function (t) { return t.aiProcess === '완료'; }), s: function (g) { return 'AI가 ' + g + '개 처리해 줌'; } },
+      { f: 'dlg', e: '👥', t: '맡기기', u: '개', g: [1, 10, 30], v: N(function (t) { return !!t.delegatedOn; }), s: function (g) { return g + '개 맡기기'; } },
+      { f: 'pj', e: '🗃️', t: '프로젝트 만들기', u: '개', g: [1, 3, 10], v: Object.keys(projects).length, s: function (g) { return '프로젝트 ' + g + '개 만들기'; } },
+      { f: 'rpt', e: '🔁', t: '반복 루틴', u: '개', g: [1, 3, 10], v: N(function (t) { return !!t.repeat && live2(t); }), s: function (g) { return '반복 루틴 ' + g + '개 등록'; } },
+      { f: 'rev', e: '🔍', t: '주간 검토', u: '번', g: [1, 5, 20], v: (r.reviews || []).length, s: function (g) { return '주간 검토 ' + g + '번 하기'; } },
+      { f: 'cls', e: '🌙', t: '하루 닫기 연속', u: '일', g: [1, 3, 7], v: (live.dayClose && live.dayClose.streak) || 0, s: function (g) { return g + '일 연속 하루 닫기'; } },
+      { f: 'act', e: '📅', t: '꾸준히 끝낸 날', u: '일', g: [7, 30, 100], v: days.length, s: function (g) { return '끝낸 날이 모두 ' + g + '일'; } },
+      { f: 'day', e: '🚀', t: '하루 몰아치기', u: '개', g: [3, 5, 10], v: maxDay, s: function (g) { return '하루에 ' + g + '개 끝내기'; } },
+      { f: 'due', e: '⏰', t: '마감 지키기', u: '개', g: [1, 10, 50], v: S.doneAll.filter(function (t) { return t.due && t.completed <= t.due; }).length, s: function (g) { return '마감 안에 ' + g + '개 끝내기'; } },
+      { f: 'imp', e: '🎯', t: '중요한 일 끝내기', u: '개', g: [5, 25, 100], v: S.doneAll.filter(isImp).length, s: function (g) { return '★ 일 ' + g + '개 끝내기'; } },
+      { f: 'urg', e: '🚨', t: '급한 불 끄기', u: '개', g: [3, 15, 50], v: S.doneAll.filter(function (t) { return t.urgent; }).length, s: function (g) { return '↑ 급한 일 ' + g + '개 끝내기'; } },
+      { f: 'plan', e: '🗓️', t: '시간표 짜기', u: '개', g: [5, 25, 100], v: N(function (t) { return !!t.est; }), s: function (g) { return '예상 시간을 ' + g + '개에 적기'; } },
+      { f: 'foc', e: '☀️', t: '오늘 할 일 정하기', u: '개', g: [5, 30, 100], v: N(function (t) { return !!t.focus; }), s: function (g) { return g + '개를 오늘 할 일로 정하기'; } },
+      { f: 'spt', e: '⏱️', t: '집중한 시간', u: '시간', g: [10, 50, 100], v: spentH, s: function (g) { return '쓴 시간 합계 ' + g + '시간'; } },
+      { f: 'det', e: '📝', t: '상세 적기', u: '개', g: [3, 15, 50], v: N(function (t) { return !!t.detail; }), s: function (g) { return g + '개에 상세 내용 적기'; } },
+      { f: 'sdy', e: '🗄️', t: '나중에 두기', u: '개', g: [1, 5, 20], v: N(function (t) { return t.status === STATUS.SOMEDAY; }), s: function (g) { return '나중에 할 일 ' + g + '개 두기'; } },
+      { f: 'hlp', e: '💬', t: '도움말 쓰기', u: '번', g: [1, 5, 20], v: Number(lsGet('kitHelpN')) || 0, s: function (g) { return '도움말 AI에게 ' + g + '번 묻기'; } }
+    ], out = [];
+    fams.forEach(function (F) { F.g.forEach(function (g, i) { out.push({ e: F.e, t: F.t + ' ' + BD_TIER[i], s: F.s(g), v: F.v, g: g, unit: F.u, fam: F.f, tier: i }); }); });
+    // 수집함 0: 담은 일이 어느 정도 있는데 수집함이 비어 있을 때
+    out.push({ e: '📭', t: '수집함 0', s: '수집함을 모두 비우기', v: inboxOpen ? 0 : (it.length >= 10 ? 1 : 0), g: 1, cur: inboxOpen ? '수집함 ' + inboxOpen + '개 남음' : (it.length >= 10 ? '' : '할 일 10개 이상 담은 뒤'), fam: 'inb', tier: 0 });
+    return out;
+  }
+  var insBdAll = false;
   function drawInsight() {
     var r = insAll, today = r.today, P = insPeriod(insRange, today), cols = qColors(), hc = heatColors();
     var S = insStats(r, P), items = S.items, done = S.done, donePrev = S.donePrev, inP = S.inP;
@@ -3033,7 +3090,8 @@
     if (pl.length) h += '<div class="h2">프로젝트 진척</div><div class="pjrs">' + pl.map(function (g) { var tt = g.d + g.o, pc2 = tt ? Math.round(g.d / tt * 100) : 0, fin = !g.o && g.d; return '<div class="card pjr' + (fin ? ' fin' : '') + '">' + ring(pc2, fin ? '#14A39A' : 'var(--g)') + '<div class="pjrc"><b>' + pc2 + '%</b></div><div class="pjrt" title="' + esc(g.n) + '">' + esc(g.n) + '</div><div class="pjrs2">' + (fin ? '🏅 완료' : g.d + '/' + tt + (g.inP ? ' · 이번에 ' + g.inP + '개' : '')) + '</div></div>'; }).join('') + '</div>';
     // 7. 배지
     var bd = insBadges(S, r), got = bd.filter(function (b) { return b.on; }).length;
-    h += '<div class="h2">배지 <em class="xn">' + got + '/' + bd.length + '</em></div><div class="bdg">' + bd.map(function (b) { return '<div class="bd' + (b.on ? ' on' : '') + '" title="' + esc(b.s) + '"><span class="be">' + b.e + '</span><b>' + esc(b.t) + '</b><small>' + (b.on ? esc(b.s) : esc(b.cur || (Math.min(b.v, b.g) + ' / ' + b.g + (b.unit || '')))) + '</small>' + (b.on ? '' : '<span class="bp"><i style="width:' + Math.round(Math.min(b.v, b.g) / b.g * 100) + '%"></i></span>') + '</div>'; }).join('') + '</div>';
+    var seenFam = {}, shown = bd.filter(function (b) { if (insBdAll || !b.fam || b.on) return true; if (seenFam[b.fam]) return false; seenFam[b.fam] = 1; return true; });
+    h += '<div class="h2">배지 <em class="xn">' + got + '/' + bd.length + '</em><span class="sp"></span><button type="button" class="pillbtn" data-bdall>' + (insBdAll ? '다음 단계만 보기' : '전체 보기') + '</button></div><div class="bdg">' + shown.map(function (b) { return '<div class="bd' + (b.on ? ' on' : '') + '" title="' + esc(b.s) + '"><span class="be">' + b.e + '</span><b>' + esc(b.t) + '</b>' + (b.fam ? '<span class="bmed' + (b.on ? ' on' : '') + '" aria-hidden="true">' + BD_MEDAL[b.tier] + '</span>' : '') + '<small>' + (b.on ? esc(b.s) : esc(b.cur || (Math.min(b.v, b.g) + ' / ' + b.g + (b.unit || '')))) + '</small>' + (b.on ? '' : '<span class="bp"><i style="width:' + Math.round(Math.min(b.v, b.g) / b.g * 100) + '%"></i></span>') + '</div>'; }).join('') + '</div>';
     // 8. 다시 볼 것
     if (postponed.length || waiting.length) {
       h += '<div class="h2">다시 볼 것</div><div class="card">' + postponed.slice(0, 3).map(function (t) { return '<div class="row" tabindex="0" role="button" data-aid2="' + esc(t.id) + '">' + tile('flag', 'red', 16) + '<div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">' + t.postponed + '번 미뤘어요</div></div><button class="chip on" data-instoday="' + esc(t.id) + '">오늘로</button></div>'; }).join('') +
@@ -3086,6 +3144,7 @@
       e.stopPropagation(); var id = b.getAttribute('data-instoday'); b.disabled = true;
       return call('clarifyTask', id, { status: STATUS.NEXT, focus: true }).then(function (r2) { setView(r2.view); toast('오늘 할 일로 올렸어요'); return call('getAll'); }).then(function (r3) { insAll = r3; drawInsight(); }).catch(function (err) { b.disabled = false; toast(err.message); });
     }
+    if ((b = e.target.closest('[data-bdall]'))) { insBdAll = !insBdAll; return drawInsight(); }
     if ((b = e.target.closest('[data-aid2]'))) { allItems = (insAll && insAll.items) || []; return openTask(b.getAttribute('data-aid2')); }
   });
 
@@ -3105,9 +3164,9 @@
     var grp = function (name, tiles) { return '<div class="mgroup"><div class="mgh">' + name + '</div><div class="mgrid">' + tiles.join('') + '</div></div>'; };
     var lnk = function (icon, cls, title, href, id) { var mo = / mOnly/.test(cls); cls = cls.replace(' mOnly', ''); return '<a class="mt' + (mo ? ' mOnly' : '') + '" ' + (id ? 'id="' + id + '" ' : '') + 'href="' + href + '"' + (href === '#' ? '' : ' target="_blank" rel="noopener"') + '>' + tile(icon, cls) + '<span class="mtt">' + title + '</span></a>'; };
     $('moreBody').innerHTML = '<div class="h1" style="margin-bottom:18px">더보기</div>' +
-      // PC가 기준: 사이드바에 있는 검색·AI 연결·카톡방·버그 제보·맡긴 일·프로젝트·프로필(계정)은 PC 더보기에 두지 않는다. 맡긴 일·프로젝트·계정은 모바일(하단 탭에 없음)에만 둔다(v1.11.1)
+      // PC가 기준: 사이드바에 있는 검색·AI 연결·카톡방·버그 제보·맡긴 일·나중에 할 일·프로젝트·프로필(계정)은 PC 더보기에 두지 않는다. 맡긴 일·나중에 할 일·프로젝트·계정은 모바일(하단 탭에 없음)에만 둔다(v1.11.1)
       grp('할 일', [ti('user', 'blue mOnly', '맡긴 일', m('waiting'), (d.delegated || []).length), ti('folder', 'purple mOnly', '프로젝트', m('projects'), (d.projects || []).filter(function (p) { return !p.finished; }).length),
-        ti('archive', 'gray', '나중에 할 일', m('someday'), d.someday || ''), ti('list', 'gray', '모든 할 일', m('all')), ti('calcheck', 'purple', '주간 검토', m('weekly'))]) +
+        ti('archive', 'gray mOnly', '나중에 할 일', m('someday'), d.someday || ''), ti('list', 'gray', '모든 할 일', m('all')), ti('calcheck', 'purple', '주간 검토', m('weekly'))]) +
       grp('설정', [ti('calendar', 'blue', '캘린더', m('cals')), ti('sun', 'amber', '화면', m('display'))].concat(window.KIT_ENGINE ? [] : [ti('mail', 'purple', '알림 메일', m('notify'))])) +
       grp('바로가기', [lnk('file', 'green', '구글 시트 열기', d.sheetUrl || '#', 'moreSheet'), ti('bug', 'red mOnly', '버그 제보', m('report')), lnk('chat', 'blue mOnly', '커뮤니티 카톡방', 'https://open.kakao.com/o/gmiCVeWi', 'moreCommunity')]) +
       '<div class="mOnly" style="margin-top:20px"><button type="button" class="sideprof mprof" data-m="profile" aria-haspopup="dialog" title="내 계정 · 내 정보 수정 · 로그아웃"><span class="av" id="moreAv"></span><span class="pt"><b id="moreNm"></b><small id="moreEm"></small></span></button></div>' +
@@ -3196,6 +3255,11 @@
   function waitAge(t) { if (!t.delegatedOn) return ''; var n = -diff(t.delegatedOn); return n <= 0 ? '오늘 맡김' : n + '일째 기다리는 중'; }
   function waitRow(t) { var w = waitInfo(t), a = waitAge(t); return '<div class="row" tabindex="0" role="button" data-wid="' + esc(t.id) + '"><button class="chk" data-wgot="' + esc(t.id) + '" aria-label="' + esc(t.title) + ' 받았어요" title="받았어요">' + svg('check', 15) + '</button><div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">' + esc(t.delegatee || '') + (a ? '<span class="dot"></span>' + a : '') + (w ? '<span class="dot"></span>' + w : '') + '</div></div>' + CHEV + '</div>'; }
   var pjOpen = false, pjDoneShow = false;
+  // 작은 진행 막대(v1.15): 전체 몇 개 중 몇 개 끝났는지. 0/0이면 빈 막대 + 문구, 전부 끝나면 꽉 찬 막대
+  function miniProg(d, t, label) {
+    d = d || 0; t = t || 0; var pc = t ? Math.min(100, Math.round(d / t * 100)) : 0;
+    return '<span class="mprog' + (t && d >= t ? ' full' : '') + '" role="img" aria-label="' + (t ? t + '개 중 ' + d + '개 끝남' : '할 일 없음') + '"><span class="mpbar"><i style="width:' + pc + '%"></i></span><span class="mpn">' + esc(label || (t ? d + '/' + t + ' 끝남' : '비어 있어요')) + '</span></span>';
+  }
   function pjProg(p) { var n = (p.done || 0) + (p.open || 0); return n ? (p.done || 0) + '/' + n + ' 끝남' : ''; }
   // 프로젝트 한 줄: 이름 · 진행(2/6 끝남) · 지금 할 일 한 줄(동그라미는 그 할 일 하나만 끝낸다. 프로젝트 전체 끝내기가 아님)
   function projRow(p) {
@@ -3214,9 +3278,9 @@
     if (cur) {
       var its = cur.items || [], more = (cur.open || 0) + (cur.someday || 0) - its.length, prog = pjProg(cur);
       $('moreBody').innerHTML = '<button class="eyebrow" data-pjback style="display:inline-flex;align-items:center;gap:2px;padding:10px 12px 8px 0;min-height:44px">' + svg('chevL', 18) + '프로젝트</button>' +
-        '<div class="h1" id="pjDetail" data-name="' + esc(cur.name) + '" style="margin-bottom:6px">' + esc(cur.name) + '</div><div class="sub2" style="margin:0 0 12px">' + (prog ? esc(prog) : '비어 있어요') + (cur.paused ? ' · 잠시 멈춤' : '') + '</div>' +
+        '<div class="h1" id="pjDetail" data-name="' + esc(cur.name) + '" style="margin-bottom:6px">' + esc(cur.name) + '</div><div class="sub2" style="margin:0 0 12px">' + miniProg(cur.done, (cur.done || 0) + (cur.open || 0)) + (cur.paused ? ' · 잠시 멈춤' : '') + '</div>' +
         '<div class="actrow2" style="margin-bottom:14px"><button type="button" class="pillbtn" data-pjid="' + esc(cur.name) + '">프로젝트 설정</button></div>' +
-        (its.length ? '<div class="card">' + its.map(function (t) {
+        (its.length ? '<div class="card qcard">' + its.map(function (t) {
           var now = isNowTask(cur, t), tg = t.status === STATUS.DELEGATED ? (t.delegatee || '맡김') : t.status === STATUS.SOMEDAY ? '나중에' : t.due ? rel(t.due) : '';
           return '<div class="row qrow" tabindex="0" role="button" data-pjtask="' + esc(t.id) + '" style="align-items:flex-start"><div class="tx"><div class="t">' + esc(t.title) + (now ? ' ' + nextChip({ nextMark: true }) : '') + '</div>' + (tg ? '<div class="m">' + esc(tg) + '</div>' : '') + qbtns('p', t, '연기(내일로)') + '</div></div>';
         }).join('') + (more > 0 ? '<div class="xe" style="padding:10px 14px">외 ' + more + '개</div>' : '') + '</div>' : '<div class="card"><div class="empty">' + tile('folder', 'purple', 26) + '<br>할 일이 없어요<br>\'프로젝트 설정\'에서 첫 할 일을 적어 보세요</div></div>');
@@ -3227,7 +3291,7 @@
       (isPC() ? '<button type="button" class="cta ghost" id="pjClaude" style="margin:0 0 16px">' + svg('sparkle', 16) + ' Claude와 만들기</button>' : '') +
       (open.length ? '<div class="pgrid" id="pjGrid">' + open.map(function (p) {
         var nt = p.nextTask, prog = pjProg(p);
-        return '<button type="button" class="pcard" data-pjsel="' + esc(p.name) + '">' + tile('folder', 'purple', 22) + '<span class="pn">' + esc(p.name) + '</span><span class="pm">' + (prog ? esc(prog) : '비어 있어요') + (p.paused ? ' · 잠시 멈춤' : '') + '</span>' +
+        return '<button type="button" class="pcard" data-pjsel="' + esc(p.name) + '">' + tile('folder', 'purple', 22) + '<span class="pn">' + esc(p.name) + '</span><span class="pm">' + miniProg(p.done, (p.done || 0) + (p.open || 0)) + (p.paused ? ' · 잠시 멈춤' : '') + '</span>' +
           '<span class="pm">' + (nt ? '지금 할 일 · ' + esc(nt.title) : '할 일이 없어요') + '</span></button>';
       }).join('') + '</div>' : '<div class="card"><div class="empty">' + tile('folder', 'purple', 26) + '<br>아직 프로젝트가 없어요<br>위 버튼으로 이름만 정하면 시작돼요</div></div>') +
       (fin.length ? '<button type="button" class="txtlink" id="pjDoneTg" aria-expanded="' + pjDoneShow + '" style="display:block;margin:18px auto 0">끝난 프로젝트 ' + fin.length + '개 ' + (pjDoneShow ? '접기' : '보기') + '</button>' +
@@ -3369,19 +3433,21 @@
     order.forEach(function (k) { by[k].sort(function (x, y) { return age(x) < age(y) ? -1 : age(x) > age(y) ? 1 : 0; }); }); // 오래 기다린 순
     order.sort(function (x, y) { return age(by[x][0]) < age(by[y][0]) ? -1 : 1; });
     if (wPerson && !by[wPerson]) wPerson = '';
+    var wDone = function (k) { return lastAll ? (lastAll.items || []).filter(function (t) { return t.delegatee === k && t.delegatedOn && t.status === STATUS.DONE; }).length : 0; };
+    if (!lastAll && !wPerson) call('getAll').then(function (r) { lastAll = r; if (onWaiting() && !wPerson) openWaiting(); }).catch(function () {});
     var late = function (k) { return by[k].filter(function (t) { return t.followUp && t.followUp <= data.today; }).length; };
     if (wPerson) {
       var k = wPerson;
       $('moreBody').innerHTML = '<button class="eyebrow" data-wback style="display:inline-flex;align-items:center;gap:2px;padding:10px 12px 8px 0;min-height:44px">' + svg('chevL', 18) + '맡긴 일</button>' +
         '<div class="h1" id="wDetail" data-who="' + esc(k) + '" style="margin-bottom:12px">' + esc(k) + ' <em>' + by[k].length + '</em><em>건</em></div>' +
         '<div class="actrow2" style="margin-bottom:14px"><button type="button" class="pillbtn" data-nudgecopy="' + esc(k) + '">독촉 글 복사</button><button type="button" class="txtlink" data-nudge="' + esc(k) + '" style="margin:0 0 0 6px;font-size:13px">고르기·고쳐 쓰기</button></div>' +
-        '<div class="card">' + by[k].map(function (t) { var w = waitInfo(t), a = waitAge(t);
+        '<div class="card qcard">' + by[k].map(function (t) { var w = waitInfo(t), a = waitAge(t);
           return '<div class="row qrow" tabindex="0" role="button" data-wid="' + esc(t.id) + '" style="align-items:flex-start"><div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">' + (a ? a : '') + (a && w ? '<span class="dot"></span>' : '') + (w || '') + '</div>' + qbtns('w', t, '연기 +3일') + '</div></div>';
         }).join('') + '</div>';
     } else {
       $('moreBody').innerHTML = backBtn() + '<div class="h1" style="margin-bottom:22px">맡긴 일 <em>' + list.length + '</em><em>개</em></div>' +
         (list.length ? '<div class="pgrid" id="wGrid">' + order.map(function (k) { var n = late(k);
-          return '<button type="button" class="pcard" data-wperson="' + esc(k) + '">' + tile('user', 'blue', 22) + '<span class="pn">' + esc(k) + '</span><span class="pm">맡긴 ' + by[k].length + '건</span><span class="pm' + (n ? ' red' : '') + '">' + (n ? '확인일 지난 ' + n + '건' : '지난 건 없어요') + '</span></button>';
+          return '<button type="button" class="pcard" data-wperson="' + esc(k) + '">' + tile('user', 'blue', 22) + '<span class="pn">' + esc(k) + '</span><span class="pm">맡긴 ' + by[k].length + '건</span>' + (lastAll ? '<span class="pm">' + miniProg(wDone(k), wDone(k) + by[k].length, wDone(k) + '/' + (wDone(k) + by[k].length) + ' 받음') + '</span>' : '') + '<span class="pm' + (n ? ' red' : '') + '">' + (n ? '확인일 지난 ' + n + '건' : '지난 건 없어요') + '</span></button>';
         }).join('') + '</div>' : '<div class="card"><div class="empty">' + tile('user', 'blue', 26) + '<br>맡긴 일이 없어요</div></div>');
     }
     stagger($('moreBody'));
@@ -3402,7 +3468,7 @@
       $('moreBody').innerHTML = backBtn() + '<div class="h1" style="margin-bottom:22px">' + title + ' <em>' + items.length + '</em><em>개</em></div>' +
         (items.length ? '<div class="card">' + items.map(function (t) {
           return '<div class="row" tabindex="0" role="button" data-aid="' + esc(t.id) + '"><div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">' + esc([t.status === STATUS.SOMEDAY ? '나중에' : t.status, t.due ? rel(t.due) : '', t.delegatee, t.project].filter(Boolean).join(' · ')) + '</div></div>' +
-            (kind === 'someday' ? '<button class="pillbtn" style="background:var(--gt);color:var(--g);box-shadow:none" data-promote="' + esc(t.id) + '">오늘 할래요</button>' : CHEV) + '</div>';
+            (kind === 'someday' ? '<span class="sdq">' + [['today', '오늘로'], ['done', '완료'], ['edit', '변경'], ['drop', '버리기']].map(function (q) { return '<button type="button" class="pillbtn sdqb' + (q[0] === 'today' ? ' pri' : '') + (q[0] === 'drop' ? ' dg' : '') + '" data-sq="' + q[0] + '" data-id="' + esc(t.id) + '" aria-label="' + esc(t.title) + ' ' + q[1] + '">' + q[1] + '</button>'; }).join('') + '</span>' : CHEV) + '</div>';
         }).join('') + '</div>' : '<div class="card"><div class="empty">' + tile('sun', 'amber', 26) + '<br>비어 있어요</div></div>');
     };
     var fresh = !lastAll;
@@ -3503,10 +3569,20 @@
       return;
     }
     if ((b = e.target.closest('[data-pjid]'))) return openProjectSheet(b.getAttribute('data-pjid'));
-    if ((b = e.target.closest('[data-aid]')) && !e.target.closest('[data-promote]')) { var at = findTask(b.getAttribute('data-aid')); if (at && at.status === STATUS.INBOX) return go('inbox'); return openTask(b.getAttribute('data-aid')); }
+    if ((b = e.target.closest('[data-aid]')) && !e.target.closest('[data-promote], [data-sq]')) { var at = findTask(b.getAttribute('data-aid')); if (at && at.status === STATUS.INBOX) return go('inbox'); return openTask(b.getAttribute('data-aid')); }
     if ((b = e.target.closest('[data-wid]'))) {
       var t = (data.delegated || []).concat((wk.w && wk.w.delegated) || []).filter(function (x) { return x.id === b.getAttribute('data-wid'); })[0]; if (!t) return;
       return waitSheet(t);
+    }
+    if ((b = e.target.closest('[data-sq]'))) {
+      e.stopPropagation(); var sqk = b.getAttribute('data-sq'), sqid = b.getAttribute('data-id');
+      if (sqk === 'edit') { allItems = (lastAll && lastAll.items) || allItems; return openTask(sqid); }
+      var again2 = function (msg, r) { lastAll = null; toast(msg, r && r.undo); if (r && r.view) setView(r.view); openAll('someday'); };
+      b.closest('.sdq').querySelectorAll('button').forEach(function (x) { x.disabled = true; });
+      var sqp = sqk === 'today' ? call('clarifyTask', sqid, { status: STATUS.NEXT, focus: true }).then(function (r) { again2('오늘 할 일로 옮겼어요', r); })
+        : sqk === 'done' ? call('completeTask', sqid).then(function (r) { again2(r.noop ? '이미 완료한 일이에요' : '완료했어요', r); })
+        : call('clarifyTask', sqid, { status: STATUS.DROPPED }).then(function (r) { again2('버렸어요 · 줄은 시트에 남아 있어요', r); });
+      return sqp.catch(function (err) { toast(err.message); openAll('someday'); });
     }
     if ((b = e.target.closest('[data-promote]'))) {
       b.disabled = true; b.innerHTML = svg('check', 15);
@@ -3574,6 +3650,38 @@
     bt.onclick = function () { t.classList.remove('on'); call('setProjectInfo', nm, { state: '진행' }).then(function (r) { toast('되돌렸어요'); setView(r.view); pjRefreshList(); }).catch(function (err) { toast(err.message); }); };
     t.appendChild(bt); t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('on'); }, 6500);
   }
+  // 공용 툴팁(PC만): 아이콘·버튼의 title 을 디자인된 말풍선으로 바꿔 보여 준다. 마우스·키보드 포커스 모두. 터치(hover 없음)에서는 쓰지 않는다.
+  // title 은 처음 올릴 때 data-tip 으로 옮기고, 이름이 없던 아이콘 버튼엔 aria-label 로 남긴다(스크린리더 유지).
+  (function () {
+    var tipEl = document.createElement('div'); tipEl.className = 'gtip'; tipEl.setAttribute('role', 'tooltip'); tipEl.id = 'gtip'; document.body.appendChild(tipEl);
+    var cur = null, hideT = 0, hoverOk = function () { return window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches; };
+    function target(el) {
+      var b = el && el.closest && el.closest('button, a, [role="button"], [data-tip]');
+      if (!b || b.closest('.blk, .wch, .dchip')) return null;
+      if (b.hasAttribute('title')) {
+        var t = b.getAttribute('title'); b.removeAttribute('title');
+        if (t) { b.setAttribute('data-tip', t); if (!b.getAttribute('aria-label') && !(b.textContent || '').trim()) b.setAttribute('aria-label', t.replace(/\s*\(.*$/, '')); }
+      }
+      var tp = b.getAttribute('data-tip'), lab = (b.textContent || '').trim();
+      if (tp && lab && (tp.indexOf(lab) === 0 || lab.indexOf(tp) === 0) && b.getBoundingClientRect().width > 100) return null; // 글자가 이미 보이는 넓은 버튼(펼친 사이드바 등)은 같은 말을 또 띄우지 않는다
+      return tp ? b : null;
+    }
+    function place(b) {
+      var r = b.getBoundingClientRect(), tw = tipEl.offsetWidth, th = tipEl.offsetHeight, vw = window.innerWidth, vh = window.innerHeight, x, y;
+      if (r.left < 90 && r.width < 60 && r.top > 0) { x = r.right + 8; y = r.top + r.height / 2 - th / 2; } // 왼쪽 사이드바 아이콘은 오른쪽에
+      else { x = r.left + r.width / 2 - tw / 2; y = r.bottom + 8; if (y + th > vh - 6) y = r.top - th - 8; }
+      tipEl.style.left = Math.max(6, Math.min(x, vw - tw - 6)) + 'px'; tipEl.style.top = Math.max(6, Math.min(y, vh - th - 6)) + 'px';
+    }
+    function show(b) { cur = b; clearTimeout(hideT); tipEl.textContent = b.getAttribute('data-tip'); tipEl.style.left = '0px'; tipEl.style.top = '0px'; place(b); tipEl.classList.add('on'); b.setAttribute('aria-describedby', 'gtip'); }
+    function hide() { if (cur) { cur.removeAttribute('aria-describedby'); cur = null; } tipEl.classList.remove('on'); }
+    document.addEventListener('mouseover', function (e) { if (!hoverOk()) return; var b = target(e.target); if (!b) { if (cur && !cur.contains(e.target)) hide(); return; } if (b !== cur) { clearTimeout(hideT); hideT = setTimeout(function () { show(b); }, 350); } }, true);
+    document.addEventListener('mouseout', function (e) { clearTimeout(hideT); if (cur && !cur.contains(e.relatedTarget)) hide(); }, true);
+    document.addEventListener('focusin', function (e) { if (!hoverOk()) return; var b = target(e.target); if (b && b.matches(':focus-visible')) show(b); }, true);
+    document.addEventListener('focusout', hide, true);
+    document.addEventListener('mousedown', hide, true);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); }, true);
+    window.addEventListener('scroll', hide, true);
+  })();
   $('sideReport').addEventListener('click', function (e) { e.preventDefault(); openReport(); });
   $('sideAi').addEventListener('click', function (e) { e.preventDefault(); openAi(); });
   $('mSearch').addEventListener('click', function () { openSearch(); }); $('mAi').addEventListener('click', function () { openAi(); });
