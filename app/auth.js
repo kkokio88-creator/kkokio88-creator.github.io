@@ -27,7 +27,8 @@
     interaction_required: '구글 로그인을 다시 눌러 주세요',
     login_required: '구글 로그인을 다시 눌러 주세요',
     consent_required: '구글 로그인을 다시 눌러 주세요',
-    popup_failed_to_open: '로그인 창이 막혔어요. 팝업을 허용하고 다시 눌러 주세요'
+    popup_failed_to_open: '로그인 창이 막혔어요. 팝업을 허용하고 다시 눌러 주세요',
+    redirect_uri_mismatch: '앱 설정에 돌아갈 주소가 없어요. 운영자에게 알려 주세요'
   };
   var GOOGLE_TAG = { access_denied: 'E-DENIED · access_denied', popup_failed_to_open: 'E-BLOCKED · popup_failed_to_open' };
   // 이메일·토큰처럼 보이는 것은 가리고 길이를 줄인다 (자세히 줄에는 개인정보를 넣지 않는다)
@@ -64,8 +65,47 @@
   }
   // </pure-login-text>
 
-  var GRACE = 5000, LOGIN_WAIT = 45e3, FOCUS_WAIT = 10e3, START_WAIT = 30e3;
-  var SOON = 5 * 60e3, timer = null, tryAt = 0, failAt = 0, hiddenAt = 0, silent = false, silentTimer = null, loginAt = 0, fetching = false, warmWait = false, closedTimer = null, loginTimer = null, focusTimer = null, loginPending = false, closedWait = false, startSeq = 0, popupRef = null, closedStart = 0;
+  // <pure-login-redirect> 같은 창 로그인(리다이렉트) 주소 만들기·돌아온 주소 읽기 (순수 함수: tests/v1173-tests.js 가 이 구간만 잘라서 시험한다)
+  var OAUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth', PROD_ORIGIN = 'https://kkokio88-creator.github.io', PROD_REDIRECT = PROD_ORIGIN + '/app/', STATE_KEY = 'kitOauthState', STATE_TTL = 10 * 60e3;
+  // 우리가 시작하지 않은 로그인(저장된 state 없음)에서는 알려진 구글 오류 코드만 화면에 보인다 (주소창에 아무 글이나 넣어 보이게 하는 것을 막는다)
+  var KNOWN_ERR = ['admin_policy_enforced', 'access_denied', 'disallowed_useragent', 'unauthorized_client', 'invalid_client', 'invalid_request', 'invalid_scope', 'redirect_uri_mismatch', 'interaction_required', 'login_required', 'consent_required'];
+  var OAUTH_KEYS = ['error', 'error_description', 'error_uri', 'state'];
+  // 운영 앱은 콘솔에 등록한 고정 주소, 그 밖(로컬·시험)은 지금 페이지(쿼리·해시 뺀 것)
+  function redirectUri(loc) { loc = loc || {}; return loc.origin === PROD_ORIGIN ? PROD_REDIRECT : String(loc.origin || '') + String(loc.pathname || '/'); }
+  // o: {clientId, scope, redirect, state, prompt, hint}
+  function redirectUrl(o) {
+    var q = ['client_id=' + encodeURIComponent(o.clientId), 'redirect_uri=' + encodeURIComponent(o.redirect), 'response_type=token', 'scope=' + encodeURIComponent(o.scope), 'include_granted_scopes=true', 'state=' + encodeURIComponent(o.state)];
+    if (o.prompt) q.push('prompt=' + encodeURIComponent(o.prompt));
+    if (o.hint) q.push('login_hint=' + encodeURIComponent(o.hint));
+    return OAUTH_URL + '?' + q.join('&');
+  }
+  function parseParams(s) {
+    var o = {}; String(s || '').replace(/^[#?]/, '').split('&').forEach(function (kv) {
+      if (!kv) return; var i = kv.indexOf('='), k = i < 0 ? kv : kv.slice(0, i), v = i < 0 ? '' : kv.slice(i + 1);
+      try { o[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, ' ')); } catch (e) { o[k] = v; }
+    }); return o;
+  }
+  // 주소 쿼리에서 로그인 오류 값만 뺀 새 쿼리('?a=b' 또는 '')
+  function stripQuery(search) {
+    var keep = String(search || '').replace(/^\?/, '').split('&').filter(function (kv) { if (!kv) return false; var k = kv.split('=')[0]; try { k = decodeURIComponent(k); } catch (e) {} return OAUTH_KEYS.indexOf(k) < 0; });
+    return keep.length ? '?' + keep.join('&') : '';
+  }
+  // saved: sessionStorage 의 {n, t} 또는 null. 돌아온 게 아니면 null.
+  // 토큰은 state 가 맞을 때만 돌려준다. 구글 오류는 state 와 관계없이 보여 준다(토큰이 없어서 안전)
+  function readRedirect(hash, search, saved, now) {
+    var h = parseParams(hash), q = parseParams(search), src = null;
+    if (h.access_token || h.error) src = h; else if (q.error && (q.state || saved)) src = q;
+    if (!src) return null;
+    if (src.error && !saved && KNOWN_ERR.indexOf(src.error) < 0) return { kind: 'state' };
+    if (src.error) return { kind: 'error', f: { error: src.error, error_description: src.error_description || '', error_uri: src.error_uri || '' } };
+    var okState = !!(saved && saved.n && src.state && src.state === saved.n && now - saved.t >= 0 && now - saved.t <= STATE_TTL);
+    if (!okState) return { kind: 'state' };
+    return { kind: 'token', r: { access_token: src.access_token, expires_in: src.expires_in, scope: src.scope || '' } };
+  }
+  // </pure-login-redirect>
+
+  var GRACE = 5000, ALT_WAIT = 15e3, LOGIN_WAIT = 45e3, FOCUS_WAIT = 10e3, START_WAIT = 30e3;
+  var SOON = 5 * 60e3, timer = null, tryAt = 0, failAt = 0, hiddenAt = 0, silent = false, silentTimer = null, loginAt = 0, fetching = false, warmWait = false, closedTimer = null, loginTimer = null, focusTimer = null, loginPending = false, closedWait = false, startSeq = 0, popupRef = null, closedStart = 0, altTimer = 0, altLate = false, holdFail = null; // holdFail: 같은 창 로그인에서 돌아온 실패. 저장본으로 앱이 열린 뒤에도 문구를 유지한다
   function expiring() { return !tok || !tok.t || tok.exp < Date.now() + SOON; }
   function visible() { return document.visibilityState !== 'hidden'; }
   // 조용한 갱신: 이메일을 알고 로그인 스크립트가 로드됐고 창이 보일 때만. 숨은 창에서는 구글이 답을 안 주거나 실패해서 보내지 않는다
@@ -113,6 +153,7 @@
     return p;
   }
   function gotToken(r) {
+    holdFail = null;
     var wasSilent = silent; silent = false; loginAt = 0; clearTimeout(silentTimer); clearLogin();
     if (wasSilent && (!r || r.error || !r.access_token)) return silentFail();
     if (r && r.error) return failShow(googleFail(r)); // 구글이 준 오류는 팝업 유예와 상관없이 바로 보여 준다
@@ -140,8 +181,8 @@
         startTimer = setTimeout(function () { if (seq !== startSeq) return; busy(false); started = false; gateMsg('시트를 여는 데 시간이 너무 걸려요. 인터넷을 확인하고 버튼을 다시 눌러 주세요 (E-START-TIMEOUT)', false, detailFor({ code: 'E-START-TIMEOUT' })); }, START_WAIT);
       } else if (valid()) showGate(false);
       // 로그인이 만료됐어도 이 기기 저장본으로 먼저 열고(아래 '계속하기' 막대는 그대로), 저장은 로그인한 뒤 이어서 보낸다
-      window.KIT_ENGINE.start(email).then(function () { clearTimeout(startTimer); if (seq !== startSeq) return; started = true; busy(false); gateMsg(''); if (valid()) showGate(false); })
-        .catch(function (e) { clearTimeout(startTimer); if (seq !== startSeq) return; busy(false); started = false; gateMsg('시작하지 못했어요 (E-START): ' + ((e && e.message) || ''), false, detailFor({ code: 'E-START', desc: e && e.message })); });
+      window.KIT_ENGINE.start(email).then(function () { clearTimeout(startTimer); if (seq !== startSeq) return; started = true; busy(false); if (holdFail) failShow(holdFail); else gateMsg(''); if (valid() && !holdFail) showGate(false); })
+        .catch(function (e) { clearTimeout(startTimer); if (seq !== startSeq) return; holdFail = null; busy(false); started = false; gateMsg('시작하지 못했어요 (E-START): ' + ((e && e.message) || ''), false, detailFor({ code: 'E-START', desc: e && e.message })); });
     };
     if (tok.email) return go(tok.email);
     // 이메일(로그아웃 표시·다음 로그인 힌트용)은 시작과 동시에 받는다 — 시작을 기다리게 하지 않는다
@@ -156,10 +197,13 @@
       .then(function (u) { fetching = false; if (!tok || !u || !u.email) return; var had = tok.email; tok.email = u.email; tok.name = u.name || ''; tok.picture = u.picture || ''; tok.pf = 1; store.set('kitTok', JSON.stringify(tok)); if (!had) { try { window.KIT_ENGINE.setEmail(u.email); } catch (e) {} } try { window.dispatchEvent(new Event('kit:profile')); } catch (e) {} })
       .catch(function () { fetching = false; });
   }
-  function clearLogin() { clearTimeout(closedTimer); clearTimeout(loginTimer); clearTimeout(focusTimer); loginPending = false; closedWait = false; closedStart = 0; }
+  function clearLogin() { clearTimeout(altTimer); altTimer = 0; altLate = false; clearTimeout(closedTimer); clearTimeout(loginTimer); clearTimeout(focusTimer); loginPending = false; closedWait = false; closedStart = 0; }
   function detailFor(f) { return detailText(f, new Date(), navigator.userAgent); }
   // f: {code, text, desc, uri}. 실패 문구 + 그 아래 '자세히' 줄
-  function failShow(f) { clearLogin(); loginAt = 0; gateMsg(f.text, false, detailFor(f)); }
+  // L-WAIT 이 15초를 넘기면 실패로 확정하지 않은 채 '같은 창 로그인' 버튼만 먼저 보여 준다
+  function waitAlt() { if (altLate) return setAlt(true); if (altTimer) return; altTimer = setTimeout(function () { altTimer = 0; altLate = true; if (loginPending && closedWait) setAlt(true); }, ALT_WAIT); }
+  var ALT_CODES = { 'E-POPUP': 1, 'E-GIS': 1, 'E-TIMEOUT': 1, 'unknown': 1, 'popup_failed_to_open': 1 };
+  function failShow(f) { clearLogin(); loginAt = 0; gateMsg(f.text, false, detailFor(f)); setAlt(!!ALT_CODES[f.code]); }
   function loginFail(code, text) { failShow({ code: code, text: text + ' (' + code + ')' }); }
   // 로그인 팝업이 아직 열려 있는지: 구글 팝업을 잡아 둔 경우에만 안다 (못 잡았으면 false → 포커스 기준으로만 판단)
   function popupOpen() { try { return !!(popupRef && popupRef.closed !== true); } catch (e) { return false; } }
@@ -193,7 +237,7 @@
   function login() {
     if (!window.google || !google.accounts || !google.accounts.oauth2) { gateMsg('구글 로그인을 불러오는 중이에요. 잠시 뒤 다시 눌러 주세요 (E-LOAD)'); return; }
     if (!CFG.clientId) { gateMsg('아직 준비 중이에요. 곧 열어요! (E-CONFIG)'); return; }
-    silent = false; clearTimeout(silentTimer); clearLogin(); loginAt = Date.now(); loginPending = true; // 사람이 누른 로그인: 이 동안 조용한 요청은 보내지 않는다
+    holdFail = null; silent = false; clearTimeout(silentTimer); clearLogin(); loginAt = Date.now(); loginPending = true; // 사람이 누른 로그인: 이 동안 조용한 요청은 보내지 않는다
     gateMsg('구글 로그인 창을 열었어요 (L-OPEN)', true);
     loginTimer = setTimeout(function again() { if (!loginPending) return; if (closedWait || popupOpen()) { loginTimer = setTimeout(again, 5e3); return; } loginFail('E-TIMEOUT', '응답이 없어요. 다시 눌러 주세요'); }, LOGIN_WAIT); // popup_closed 뒤에는 유예(tickGrace)가 판단한다
     var untrap = trapPopup();
@@ -201,12 +245,36 @@
     catch (e) { loginFail('E-GIS', '로그인 창을 열지 못했어요. 다시 눌러 주세요'); }
     finally { untrap(); }
   }
+  // 같은 창 로그인: 팝업이 막히거나 응답이 없을 때 사람이 누른다. 팝업·opener 가 필요 없다
+  function redirectLogin() {
+    if (!CFG.clientId) { gateMsg('아직 준비 중이에요. 곧 열어요! (E-CONFIG)'); return; }
+    var n = '', a = new Uint8Array(16);
+    try { crypto.getRandomValues(a); } catch (e) { loginFail('E-GIS', '같은 창 로그인을 시작하지 못했어요. 다시 눌러 주세요'); return; }
+    for (var i = 0; i < a.length; i++) n += (a[i] < 16 ? '0' : '') + a[i].toString(16);
+    try { sessionStorage.setItem(STATE_KEY, JSON.stringify({ n: n, t: Date.now() })); } catch (e) { loginFail('E-GIS', '같은 창 로그인을 시작하지 못했어요. 다시 눌러 주세요'); return; }
+    var url = redirectUrl({ clientId: CFG.clientId, scope: SCOPES, redirect: redirectUri(location), state: n, prompt: tok ? '' : 'consent', hint: tok && tok.email ? tok.email : '' });
+    holdFail = null; clearLogin(); loginPending = false;
+    gateMsg('같은 창에서 구글 로그인으로 이동해요', true);
+    var b = document.getElementById('kgAlt'); if (b) b.disabled = true;
+    location.assign(url);
+  }
+  // 돌아온 주소(#access_token / #error / ?error)를 스크립트가 로드되자마자 읽고 주소창에서 바로 지운다
+  function takeRedirect() {
+    var saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(STATE_KEY) || 'null'); } catch (e) {}
+    var res = readRedirect(location.hash, location.search, saved, Date.now());
+    if (!res) return null;
+    try { sessionStorage.removeItem(STATE_KEY); } catch (e) {}
+    try { history.replaceState(null, '', location.pathname + stripQuery(location.search)); } catch (e) {}
+    return res;
+  }
+  var back = takeRedirect();
   function getClient() {
     if (!client) client = google.accounts.oauth2.initTokenClient({ client_id: CFG.clientId, scope: SCOPES, include_granted_scopes: true, callback: gotToken, error_callback: function (e) {
       if (silent) return silentFail();
       // 동의 화면에서 '계속'을 누르면 팝업이 닫히면서 popup_closed가 토큰보다 먼저 올 수 있다 → 창이 다시 보인 뒤 잠시 토큰을 기다렸다가, 끝내 안 오면 안내한다
       // popup_closed만으로는 실패로 보지 않는다 (구글 오류 화면이 떠 있는 팝업도 이 신호를 줄 수 있다)
-      if (e && e.type === 'popup_closed') { loginPending = true; closedWait = true; closedStart = 0; gateMsg('로그인 응답을 기다리는 중 (L-WAIT)', true); tickGrace(); return; }
+      if (e && e.type === 'popup_closed') { loginPending = true; closedWait = true; closedStart = 0; gateMsg('로그인 응답을 기다리는 중 (L-WAIT)', true); waitAlt(); tickGrace(); return; }
       failShow(googleFail(e));
     } });
     return client;
@@ -229,7 +297,8 @@
     g = document.createElement('div'); g.id = 'kitGate';
     var first = !started && !(tok && tok.email) && !store.get('kitSheetId');
     g.className = first ? 'kg-full' : 'kg-bar';
-    var DETAIL = '<div class="kg-detail" id="kgDetail" hidden><b>자세히</b> <span class="kg-dt" id="kgDT"></span> <button class="kg-copy" id="kgCopy" type="button">복사</button></div>';
+    var DETAIL = '<div class="kg-detail" id="kgDetail" hidden><b>자세히</b> <span class="kg-dt" id="kgDT"></span> <button class="kg-copy" id="kgCopy" type="button">복사</button></div>' +
+      '<p class="kg-alth" id="kgAltHint" hidden>팝업으로 응답이 없으면 같은 창에서 로그인할 수 있어요.</p><button class="kg-alt" id="kgAlt" type="button" hidden>다른 방법으로 로그인(같은 창)</button>';
     var gbtn = '<button class="kg-btn" id="kgBtn" type="button"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.9 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.1-13.4-9.9l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span>' + (first ? '구글로 시작하기' : '구글로 계속하기') + '</span></button>';
     g.innerHTML = first
       ? '<div class="kg-in"><div class="kg-logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
@@ -241,6 +310,7 @@
     document.body.appendChild(g);
     document.getElementById('kgBtn').onclick = login;
     document.getElementById('kgCopy').onclick = copyDetail;
+    document.getElementById('kgAlt').onclick = redirectLogin;
     return g;
   }
   function busy(on) {
@@ -252,7 +322,8 @@
   function showGate(on) { if (on) { gate().hidden = false; } else { var g = document.getElementById('kitGate'); if (g) g.hidden = true; } }
   // 안내·오류는 구글 버튼 바로 아래에 보인다. info=true면 진행 안내(회색), 아니면 오류(빨강)
   // detail: 실패일 때만 주는 '자세히' 한 줄. 진행 안내(L-OPEN·L-WAIT)나 성공으로 바뀌면 지운다
-  function gateMsg(m, info, detail) { var g = gate(); if (m) g.hidden = false; var el = document.getElementById('kgMsg'); if (!el) return; el.textContent = m || ''; el.className = 'kg-msg' + (info ? ' kg-info' : ''); setDetail(m && !info ? detail : ''); }
+  function gateMsg(m, info, detail) { var g = gate(); if (m) g.hidden = false; var el = document.getElementById('kgMsg'); if (!el) return; el.textContent = m || ''; el.className = 'kg-msg' + (info ? ' kg-info' : ''); setDetail(m && !info ? detail : ''); setAlt(false); }
+  function setAlt(on) { var b = document.getElementById('kgAlt'), h = document.getElementById('kgAltHint'); if (!b) return; b.hidden = !on; if (h) h.hidden = !on; if (on) b.disabled = false; }
   function setDetail(t) { var d = document.getElementById('kgDetail'); if (!d) return; var s = document.getElementById('kgDT'); if (s) s.textContent = t || ''; d.hidden = !t; }
   function copyDetail() {
     var s = document.getElementById('kgDT'), b = document.getElementById('kgCopy'); if (!s) return;
@@ -302,6 +373,9 @@
   // GIS 스크립트
   var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.defer = true; s.onload = function () { if (tok && tok.email) { if (expiring()) refresh(); else schedule(); } }; document.head.appendChild(s);
   document.addEventListener('DOMContentLoaded', function () {
+    if (back && back.kind === 'token') { showGate(true); return gotToken(back.r); } // 같은 창 로그인으로 돌아옴: 팝업 성공과 같은 길
+    var bk = back; back = null;
+    if (bk) { showGate(true); holdFail = bk.kind === 'error' ? googleFail(bk.f) : { code: 'E-STATE', text: '로그인 확인값이 맞지 않아요. 다시 눌러 주세요 (E-STATE)', desc: '돌아온 주소의 state 값이 없거나 달라요, 또는 10분이 지났어요' }; failShow(holdFail); }
     if (valid()) return afterLogin();
     showGate(true);
     // 전에 이 기기에서 쓴 적이 있으면 로그인을 기다리지 않고 저장본으로 바로 연다
