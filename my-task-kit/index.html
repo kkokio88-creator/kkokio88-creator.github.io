@@ -901,7 +901,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.17.3" };
+  var KIT = { name: "GTD 워크", version: "1.18.0" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -2574,6 +2574,16 @@
   // ════════ 도움말 AI (v1.12.1): 종 옆 물음표 → 같은 화면에서 대화. 중앙 앱스 스크립트 웹 앱이 Gemini를 부르고 키는 서버(Script Properties)에만 있다 ════════
   // 서버로 보내는 것: 질문 글 · 화면 이름 · 앱 버전 · 직전 대화 몇 줄 · 로그인 토큰(서버가 구글에 확인). 할 일 제목·시트 내용은 보내지 않는다.
   var helpChat = [], helpBusy = false;
+  // 상태별 문구: 준비 중(서버가 아직 안 켜짐) / 로그인 필요 / 잠시 후(일시 장애). 서버 코드 no_key=준비 중, auth=로그인 필요, rate·bad=서버 문장 그대로, 그 밖=잠시 후
+  var HELP_TXT = { soon: '도움말 AI를 준비하고 있어요. 곧 쓸 수 있어요.', login: '로그인한 뒤에 물어볼 수 있어요.', later: '지금은 답을 가져오지 못했어요. 잠시 뒤에 다시 물어봐 주세요.' };
+  function helpReady() { return !!(window.KIT_V2 && window.KIT_V2.helpReady === true); }
+  function helpFailText(j) {
+    var c = j && j.code;
+    if (c === 'no_key') return HELP_TXT.soon;
+    if (c === 'auth') return HELP_TXT.login;
+    if ((c === 'rate' || c === 'bad') && j.message) return String(j.message);
+    return HELP_TXT.later;
+  }
   function helpUrl() { return String((window.KIT_V2 && window.KIT_V2.helpApi) || window.KIT_HELP_URL || '').replace(/\/+$/, ''); }
   function helpKey() { return 'kitHelpChat:' + ((window.KIT_AUTH && window.KIT_AUTH.email && window.KIT_AUTH.email()) || ''); }
   function helpLoad() { try { helpChat = JSON.parse(sessionStorage.getItem(helpKey()) || '[]') || []; } catch (e) { helpChat = []; } }
@@ -2603,19 +2613,21 @@
     helpChat.push({ r: 'u', t: q }, pend); helpBusy = true; helpDraw();
     var fin = function (m) { helpBusy = false; helpChat.splice(helpChat.indexOf(pend), 1, m); helpSave(); helpDraw(); },
         note = function (t) { return { r: 'a', note: true, t: t }; }, url = helpUrl();
-    if (!url) return fin(note('지금은 도움말을 쓸 수 없어요. 조금 뒤에 다시 시도해 주세요.'));
-    if (!(window.KIT_AUTH && window.KIT_AUTH.getToken && window.KIT_AUTH.email && window.KIT_AUTH.email())) return fin(note('로그인한 뒤에 물어볼 수 있어요.'));
+    if (!helpReady() || !url) return fin(note(HELP_TXT.soon));
+    if (!(window.KIT_AUTH && window.KIT_AUTH.getToken && window.KIT_AUTH.email && window.KIT_AUTH.email())) return fin(note(HELP_TXT.login));
     window.KIT_AUTH.getToken().then(function (tok) {
+      if (!tok) return { ok: false, code: 'auth' };
       // 앱스 스크립트 웹 앱(doPost)으로. text/plain이라 브라우저가 사전 요청(CORS preflight)을 하지 않는다. 토큰은 주소가 아니라 본문에만 싣는다
-      return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: 'helpAsk', token: tok, question: q, screen: helpScreen(), version: KIT.version, history: prior }) });
-    }).then(function (r) { return r.json(); }).then(function (j) {
-      fin(j && j.ok ? (lsSet('kitHelpN', String((Number(lsGet('kitHelpN')) || 0) + 1)), { r: 'a', t: String(j.answer || ''), id: j.id }) : note((j && j.message) || '지금은 도움말을 쓸 수 없어요. 조금 뒤에 다시 시도해 주세요.'));
-    }).catch(function () { fin(note('연결이 안 돼요. 잠시 뒤에 다시 시도해 주세요.')); });
+      return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: 'helpAsk', token: tok, question: q, screen: helpScreen(), version: KIT.version, history: prior }) }).then(function (r) { return r.json(); });
+    }).then(function (j) {
+      if (j && j.ok) { lsSet('kitHelpN', String((Number(lsGet('kitHelpN')) || 0) + 1)); return fin({ r: 'a', t: String(j.answer || ''), id: j.id }); }
+      fin(note(helpFailText(j)));
+    }).catch(function () { fin(note(HELP_TXT.later)); });
   }
   function helpVote(i, v) {
     var m = helpChat[i], url = helpUrl(); if (!m || !m.id) return;
     m.vote = m.vote === v ? '' : v; helpSave(); helpDraw();
-    if (!m.vote || !url || !window.KIT_AUTH || !window.KIT_AUTH.getToken) return;
+    if (!m.vote || !url || !helpReady() || !window.KIT_AUTH || !window.KIT_AUTH.getToken) return;
     window.KIT_AUTH.getToken().then(function (tok) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: 'helpFeedback', token: tok, id: m.id, vote: m.vote }) }); }).catch(function () {});
   }
   $('helpBtn').addEventListener('click', function () { helpOpen(!$('helpP').classList.contains('on')); });

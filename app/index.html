@@ -31,7 +31,7 @@
   #kitGate .kg-alt { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; margin: 8px 0 0; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line, #D9DCE3); background: transparent; color: var(--t1, #191F28); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; } #kitGate .kg-alt:disabled { opacity: .55; cursor: default; }
   #kitGate.kg-bar .kg-alth { width: 100%; margin: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":""};</script><script src="engine.js?v=5e6de37d1a"></script><script src="auth.js?v=5e6de37d1a"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":"https://script.google.com/macros/s/AKfycbzgZ-NdHYFosVl7CQdyKFaKwieqHk3us68iVFkbjfAWV3PZEuQZFDwWUfwRIL2fvmpUfw/exec","helpReady":false};</script><script src="engine.js?v=cb53ef0809"></script><script src="auth.js?v=cb53ef0809"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -931,7 +931,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = "";
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.17.3·v2" };
+  var KIT = { name: "GTD 워크", version: "1.18.0·v2" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -2604,6 +2604,16 @@
   // ════════ 도움말 AI (v1.12.1): 종 옆 물음표 → 같은 화면에서 대화. 중앙 앱스 스크립트 웹 앱이 Gemini를 부르고 키는 서버(Script Properties)에만 있다 ════════
   // 서버로 보내는 것: 질문 글 · 화면 이름 · 앱 버전 · 직전 대화 몇 줄 · 로그인 토큰(서버가 구글에 확인). 할 일 제목·시트 내용은 보내지 않는다.
   var helpChat = [], helpBusy = false;
+  // 상태별 문구: 준비 중(서버가 아직 안 켜짐) / 로그인 필요 / 잠시 후(일시 장애). 서버 코드 no_key=준비 중, auth=로그인 필요, rate·bad=서버 문장 그대로, 그 밖=잠시 후
+  var HELP_TXT = { soon: '도움말 AI를 준비하고 있어요. 곧 쓸 수 있어요.', login: '로그인한 뒤에 물어볼 수 있어요.', later: '지금은 답을 가져오지 못했어요. 잠시 뒤에 다시 물어봐 주세요.' };
+  function helpReady() { return !!(window.KIT_V2 && window.KIT_V2.helpReady === true); }
+  function helpFailText(j) {
+    var c = j && j.code;
+    if (c === 'no_key') return HELP_TXT.soon;
+    if (c === 'auth') return HELP_TXT.login;
+    if ((c === 'rate' || c === 'bad') && j.message) return String(j.message);
+    return HELP_TXT.later;
+  }
   function helpUrl() { return String((window.KIT_V2 && window.KIT_V2.helpApi) || window.KIT_HELP_URL || '').replace(/\/+$/, ''); }
   function helpKey() { return 'kitHelpChat:' + ((window.KIT_AUTH && window.KIT_AUTH.email && window.KIT_AUTH.email()) || ''); }
   function helpLoad() { try { helpChat = JSON.parse(sessionStorage.getItem(helpKey()) || '[]') || []; } catch (e) { helpChat = []; } }
@@ -2633,19 +2643,21 @@
     helpChat.push({ r: 'u', t: q }, pend); helpBusy = true; helpDraw();
     var fin = function (m) { helpBusy = false; helpChat.splice(helpChat.indexOf(pend), 1, m); helpSave(); helpDraw(); },
         note = function (t) { return { r: 'a', note: true, t: t }; }, url = helpUrl();
-    if (!url) return fin(note('지금은 도움말을 쓸 수 없어요. 조금 뒤에 다시 시도해 주세요.'));
-    if (!(window.KIT_AUTH && window.KIT_AUTH.getToken && window.KIT_AUTH.email && window.KIT_AUTH.email())) return fin(note('로그인한 뒤에 물어볼 수 있어요.'));
+    if (!helpReady() || !url) return fin(note(HELP_TXT.soon));
+    if (!(window.KIT_AUTH && window.KIT_AUTH.getToken && window.KIT_AUTH.email && window.KIT_AUTH.email())) return fin(note(HELP_TXT.login));
     window.KIT_AUTH.getToken().then(function (tok) {
+      if (!tok) return { ok: false, code: 'auth' };
       // 앱스 스크립트 웹 앱(doPost)으로. text/plain이라 브라우저가 사전 요청(CORS preflight)을 하지 않는다. 토큰은 주소가 아니라 본문에만 싣는다
-      return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: 'helpAsk', token: tok, question: q, screen: helpScreen(), version: KIT.version, history: prior }) });
-    }).then(function (r) { return r.json(); }).then(function (j) {
-      fin(j && j.ok ? (lsSet('kitHelpN', String((Number(lsGet('kitHelpN')) || 0) + 1)), { r: 'a', t: String(j.answer || ''), id: j.id }) : note((j && j.message) || '지금은 도움말을 쓸 수 없어요. 조금 뒤에 다시 시도해 주세요.'));
-    }).catch(function () { fin(note('연결이 안 돼요. 잠시 뒤에 다시 시도해 주세요.')); });
+      return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: 'helpAsk', token: tok, question: q, screen: helpScreen(), version: KIT.version, history: prior }) }).then(function (r) { return r.json(); });
+    }).then(function (j) {
+      if (j && j.ok) { lsSet('kitHelpN', String((Number(lsGet('kitHelpN')) || 0) + 1)); return fin({ r: 'a', t: String(j.answer || ''), id: j.id }); }
+      fin(note(helpFailText(j)));
+    }).catch(function () { fin(note(HELP_TXT.later)); });
   }
   function helpVote(i, v) {
     var m = helpChat[i], url = helpUrl(); if (!m || !m.id) return;
     m.vote = m.vote === v ? '' : v; helpSave(); helpDraw();
-    if (!m.vote || !url || !window.KIT_AUTH || !window.KIT_AUTH.getToken) return;
+    if (!m.vote || !url || !helpReady() || !window.KIT_AUTH || !window.KIT_AUTH.getToken) return;
     window.KIT_AUTH.getToken().then(function (tok) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: 'helpFeedback', token: tok, id: m.id, vote: m.vote }) }); }).catch(function () {});
   }
   $('helpBtn').addEventListener('click', function () { helpOpen(!$('helpP').classList.contains('on')); });
