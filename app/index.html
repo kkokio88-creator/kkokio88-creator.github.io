@@ -31,7 +31,7 @@
   #kitGate .kg-alt { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; margin: 8px 0 0; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line, #D9DCE3); background: transparent; color: var(--t1, #191F28); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; } #kitGate .kg-alt:disabled { opacity: .55; cursor: default; }
   #kitGate.kg-bar .kg-alth { width: 100%; margin: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":"https://script.google.com/macros/s/AKfycbzgZ-NdHYFosVl7CQdyKFaKwieqHk3us68iVFkbjfAWV3PZEuQZFDwWUfwRIL2fvmpUfw/exec","helpReady":true};</script><script src="engine.js?v=6fcf86ef9a"></script><script src="auth.js?v=6fcf86ef9a"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":"https://script.google.com/macros/s/AKfycbzgZ-NdHYFosVl7CQdyKFaKwieqHk3us68iVFkbjfAWV3PZEuQZFDwWUfwRIL2fvmpUfw/exec","helpReady":true};</script><script src="engine.js?v=5ef96da003"></script><script src="auth.js?v=5ef96da003"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -931,7 +931,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = "";
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.18.4·v2" };
+  var KIT = { name: "GTD 워크", version: "1.18.5·v2" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -1173,6 +1173,16 @@
   // ★ = 중요(우선순위 높음), ↑ = 급함. 둘을 합쳐 4분면: ① ★↑ ② ★ ③ ↑ ④ 나머지
   function isImp(t) { return t && t.priority === '높음'; }
   function quad(t) { return isImp(t) ? (t.urgent ? 1 : 2) : (t.urgent ? 3 : 4); }
+  // 끝내지 못한 ★의 쓴 시간. 완료·버림은 완료 합계에 이미 있거나 빼므로 넣지 않는다. 오늘 할 날이 기간 안일 때만.
+  function addOpenImpSpent(qt, qn, items, inP, P) {
+    (items || []).forEach(function (t) {
+      if (!t || t.status === STATUS.DONE || t.status === STATUS.DROPPED) return;
+      if (!isImp(t) || !(t.spent > 0) || !inP(t.focus, P)) return;
+      var q = quad(t) - 1;
+      qt[q] += t.spent;
+      if (qn) qn[q]++;
+    });
+  }
   function byQuad(list) { return list.map(function (t, i) { return [t, i]; }).sort(function (a, b) { return quad(a[0]) - quad(b[0]) || a[1] - b[1]; }).map(function (x) { return x[0]; }); }
   function marks(t) { return (isImp(t) ? '<span class="starI">' + svg('star', 14, '', true) + '</span>' : '') + (t.urgent ? '<span class="upI">' + svg('up', 14) + '</span>' : ''); }
   // 켜진 ★·↑만 줄 안에 둔다(켜진 뱃지는 늘 보임). 꺼진 것은 hovBtns가 오버 때 겹쳐 띄운다
@@ -1285,6 +1295,7 @@
     var gw1 = $('gridWrap');
     if (gw1 && keepTop !== null) { gw1.scrollTop = keepTop; gw1.dataset.scrolled = '1'; } else scrollGridToNow();
     if (animNext) { stagger($('todayA')); stagger($('todayB')); animNext = false; }
+    syncOpenImpSpent();
   }
   function setBadges() {
     var d = data, n = todayList(d).length, ibn = d.counts.inbox;
@@ -1332,6 +1343,30 @@
   var PS = 7 * 60, PE = 22 * 60, PX = 0.9; // 07~22시, 1분 = 0.9px
   var hm2 = function (m) { return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2); };
   var toMin = function (t) { var p = String(t).split(':'); return +p[0] * 60 + +p[1]; };
+  // 시작 시각이 아직이면 0. 진행 중이면 시작~지금, 블록이 지났으면 시작~끝.
+  function elapsedBlockMin(start, end, nowMin) {
+    var ps = String(start).split(':'), pe = String(end).split(':');
+    var s = +ps[0] * 60 + +ps[1], e = +pe[0] * 60 + +pe[1];
+    if (!(nowMin > s) || !(e > s)) return 0;
+    return Math.max(0, Math.min(nowMin, e) - s);
+  }
+  function syncOpenImpSpent() {
+    if (!data || !data.today) return Promise.resolve();
+    var nm = new Date().getHours() * 60 + new Date().getMinutes();
+    var jobs = [];
+    ((data.events && data.events.items) || []).forEach(function (ev) {
+      if (!ev.kit || !ev.start || !ev.end) return;
+      if (ev.date && ev.date !== data.today) return;
+      var t = findTask(ev.kit);
+      if (!t || !isImp(t) || t.status === STATUS.DONE || t.status === STATUS.DROPPED) return;
+      if ((data.doneToday || []).some(function (x) { return x.id === t.id; })) return;
+      var mins = elapsedBlockMin(ev.start, ev.end, nm);
+      if (!(mins > (t.spent || 0))) return;
+      t.spent = mins;
+      jobs.push(call('updateTask', t.id, { spent: mins }).catch(function () {}));
+    });
+    return Promise.all(jobs);
+  }
   // PC 왼쪽: 체크박스 대신 '시간표에 끌어다 놓는' 목록. 완료는 시간표 오른쪽 칸에서 한다.
   function planListHtml(d, shown) {
     var placed = {}; ((d.events && d.events.items) || []).forEach(function (e) { if (e.kit) placed[e.kit] = 1; });
@@ -1710,7 +1745,7 @@
     var rightH = 64 + (pjRows.length ? pjRows.reduce(function (a2, r2) { return a2 + r2.h; }, 0) : 40) + 10;
     // 하단: 최근 2주 날짜별 중요한 일(★)에 쓴 시간 · 막대 안에 그 일의 키워드
     var days2 = []; for (var di = 13; di >= 0; di--) days2.push(addDays(d.today, -di));
-    var imp2 = days2.map(function (dd) { var ts = all.filter(function (t) { return t.status === STATUS.DONE && t.completed === dd && isImp(t); }); return { d: dd, m: ts.reduce(function (a, t) { return a + (t.spent || 0); }, 0), kw: ts.filter(function (t) { return t.spent; }).sort(function (a, b) { return b.spent - a.spent; }).map(function (t) { return capKw(t.title); }) }; })
+    var imp2 = days2.map(function (dd) { var ts = all.filter(function (t) { if (!isImp(t) || t.status === STATUS.DROPPED) return false; if (t.status === STATUS.DONE) return t.completed === dd; return t.focus === dd && t.spent; }); return { d: dd, m: ts.reduce(function (a, t) { return a + (t.spent || 0); }, 0), kw: ts.filter(function (t) { return t.spent; }).sort(function (a, b) { return b.spent - a.spent; }).map(function (t) { return capKw(t.title); }) }; })
       .filter(function (r) { var w = dowOf(r.d); return r.m || (w !== 0 && w !== 6); });
     var BR = 24, botTop = top + Math.max(leftH, rightH) + GAP, botH = 70 + imp2.length * BR + 20;
     var H = botTop + botH + 52, sc = 2;
@@ -2958,7 +2993,7 @@
   });
 
   // ════════ 인사이트: 지난 기간을 돌아보기 ════════
-  // 핵심 숫자 = 중요한 일(★)에 쓴 시간. 쓴 시간은 시간표에서 끝낸 블록의 길이(시트 '쓴 시간(분)').
+  // 핵심 숫자 = 중요한 일(★)에 쓴 시간. 끝내지 못한 ★도 '쓴 시간(분)'이 있고 오늘 할 날이 이 기간이면 포함한다.
   var insRange = 'week', insAll = null;
   var QC = { light: ['#E5484D', '#5B5CF6', '#D08400', '#14A39A'], dark: ['#F05A5F', '#7B7CFF', '#C27A00', '#1FA89F'] };
   var QN = ['중요·급함', '중요', '급함', '그 밖'];
@@ -2976,7 +3011,7 @@
     var el = $('insBody');
     if (!insAll) el.innerHTML = '<div class="h1" style="margin-bottom:8px">인사이트</div><div class="card"><div class="empty">불러오는 중…</div></div>';
     else drawInsight();
-    call('getAll').then(function (r) { insAll = r; drawInsight(); }).catch(function (e) { el.innerHTML = '<div class="card"><div class="empty">' + esc(e.message) + '</div></div>'; });
+    Promise.resolve(syncOpenImpSpent()).then(function () { return call('getAll'); }).then(function (r) { insAll = r; drawInsight(); }).catch(function (e) { el.innerHTML = '<div class="card"><div class="empty">' + esc(e.message) + '</div></div>'; });
   }
   // ── 인사이트 도우미 ──
   var INS_HEAT = { light: ['var(--fill)', '#DCDCFF', '#B6B7FF', '#8B8CFB', '#5B5CF6', '#3D3ED1'], dark: ['#23272C', '#2C2D58', '#3B3C86', '#5253BE', '#7576F5', '#A3A4FF'] };
@@ -3021,6 +3056,7 @@
   }
   function insBadges(S, r) {
     var n = S.doneAll.length, impMin = S.doneAll.filter(isImp).reduce(function (a, t) { return a + (t.spent || 0); }, 0);
+    impMin += S.items.filter(function (t) { return isImp(t) && t.status !== STATUS.DONE && t.status !== STATUS.DROPPED && t.spent && t.focus; }).reduce(function (a, t) { return a + t.spent; }, 0);
     var back = S.items.filter(function (t) { return t.delegatedOn && t.status === STATUS.DONE; }).length;
     var openPost = S.items.filter(function (t) { return (t.postponed || 0) > 0 && [STATUS.DONE, STATUS.DROPPED].indexOf(t.status) < 0; }).length;
     var pj = {}; S.items.forEach(function (t) { if (!t.project || t.status === STATUS.DROPPED) return; var g = pj[t.project] = pj[t.project] || { d: 0, o: 0 }; if (t.status === STATUS.DONE) g.d++; else if (t.status !== STATUS.REFERENCE) g.o++; });
@@ -3087,6 +3123,7 @@
     var S = insStats(r, P), items = S.items, done = S.done, donePrev = S.donePrev, inP = S.inP;
     var qt = [0, 0, 0, 0], qn = [0, 0, 0, 0];
     done.forEach(function (t) { var q = quad(t) - 1; qt[q] += t.spent || 0; qn[q]++; });
+    addOpenImpSpent(qt, qn, items, inP, P);
     var tot = qt.reduce(function (a, b) { return a + b; }, 0), imp = qt[0] + qt[1], pct = tot ? Math.round(imp / tot * 100) : 0;
     var deleg = items.filter(function (t) { return inP(t.delegatedOn, P); }), back = deleg.filter(function (t) { return t.status === STATUS.DONE; });
     var waiting = items.filter(function (t) { return t.status === STATUS.DELEGATED; }).sort(function (a, b) { return (a.delegatedOn || '9') < (b.delegatedOn || '9') ? -1 : 1; });
@@ -3104,11 +3141,12 @@
       '<div class="ibr"><div class="ifire' + (S.streak ? ' on' : '') + '"><span class="fe">🔥</span><b data-cu="' + S.streak + '">' + S.streak + '</b><small>일 연속</small></div><div class="ibest">최고 ' + S.best + '일</div></div>' +
       '<button class="ishare" data-insshare>' + svg('camera', 15) + '회고 이미지</button></div>';
     // 2. 핵심 타일 4개 (작은 추세선: 최근 8주)
-    var wImp = S.per(function (t) { return isImp(t) ? (t.spent || 0) : 0; }), wBack = S.per(function (t) { return t.delegatedOn ? 1 : 0; });
+    var wImpDone = S.per(function (t) { return isImp(t) ? (t.spent || 0) : 0; });
+    var wImp = S.weeks.map(function (wk, i) { return wImpDone[i] + items.filter(function (t) { return isImp(t) && t.status !== STATUS.DONE && t.status !== STATUS.DROPPED && t.spent && t.focus >= wk.from && t.focus <= wk.to; }).reduce(function (a, t) { return a + t.spent; }, 0); }), wBack = S.per(function (t) { return t.delegatedOn ? 1 : 0; });
     var kt = function (icon, cls, label, val, fmt, sub, sp, col, cta) { return '<div class="card ikt"><div class="ikh">' + tile(icon, cls, 16) + '<span>' + label + '</span></div><div class="ikn" data-cu="' + val + '" data-fmt="' + fmt + '">' + (fmt === 'h' ? hrs(val) : val) + '</div><div class="iks">' + sub + '</div>' + (cta || '') + (sp ? spark(sp, col) : '') + '</div>'; };
     h += '<div class="ikts">' +
       kt('check', 'green', '끝낸 일', done.length, 'n', donePrev.length ? '이전 ' + donePrev.length + '개' : '이 기간', wDone, 'var(--g)') +
-      kt('star', 'amber', '중요한 일에 쓴 시간', imp, 'h', tot ? '전체의 ' + pct + '%' : '시간표로 끝내면 기록돼요', wImp, '#D08400', impCta(imp)) +
+      kt('star', 'amber', '중요한 일에 쓴 시간', imp, 'h', tot ? '전체의 ' + pct + '%' : '시간표나 집중을 시작하면 쌓여요', wImp, '#D08400', impCta(imp)) +
       kt('user', 'blue', '맡긴 일 돌아옴', back.length, 'n', (deleg.length ? P.label + ' 맡긴 ' + deleg.length + '개 중' : P.label + ' 맡긴 일 없음') + '<br>지금 기다리는 일 ' + waiting.length + '개(전체)', wBack, 'var(--blue)') +
       kt('flag', postponed.length ? 'red' : 'green', '미룬 일', postponed.length, 'n', postponed.length ? '모두 ' + postponed.reduce(function (a, t) { return a + t.postponed; }, 0) + '번 미뤘어요' : '깔끔해요 👏', null) + '</div>';
     // 3. 활동 잔디 (16주)
@@ -3880,8 +3918,16 @@
   function tick() { $('fmClock').textContent = ('0' + Math.floor(fm.left / 60)).slice(-2) + ':' + ('0' + fm.left % 60).slice(-2); document.title = $('fmClock').textContent + ' · ' + KIT.name; }
   function closeFocus(done) {
     clearInterval(fm.timer); $('fm').classList.remove('on'); document.title = KIT.name;
-    var t = fm.t; fm.t = null;
-    if (done && t) { confetti(90); call('completeTask', t.id).then(function (r) { toast('집중 완료!', r.undo); setView(r.view); }).catch(function (e) { toast(e.message); }); }
+    var t = fm.t, left = fm.left; fm.t = null;
+    if (done && t) { confetti(90); call('completeTask', t.id).then(function (r) { toast('집중 완료!', r.undo); setView(r.view); }).catch(function (e) { toast(e.message); }); return; }
+    if (!t || !isImp(t) || t.status === STATUS.DONE || t.status === STATUS.DROPPED) return;
+    var hasBlock = !!(((data && data.events && data.events.items) || []).filter(function (e) { return e.kit === t.id && e.start && e.end; })[0]);
+    if (hasBlock) return;
+    var elapsed = Math.round(((t.est || 25) * 60 - left) / 60);
+    if (!(elapsed > 0)) return;
+    var spent = (t.spent || 0) + elapsed;
+    t.spent = spent;
+    call('updateTask', t.id, { spent: spent }).catch(function () {});
   }
   $('fmPause').onclick = function () { fm.paused = !fm.paused; this.textContent = fm.paused ? '계속' : '멈춤'; };
   $('fmDone').onclick = function () { closeFocus(true); };
