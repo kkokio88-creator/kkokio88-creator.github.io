@@ -901,7 +901,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = window.KIT_KEY;
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.18.3" };
+  var KIT = { name: "GTD 워크", version: "1.18.4" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -2288,7 +2288,7 @@
         return setTimeout(function () { $('tMemo') && $('tMemo').focus(); }, 300);
       }
       if (a === 'someday') { closeSheet(); dropLocal(t.id); toast('나중에 할 일로'); return call('clarifyTask', t.id, { status: STATUS.SOMEDAY, focus: '' }).then(ok('나중에 할 일로')).catch(failReload); }
-      if (a === 'drop') { closeSheet(); dropLocal(t.id); toast('삭제했어요'); return call('clarifyTask', t.id, { status: STATUS.DROPPED }).then(ok('삭제했어요')).catch(failReload); }
+      if (a === 'drop') { closeSheet(); var days = {}; if (td) days[td] = 1; ((data && data.events && data.events.items) || []).forEach(function (ev) { if (ev.kit === t.id && ev.date) days[ev.date] = 1; }); if (data && data.events) data.events.items = data.events.items.filter(function (ev) { return ev.kit !== t.id; }); dropLocal(t.id); toast('삭제했어요'); return Object.keys(days).reduce(function (p, day) { return p.then(function () { return call('unplaceTask', t.id, day).catch(function () {}); }); }, Promise.resolve()).then(function () { return call('clarifyTask', t.id, { status: STATUS.DROPPED }); }).then(ok('삭제했어요')).catch(failReload); }
       if (a === 'more') return openMoreSettings(t);
       if (a === 'est') return openSheet('<div class="st">얼마나 걸려요?</div><div class="chips">' + [5, 15, 30, 60, 120].map(function (m) { return '<button class="chip" data-est="' + m + '">' + minText(m) + '</button>'; }).join('') + '</div>');
       if (a === 'repeat') return openRepeat(t);
