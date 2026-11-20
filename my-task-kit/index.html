@@ -3119,6 +3119,10 @@
       kt('star', 'amber', '중요한 일에 쓴 시간', imp, 'h', tot ? '전체의 ' + pct + '%' : '시간표나 집중을 시작하면 쌓여요', wImp, '#D08400', impCta(imp)) +
       kt('user', 'blue', '맡긴 일 돌아옴', back.length, 'n', (deleg.length ? P.label + ' 맡긴 ' + deleg.length + '개 중' : P.label + ' 맡긴 일 없음') + '<br>지금 기다리는 일 ' + waiting.length + '개(전체)', wBack, 'var(--blue)') +
       kt('flag', postponed.length ? 'red' : 'green', '미룬 일', postponed.length, 'n', postponed.length ? '모두 ' + postponed.reduce(function (a, t) { return a + t.postponed; }, 0) + '번 미뤘어요' : '깔끔해요 👏', null) + '</div>';
+    h += '<details class="card wkdet" id="insDone"><summary>완료한 일 <span class="m">' + done.length + '개</span></summary>' +
+      (done.length ? done.slice().sort(function (a, b) { return b.completed.localeCompare(a.completed); }).slice(0, 10).map(function (t) {
+        return '<div class="row" style="cursor:default"><div class="tx"><div class="t">' + esc(t.title) + '</div><div class="m">완료일 <time datetime="' + esc(t.completed) + '">' + esc(t.completed) + '</time></div></div></div>';
+      }).join('') + (done.length > 10 ? '<div class="empty">외 ' + (done.length - 10) + '개</div>' : '') : '<div class="empty">이 기간에 완료한 일이 없어요</div>') + '</details>';
     // 3. 활동 잔디 (16주)
     var start = addDays(weekStartOf(today), -7 * 15), cells = '', mons = '', total16 = 0, bestDay = null, lastMon = '';
     for (var wi = 0; wi < 16; wi++) {
