@@ -31,7 +31,7 @@
   #kitGate .kg-alt { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; margin: 8px 0 0; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line, #D9DCE3); background: transparent; color: var(--t1, #191F28); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; } #kitGate .kg-alt:disabled { opacity: .55; cursor: default; }
   #kitGate.kg-bar .kg-alth { width: 100%; margin: 0; }
   html[data-theme="dark"] #kitGate.kg-full { background: radial-gradient(120% 80% at 50% 0%, #22224A 0%, #101113 60%); }
-</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":"https://script.google.com/macros/s/AKfycbzgZ-NdHYFosVl7CQdyKFaKwieqHk3us68iVFkbjfAWV3PZEuQZFDwWUfwRIL2fvmpUfw/exec","helpReady":true};</script><script src="engine.js?v=303ef58817"></script><script src="auth.js?v=303ef58817"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
+</style><script>window.KIT_V2 = {"clientId":"323671519888-3hi8lqr9sijogse3ar7ndsai2jmj7njh.apps.googleusercontent.com","apiKey":"AIzaSyAcXePo-tzvUG3iCA4ypDgpqTKLjS99tpE","helpApi":"https://script.google.com/macros/s/AKfycbzgZ-NdHYFosVl7CQdyKFaKwieqHk3us68iVFkbjfAWV3PZEuQZFDwWUfwRIL2fvmpUfw/exec","helpReady":true};</script><script src="engine.js?v=7c6772967a"></script><script src="auth.js?v=7c6772967a"></script><script>if ("serviceWorker" in navigator) addEventListener("load", function () {var had = !!navigator.serviceWorker.controller, done = false;navigator.serviceWorker.register("sw.js").then(function (reg) {  var chk = function () { try { reg.update(); } catch (e) {} };  setInterval(chk, 30 * 60e3); document.addEventListener("visibilitychange", function () { if (!document.hidden) chk(); });}).catch(function () {});navigator.serviceWorker.addEventListener("controllerchange", function () {  if (!had || done) return; done = true;  var busy = function () { var a = document.activeElement; return (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) || (document.getElementById("sheet") && document.getElementById("sheet").classList.contains("on")) || document.body.classList.contains("dragging-task"); };  var go = function () { if (busy()) return setTimeout(go, 3000); location.reload(); };  if (document.hidden) go(); else { try { var t = document.getElementById("toast"); if (t) { t.innerHTML = "<span>새 버전으로 바꾸는 중이에요</span>"; t.classList.add("on"); } } catch (e) {} setTimeout(go, 1200); }});});</script>
 <meta charset="utf-8">
 <script>
   // 화면 모드: 자동(기기 설정을 따름) · 라이트 · 다크. 이 기기에 기억하고, 첫 그림 전에 정해 깜빡임이 없게 한다
@@ -946,7 +946,7 @@
   var STATUS = {"INBOX":"수집함","NEXT":"다음 행동","DELEGATED":"위임","SCHEDULED":"일정","SOMEDAY":"언젠가","DONE":"완료","DROPPED":"버림","REFERENCE":"참고"};
   var KEY = "";
   var INITIAL = null;
-  var KIT = { name: "GTD 워크", version: "1.18.7·v2" };
+  var KIT = { name: "GTD 워크", version: "1.18.8·v2" };
 
   // ── 아이콘 (24px, 선 하나로 통일) ──
   var ICONS = {
@@ -1155,14 +1155,14 @@
   }
 
   document.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { go(b.getAttribute('data-go')); }); });
-  function go(name) {
+  function go(name, localOnly) {
     document.querySelectorAll('[data-go]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-go') === name); });
     document.querySelectorAll('[data-nav]').forEach(function (b) { b.classList.remove('on'); });
     document.querySelectorAll('.page').forEach(function (p) { p.classList.toggle('on', p.id === 'p-' + name); });
     $('main').classList.toggle('narrow', name === 'inbox' || name === 'more');
     $('main').classList.toggle('mid', name === 'insight');
     closeSheet(); window.scrollTo(0, 0);
-    if (name === 'today') { animNext = true; renderToday(); load(); }
+    if (name === 'today') { animNext = true; renderToday(); if (!localOnly) load(); }
     if (name === 'inbox') loadInbox();
     if (name === 'calendar') loadCal();
     if (name === 'more') renderMore();
@@ -1440,8 +1440,8 @@
       if (e.kit && kt && quad(kt) < 4) sh += ' q' + quad(kt);
       if (e.kit && doneIds[e.kit]) h += '<div class="blk dn' + sh + '" data-drag="' + esc(e.kit) + '" data-placed="1" data-done="1" data-start="' + s + '" data-title="' + ttl + '" title="' + ttl + '" data-dur="' + (en - s) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '" title="' + ttl + ' · 왼쪽 칸으로 끌면 다시 계획"><b>' + svg('check', 13) + mk2 + '<span>' + ttl + '</span></b><span class="rsz" aria-hidden="true"></span></div>';
       else if (e.kit) h += '<div class="blk pk' + sh + (planSel[e.kit] ? ' sel' : '') + '" data-drag="' + esc(e.kit) + '" data-placed="1" data-start="' + s + '" data-title="' + ttl + '" title="' + ttl + '" data-dur="' + (en - s) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '" title="' + ttl + ' · 끌어서 시간 옮기기, 아래 가장자리로 길이 조절, 오른쪽 칸으로 끌면 완료"><b>' + mk2 + ttl + '</b><span class="rsz" aria-hidden="true"></span></div>';
-      else if (e.own && e.eventId) h += '<div class="blk ev mv' + sh + '" data-drag="ev:' + esc(e.eventId) + '" data-evid="' + esc(e.eventId) + '" data-calid="' + esc(e.calId || 'primary') + '" data-placed="1" data-start="' + s + '" data-title="' + esc(e.title) + '" data-dur="' + (en - s) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '' + (e.color ? ';box-shadow:inset 3px 0 0 ' + esc(e.color) : '') + '" title="' + esc(e.title) + ' · 끌어서 옮기면 구글 캘린더에도 반영돼요"><b>' + esc(e.title) + '</b><span class="rsz" aria-hidden="true"></span></div>';
-      else h += '<div class="blk ev' + sh + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '' + (e.color ? ';box-shadow:inset 3px 0 0 ' + esc(e.color) : '') + '" title="' + esc(e.title) + ' ' + esc(e.start) + '–' + esc(e.end) + ' · 공유받은 캘린더라 여기서는 옮길 수 없어요"><b>' + esc(e.title) + '</b></div>';
+      else if (e.own && e.eventId) h += '<div class="blk ev mv' + sh + '" role="button" tabindex="0" data-devent="' + ev.items.indexOf(e) + '" data-drag="ev:' + esc(e.eventId) + '" data-evid="' + esc(e.eventId) + '" data-calid="' + esc(e.calId || 'primary') + '" data-placed="1" data-start="' + s + '" data-title="' + esc(e.title) + '" data-dur="' + (en - s) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '' + (e.color ? ';box-shadow:inset 3px 0 0 ' + esc(e.color) : '') + '" title="' + esc(e.title) + ' · 끌어서 옮기면 구글 캘린더에도 반영돼요"><b>' + esc(e.title) + '</b><span class="rsz" aria-hidden="true"></span></div>';
+      else h += '<div class="blk ev' + sh + '" role="button" tabindex="0" data-devent="' + ev.items.indexOf(e) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '' + (e.color ? ';box-shadow:inset 3px 0 0 ' + esc(e.color) : '') + '" title="' + esc(e.title) + ' ' + esc(e.start) + '–' + esc(e.end) + ' · 공유받은 캘린더라 여기서는 옮길 수 없어요"><b>' + esc(e.title) + '</b></div>';
     });
     return h + '<div class="drop" id="dropMark" hidden></div></div></div></div>';
   }
@@ -3009,8 +3009,26 @@
   })();
   function openCalEvent(ev) {
     openSheet('<div class="cal-event-detail" style="--event-accent:' + esc(ev.color || 'var(--blue)') + '"><div class="st cal-event-title">' + esc(ev.title) + '</div><div class="ss">' + esc(ev.date) + '</div>' +
-      '<div class="cal-event-time">' + esc(ev.start) + '-' + esc(ev.end) + '</div></div>');
+      '<div class="cal-event-time">' + esc(ev.start) + '-' + esc(ev.end) + '</div><p>구글 캘린더 일정은 완료 표시가 없어요. 할 일로 관리하려면 \'할 일로 담기\'를 눌러 주세요.</p>' +
+      '<button type="button" class="cta" data-cal-capture="' + esc(ev.title) + '">할 일로 담기</button></div>');
   }
+  function captureCalEvent(title) {
+    go('today', true);
+    var input = $('capInput');
+    input.value = title; input.focus(); input.setSelectionRange(title.length, title.length);
+  }
+  document.addEventListener('keydown', function (e) {
+    var block = e.target.closest && e.target.closest('[data-devent]');
+    if (block && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); block.click(); }
+  });
+  document.addEventListener('click', function (e) {
+    var capture = e.target.closest('[data-cal-capture]');
+    if (capture) return captureCalEvent(capture.getAttribute('data-cal-capture'));
+    var block = e.target.closest('[data-devent]');
+    if (!block || e.target.closest('.rsz') || (swipedAt && Date.now() - swipedAt < 400)) return;
+    var item = data && data.events && data.events.items[+block.getAttribute('data-devent')];
+    if (item && !item.kit) openCalEvent(item);
+  });
   $('cBody').addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('[data-wexp], [data-wevent]')) { e.preventDefault(); e.target.closest('[data-wexp], [data-wevent]').click(); } });
   $('cBody').addEventListener('click', function (e) {
     var x = e.target.closest('[data-wexp]'); if (x) { var xd = x.getAttribute('data-wexp'); cExp[xd] = !cExp[xd]; return cLast && renderCal(cLast); }
