@@ -11,7 +11,7 @@
   var SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/calendar.calendarlist.readonly', 'https://www.googleapis.com/auth/calendar.events.readonly', 'https://www.googleapis.com/auth/calendar.events.owned', 'openid', 'email'].join(' ');
   var tok = null, waiters = [], client = null, started = false;
   try { tok = JSON.parse(localStorage.getItem('kitTok') || 'null'); } catch (e) {}
-  var valid = function () { return tok && tok.t && tok.exp > Date.now() + 60e3; };
+  var valid = function () { return tok && tok.t && tok.exp > Date.now(); };
   var store = {
     get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -131,7 +131,7 @@
     failAt = Date.now();
     if (valid()) { // 아직 토큰이 살아 있으면 막대를 띄우지 않고, 만료되는 때 확인한다
       showGate(false); clearTimeout(timer);
-      timer = setTimeout(function () { if (!visible()) return; if (!valid()) showGate(true); else schedule(); }, Math.max(1000, tok.exp - 60e3 - Date.now() + 1000));
+      timer = setTimeout(function () { if (!visible()) return; if (!valid()) showGate(true); else schedule(); }, Math.max(1000, tok.exp - Date.now() + 1000));
       return;
     }
     // 만료된 토큰은 정리하되 이메일·프로필은 남긴다(다음에 열 때 처음 화면이 아니라 저장본 + '계속하기' 막대)
