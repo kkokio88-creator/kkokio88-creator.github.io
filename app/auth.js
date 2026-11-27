@@ -12,6 +12,10 @@
   var tok = null, waiters = [], client = null, started = false;
   try { tok = JSON.parse(localStorage.getItem('kitTok') || 'null'); } catch (e) {}
   var valid = function () { return tok && tok.t && tok.exp > Date.now(); };
+  // 제보 #17: 로그인 기억 90일(쓸 때마다 연장). 구글 접근 토큰은 1시간짜리라 구글이 정한 값이고, 앱은 90일 동안 계정을 기억해 '처음 화면'이 아니라 '계속하기'로 이어 준다
+  var REMEMBER = 90 * 864e5, SEEN_STEP = 36e5;
+  if (tok && !tok.seen) tok.seen = Date.now();
+  if (tok && !valid() && Date.now() - tok.seen > REMEMBER) { tok = null; try { localStorage.removeItem('kitTok'); } catch (e) {} }
   var store = {
     get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -112,7 +116,24 @@
   function canSilent() { return !!(tok && tok.email && CFG.clientId && window.google && google.accounts && google.accounts.oauth2 && visible()); }
   function cooling() { return Date.now() - failAt < 120e3 || Date.now() - loginAt < 120e3; }
   // force: 창이 다시 보일 때·포커스·401 처럼 사람이 돌아온 순간. 이전 실패·시도 간격을 무시하고 새로 시도한다
+  // 쓴 시각을 1시간에 한 번만 저장해 90일을 사용 시점부터 다시 센다
+  function touch() {
+    if (!tok || Date.now() - (tok.seen || 0) < SEEN_STEP) return;
+    tok.seen = Date.now(); store.set('kitTok', JSON.stringify(tok));
+  }
+  // 조용한 갱신이 팝업 차단 등으로 실패하면 사람의 다음 클릭·키 입력 때(팝업이 허용되는 순간) 한 번 더 갱신한다
+  var gestureArmed = false, gestureAt = 0;
+  function armGesture() { gestureArmed = !!(tok && tok.email) && Date.now() - gestureAt > 60e3; }
+  function onGesture() {
+    if (!gestureArmed) return;
+    gestureArmed = false;
+    if (!expiring() || silent || !canSilent()) return;
+    gestureAt = Date.now(); tryAt = gestureAt; silent = true;
+    clearTimeout(silentTimer); silentTimer = setTimeout(function () { if (silent) silentFail(); }, 15e3);
+    try { getClient().requestAccessToken({ prompt: '', login_hint: tok.email }); } catch (e) { silentFail(); }
+  }
   function refresh(force) {
+    touch();
     if (!expiring() || Date.now() - loginAt < 120e3) return;
     if (!force && (Date.now() - tryAt < 30e3 || Date.now() - failAt < 120e3)) return;
     if (!canSilent()) { if (!valid() && started && visible()) showGate(true); return; }
@@ -128,14 +149,14 @@
   function silentFail() {
     clearTimeout(silentTimer); silent = false;
     if (!visible()) return; // 숨은 동안의 실패는 확정하지 않는다: 다시 보일 때 새로 시도
-    failAt = Date.now();
+    failAt = Date.now(); armGesture();
     if (valid()) { // 아직 토큰이 살아 있으면 막대를 띄우지 않고, 만료되는 때 확인한다
       showGate(false); clearTimeout(timer);
       timer = setTimeout(function () { if (!visible()) return; if (!valid()) showGate(true); else schedule(); }, Math.max(1000, tok.exp - Date.now() + 1000));
       return;
     }
     // 만료된 토큰은 정리하되 이메일·프로필은 남긴다(다음에 열 때 처음 화면이 아니라 저장본 + '계속하기' 막대)
-    if (tok) { tok = { email: tok.email, name: tok.name, picture: tok.picture, pf: tok.pf }; store.set('kitTok', JSON.stringify(tok)); }
+    if (tok) { tok = { email: tok.email, name: tok.name, picture: tok.picture, pf: tok.pf, seen: tok.seen }; store.set('kitTok', JSON.stringify(tok)); }
     showGate(true);
   }
   function schedule() {
@@ -161,7 +182,7 @@
     var granted = String(r.scope || SCOPES);
     if (granted.indexOf('drive.file') < 0) return failShow({ code: 'E-SCOPE', text: '권한 화면에서 위쪽 "모두 선택"을 눌러 주세요. 내 시트를 만들고 캘린더를 보려면 필요해요. 버튼을 다시 눌러 주세요 (E-SCOPE)' });
     var oldMsg = document.getElementById('kgMsg'); if (oldMsg) oldMsg.textContent = ''; setDetail(''); // 늦게 온 토큰: 떠 있던 안내·오류를 지운다
-    tok = { t: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000, cal: granted.indexOf('calendar') >= 0, email: tok && tok.email };
+    tok = { t: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000, cal: granted.indexOf('calendar') >= 0, email: tok && tok.email, seen: Date.now() };
     store.set('kitTok', JSON.stringify(tok)); failAt = 0;
     schedule();
     var w = waiters; waiters = []; w.forEach(function (f) { f(tok.t); });
@@ -366,6 +387,7 @@
     waiters.push(function () { warmWait = false; window.KIT_ENGINE.warm(); });
   }
   window.addEventListener('focus', function () { backFromPopup(); if (started) refresh(true); });
+  ['pointerdown', 'keydown'].forEach(function (n) { document.addEventListener(n, onGesture, true); });
   window.addEventListener('pagehide', function () { if (started) window.KIT_ENGINE.persist(); });
   window.addEventListener('beforeunload', function (e) { if (started) window.KIT_ENGINE.persist(); if (started && window.KIT_ENGINE.saveFailed()) { e.preventDefault(); e.returnValue = ''; } });
   window.KIT_AUTH = { login: login, logout: logout, email: function () { return (tok && tok.email) || ''; }, profile: function () { return tok ? { email: tok.email || '', name: tok.name || '', picture: tok.picture || '' } : {}; }, getToken: function () { return token(); } };
