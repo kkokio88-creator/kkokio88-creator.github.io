@@ -3954,16 +3954,20 @@
   function tick() { $('fmClock').textContent = ('0' + Math.floor(fm.left / 60)).slice(-2) + ':' + ('0' + fm.left % 60).slice(-2); document.title = $('fmClock').textContent + ' · ' + KIT.name; }
   function closeFocus(done) {
     clearInterval(fm.timer); $('fm').classList.remove('on'); document.title = KIT.name;
-    var t = fm.t, left = fm.left; fm.t = null;
-    if (done && t) { confetti(90); call('completeTask', t.id).then(function (r) { toast('집중 완료!', r.undo); setView(r.view); }).catch(function (e) { toast(e.message); }); return; }
+    var t = fm.t, left = fm.left, total = (t && t.est || 25) * 60; fm.t = null;
+    var hasBlock = !!(t && ((data && data.events && data.events.items) || []).filter(function (e) { return e.kit === t.id && e.start && e.end; })[0]);
+    var elapsed = Math.round((total - left) / 60);
+    if (done && t) {
+      confetti(90);
+      call('completeTask', t.id).then(function (r) { toast('집중 완료!', r.undo); setView(r.view); }).catch(function (e) { toast(e.message); });
+      return;
+    }
     if (!t || !isImp(t) || t.status === STATUS.DONE || t.status === STATUS.DROPPED) return;
-    var hasBlock = !!(((data && data.events && data.events.items) || []).filter(function (e) { return e.kit === t.id && e.start && e.end; })[0]);
     if (hasBlock) return;
-    var elapsed = Math.round(((t.est || 25) * 60 - left) / 60);
     if (!(elapsed > 0)) return;
     var spent = (t.spent || 0) + elapsed;
     t.spent = spent;
-    call('updateTask', t.id, { spent: spent }).catch(function () {});
+    call('updateTask', t.id, { spent: spent }).then(function () { toast('중단했어요 · ' + elapsed + '분을 쓴 시간에 더했어요'); }).catch(function () { t.spent = spent - elapsed; toast('쓴 시간을 저장하지 못했어요. 다시 시도해 주세요'); });
   }
   $('fmPause').onclick = function () { fm.paused = !fm.paused; this.textContent = fm.paused ? '계속' : '멈춤'; };
   $('fmDone').onclick = function () { closeFocus(true); };
