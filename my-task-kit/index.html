@@ -1364,6 +1364,19 @@
         tagBtns(t) + hovBtns(t, true) + '</div></div>';
     }).join('') + '</div>' + (tray.length > 1 ? '<button class="txtlink" data-autoplan>' + svg('calendar', 15) + ' 빈 시간에 한 번에 배치</button>' : '');
   }
+  // 캘린더 일정 완료: 구글 캘린더에는 표시하지 않고 이 기기에만 날짜별로 기억한다 (오늘 것만 남김)
+  function evDoneMap() { try { var m = JSON.parse(localStorage.getItem('kitEvDone') || '{}'); return m && typeof m === 'object' ? m : {}; } catch (e) { return {}; } }
+  function evDoneSet(date, evId, title, on) {
+    var m = evDoneMap(), n = {}; n[date] = m[date] || {};
+    if (on) n[date][evId] = title; else delete n[date][evId];
+    try { localStorage.setItem('kitEvDone', JSON.stringify(n)); } catch (e) {}
+  }
+  function isEvDone(e, today) { var m = evDoneMap(); return !!(e && e.eventId && !e.kit && m[e.date || today] && m[e.date || today][e.eventId] !== undefined); }
+  function doneEvents(d) { return ((d.events && d.events.items) || []).filter(function (e) { return !e.allDay && e.start && e.end && isEvDone(e, d.today); }).map(function (e) { return { id: e.eventId, title: e.title, spent: Math.max(toMin(e.end) - toMin(e.start), 0) }; }); }
+  function markEventDone(evId, title, on) {
+    evDoneSet(data.today, evId, title, on); animNext = false; renderToday();
+    toast(on ? '완료했어요 · 캡처에도 들어가요' : '다시 계획으로 옮겼어요');
+  }
   function dayPlanHtml(d, list, noTray) {
     var ev = d.events || { items: [] };
     if (ev.ok === false) return '<div class="card"><div class="empty">' + tile('calendar', 'blue', 26) + '<br>' + esc(ev.reason || '구글 캘린더를 읽지 못했어요') + '</div></div>';
@@ -1377,13 +1390,13 @@
     }).join('') + '</div>' + (tray.length > 1 ? '<button class="txtlink" data-autoplan style="margin-top:2px">빈 시간에 한 번에 배치</button>' : '') + '</div>'
       : '<div class="tray"><div class="trayh">' + svg('check', 13) + ' 오늘 할 일을 모두 배치했어요</div></div>';
     if (noTray && !items.length) h += '<div class="ss" style="margin:0 4px 8px;color:var(--t3);font-size:13.5px">왼쪽 할 일을 끌어다 시간에 놓아 보세요</div>';
-    var nDone = items.filter(function (e) { return e.kit && doneIds[e.kit]; }).length;
+    var nDone = items.filter(function (e) { return e.kit ? doneIds[e.kit] : isEvDone(e, d.today); }).length;
     h += '<div class="gridwrap" id="gridWrap"><div class="lanes"><span>계획</span><span class="dn">' + svg('check', 13) + '완료' + (nDone ? ' ' + nDone : '') + '</span></div><div class="dgrid" id="dayGrid" style="height:' + Math.round((PE - PS) * PX) + 'px"><div class="dlane" id="doneLane"></div>';
     for (var m = PS; m <= PE; m += 60) h += '<div class="hr" style="top:' + Math.round((m - PS) * PX) + 'px"><span>' + (m / 60) + '시</span></div>';
     var now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
     if (nm > PS && nm < PE) h += '<div class="nowl" style="top:' + Math.round((nm - PS) * PX) + 'px"></div>';
     // 시간이 겹치는 블록은 구글 캘린더처럼 옆으로 나눠 놓는다 (계획 칸·완료 칸 따로)
-    var laneOf = function (e) { return e.kit && doneIds[e.kit] ? 'dn' : 'pl'; };
+    var laneOf = function (e) { return e.kit ? (doneIds[e.kit] ? 'dn' : 'pl') : (isEvDone(e, d.today) ? 'dn' : 'pl'); };
     ['pl', 'dn'].forEach(function (ln) {
       var arr = items.filter(function (e) { return laneOf(e) === ln; }).map(function (e) { var a0 = Math.max(toMin(e.start), PS); return { e: e, s: a0, en: Math.min(Math.max(toMin(e.end), a0 + 15), PE) }; })
         .sort(function (a, b) { return a.s - b.s || b.en - a.en; });
@@ -1410,7 +1423,10 @@
       if (e.kit && kt && quad(kt) < 4) sh += ' q' + quad(kt);
       if (e.kit && doneIds[e.kit]) h += '<div class="blk dn' + sh + '" data-drag="' + esc(e.kit) + '" data-placed="1" data-done="1" data-start="' + s + '" data-title="' + ttl + '" title="' + ttl + '" data-dur="' + (en - s) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '" title="' + ttl + ' · 왼쪽 칸으로 끌면 다시 계획"><b>' + svg('check', 13) + mk2 + '<span>' + ttl + '</span></b><span class="rsz" aria-hidden="true"></span></div>';
       else if (e.kit) h += '<div class="blk pk' + sh + (planSel[e.kit] ? ' sel' : '') + '" data-drag="' + esc(e.kit) + '" data-placed="1" data-start="' + s + '" data-title="' + ttl + '" title="' + ttl + '" data-dur="' + (en - s) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '" title="' + ttl + ' · 끌어서 시간 옮기기, 아래 가장자리로 길이 조절, 오른쪽 칸으로 끌면 완료"><b>' + mk2 + ttl + '</b><span class="rsz" aria-hidden="true"></span></div>';
-      else if (e.own && e.eventId) h += '<div class="blk ev mv' + sh + '" role="button" tabindex="0" data-devent="' + ev.items.indexOf(e) + '" data-drag="ev:' + esc(e.eventId) + '" data-evid="' + esc(e.eventId) + '" data-calid="' + esc(e.calId || 'primary') + '" data-placed="1" data-start="' + s + '" data-title="' + esc(e.title) + '" data-dur="' + (en - s) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '' + (e.color ? ';box-shadow:inset 3px 0 0 ' + esc(e.color) : '') + '" title="' + esc(e.title) + ' · 끌어서 옮기면 구글 캘린더에도 반영돼요"><b>' + esc(e.title) + '</b><span class="rsz" aria-hidden="true"></span></div>';
+      else if (e.eventId && !e.kit) {
+        var edn = isEvDone(e, d.today), mv = !!e.own, evAt = e.color ? ';box-shadow:inset 3px 0 0 ' + esc(e.color) : '';
+        h += '<div class="blk ev' + (edn ? ' dn' : '') + (mv ? ' mv' : '') + sh + '" role="button" tabindex="0" data-devent="' + ev.items.indexOf(e) + '" data-drag="ev:' + esc(e.eventId) + '" data-evid="' + esc(e.eventId) + '" data-calid="' + esc(e.calId || 'primary') + '"' + (mv ? '' : ' data-nomove="1"') + (edn ? ' data-evdone="1"' : '') + ' data-placed="1" data-start="' + s + '" data-title="' + esc(e.title) + '" data-dur="' + (en - s) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + evAt + '" title="' + esc(e.title) + (edn ? ' · 왼쪽 칸으로 끌면 다시 계획' : ' · 오른쪽 칸으로 끌면 완료' + (mv ? ', 끌어서 옮기면 구글 캘린더에도 반영돼요' : '')) + '"><b>' + (edn ? svg('check', 13) + '<span>' + esc(e.title) + '</span>' : esc(e.title)) + '</b>' + (mv && !edn ? '<span class="rsz" aria-hidden="true"></span>' : '') + '</div>';
+      }
       else h += '<div class="blk ev' + sh + '" role="button" tabindex="0" data-devent="' + ev.items.indexOf(e) + '" style="top:' + top + 'px;height:' + ht + 'px' + lay(e) + '' + (e.color ? ';box-shadow:inset 3px 0 0 ' + esc(e.color) : '') + '" title="' + esc(e.title) + ' ' + esc(e.start) + '–' + esc(e.end) + ' · 공유받은 캘린더라 여기서는 옮길 수 없어요"><b>' + esc(e.title) + '</b></div>';
     });
     return h + '<div class="drop" id="dropMark" hidden></div></div></div></div>';
@@ -1707,7 +1723,7 @@
     var byId = {}; all.forEach(function (t) { byId[t.id] = t; });
     var ev = ((d.events && d.events.items) || []).filter(function (e) { return !e.allDay && e.start && e.end; });
     var doneIds = {}; (d.doneToday || []).forEach(function (t) { doneIds[t.id] = 1; });
-    var bl = ev.map(function (e) { var s0 = toMin(e.start); return { s: s0, e: Math.max(toMin(e.end), s0 + 15), calendar: !e.kit, title: !e.kit ? '일정' : (function () { var kt = findTask(e.kit) || (d.doneToday || []).filter(function (x) { return x.id === e.kit; })[0]; return (kt && isImp(kt) ? '★ ' : '') + (kt && kt.urgent ? '↑ ' : ''); })() + String(e.title).replace(/^▶\s*/, ''), done: !!e.kit && !!doneIds[e.kit] }; }).sort(function (a, b) { return a.s - b.s; });
+    var bl = ev.map(function (e) { var s0 = toMin(e.start); return { s: s0, e: Math.max(toMin(e.end), s0 + 15), calendar: !e.kit && !isEvDone(e, d.today), title: !e.kit ? (isEvDone(e, d.today) ? String(e.title) : '일정') : (function () { var kt = findTask(e.kit) || (d.doneToday || []).filter(function (x) { return x.id === e.kit; })[0]; return (kt && isImp(kt) ? '★ ' : '') + (kt && kt.urgent ? '↑ ' : ''); })() + String(e.title).replace(/^▶\s*/, ''), done: e.kit ? !!doneIds[e.kit] : isEvDone(e, d.today) }; }).sort(function (a, b) { return a.s - b.s; });
     var pj = (d.projects || []).filter(function (p) { return !p.finished; }).sort(function (a, b) { return (b.important || 0) - (a.important || 0) || ((a.nextDue || '9') < (b.nextDue || '9') ? -1 : 1); }).slice(0, 3);
     var doneBy = {}; (d.doneToday || []).forEach(function (t) { if (t.project) (doneBy[t.project] = doneBy[t.project] || []).push(t); });
     var from = 9 * 60, to = 18 * 60;
@@ -1737,7 +1753,7 @@
     var days2 = []; for (var di = 13; di >= 0; di--) days2.push(addDays(d.today, -di));
     var imp2 = days2.map(function (dd) { var ts = all.filter(function (t) { if (!isImp(t) || t.status === STATUS.DROPPED) return false; if (t.status === STATUS.DONE) return t.completed === dd; return t.focus === dd && t.spent; }); return { d: dd, m: ts.reduce(function (a, t) { return a + (t.spent || 0); }, 0), kw: ts.filter(function (t) { return t.spent; }).sort(function (a, b) { return b.spent - a.spent; }).map(function (t) { return capKw(t.title); }) }; })
       .filter(function (r) { var w = dowOf(r.d); return r.m || (w !== 0 && w !== 6); });
-    var cd = captureDone(d.doneToday, 8), doneTop = top + Math.max(leftH, rightH) + GAP, doneH = cd.n ? 56 + cd.rows.length * 26 + (cd.more ? 24 : 0) + 8 : 0;
+    var cd = captureDone((d.doneToday || []).concat(doneEvents(d)), 8), doneTop = top + Math.max(leftH, rightH) + GAP, doneH = cd.n ? 56 + cd.rows.length * 26 + (cd.more ? 24 : 0) + 8 : 0;
     var BR = 24, botTop = doneTop + (doneH ? doneH + GAP : 0), botH = 70 + imp2.length * BR + 20;
     var H = botTop + botH + 52, sc = 2;
     var cv = document.createElement('canvas'); cv.width = W * sc; cv.height = H * sc; var x = cv.getContext('2d'); x.scale(sc, sc);
@@ -1911,7 +1927,7 @@
       if (x < w.left || x > w.right || y < w.top || y > w.bottom) return null;
       // 시간표 블록은 잡은 자리를 기준으로(블록이 손가락 아래에서 튀지 않게), 칩은 가운데를 기준으로
       var m = dg.placed ? PS + Math.round(((y - r.top) / PX - dg.grab) / 15) * 15 : PS + Math.round((y - r.top) / PX / 15) * 15 - Math.round(dg.dur / 2 / 15) * 15;
-      dg.lane = !dg.evid && (x - r.left) / r.width > 0.5 ? 'done' : 'plan';
+      dg.lane = (x - r.left) / r.width > 0.5 ? 'done' : 'plan';
       return Math.max(PS, Math.min(m, PE - Math.min(dg.dur, 15)));
     }
     function start() {
@@ -1935,6 +1951,14 @@
       if (d.evid) {
         if (!e || e.type === 'pointercancel') return renderToday();
         if (d.trash) { toast('캘린더 일정은 구글 캘린더에서 지워 주세요'); return renderToday(); }
+        var evNoMove = d.el.hasAttribute('data-nomove');
+        // 오른쪽(완료) 칸: 완료로 기록(구글 캘린더는 건드리지 않음). 완료한 일정을 왼쪽(계획) 칸으로 끌면 다시 계획
+        if (d.slot !== null && d.slot !== undefined) {
+          if (d.lane === 'done' && !d.isDone) return markEventDone(d.evid, d.title, true);
+          if (d.lane !== 'done' && d.isDone) return markEventDone(d.evid, d.title, false);
+          if (d.isDone) return renderToday();
+        }
+        if (evNoMove) { toast('공유받은 캘린더 일정은 옮길 수 없어요'); return renderToday(); }
         if (d.day) return moveEventTo(d.calid, d.evid, d.day, d.start0, d.dur);
         if (d.slot !== null && d.slot !== undefined && d.slot !== d.start0) return moveEventTo(d.calid, d.evid, data.today, d.slot, d.dur);
         return renderToday();
@@ -1980,7 +2004,7 @@
       var sel = selIds(), group = placed && planSel[id] && sel.length > 1 ? sel : [id];
       var g = $('dayGrid'), grab = placed && g ? (e.clientY - g.getBoundingClientRect().top) / PX - (st0 - PS) : 0;
       if (el.hasAttribute('data-evid')) group = [id];
-      dg = { el: el, evid: el.getAttribute('data-evid'), calid: el.getAttribute('data-calid'), isDone: el.hasAttribute('data-done'), fromSheet: !!el.closest('#sheet'), placed: placed, id: id, start0: st0, grab: grab, group: group, title: el.getAttribute('data-title'), dur: +el.getAttribute('data-dur') || 30, x: e.clientX, y: e.clientY, on: false, touch: e.pointerType !== 'mouse', slot: null };
+      dg = { el: el, evid: el.getAttribute('data-evid'), calid: el.getAttribute('data-calid'), isDone: el.hasAttribute('data-done') || el.hasAttribute('data-evdone'), fromSheet: !!el.closest('#sheet'), placed: placed, id: id, start0: st0, grab: grab, group: group, title: el.getAttribute('data-title'), dur: +el.getAttribute('data-dur') || 30, x: e.clientX, y: e.clientY, on: false, touch: e.pointerType !== 'mouse', slot: null };
       if (dg.touch) dg.timer = setTimeout(function () { if (dg && !dg.on) start(); }, 200);
     });
     document.addEventListener('pointermove', function (e) {
@@ -2979,7 +3003,7 @@
   })();
   function openCalEvent(ev) {
     openSheet('<div class="cal-event-detail" style="--event-accent:' + esc(ev.color || 'var(--blue)') + '"><div class="st cal-event-title">' + esc(ev.title) + '</div><div class="ss">' + esc(ev.date) + '</div>' +
-      '<div class="cal-event-time">' + esc(ev.start) + '-' + esc(ev.end) + '</div><p>구글 캘린더 일정은 완료 표시가 없어요. 할 일로 관리하려면 \'할 일로 담기\'를 눌러 주세요.</p>' +
+      '<div class="cal-event-time">' + esc(ev.start) + '-' + esc(ev.end) + '</div><p>구글 캘린더에는 완료 표시가 없어도 돼요. 시간표에서 오른쪽 \'완료\' 칸으로 끌면 완료로 기록되고 캡처에 들어가요. 할 일로 관리하려면 \'할 일로 담기\'를 눌러 주세요.</p>' +
       '<button type="button" class="cta" data-cal-capture="' + esc(ev.title) + '">할 일로 담기</button></div>');
   }
   function captureCalEvent(title) {
