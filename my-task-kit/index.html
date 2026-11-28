@@ -1267,6 +1267,9 @@
           (extra ? '<button class="txtlink" data-more>' + extra + '개 더 보기</button>' : '');
       }
     }
+    var completed = d.doneToday || [];
+    a += '<div class="h2">오늘 끝낸 일 <em class="xn">' + completed.length + '개</em></div><div class="card" id="todayDone">' +
+      (completed.length ? completed.map(function (t) { return '<div class="row" style="cursor:default">' + tile('check', 'green', 18) + '<div class="tx"><div class="t">' + esc(t.title) + '</div></div></div>'; }).join('') : '<div class="empty">오늘 끝낸 일이 없어요</div>') + '</div>';
     // 다시 그려도 시간표 스크롤 자리를 지킨다 (끌어다 놓은 뒤 저장이 끝나 다시 그릴 때 '지금'으로 튀지 않게)
     var gw0 = $('gridWrap'), keepTop = gw0 ? gw0.scrollTop : null;
     $('todayA').innerHTML = a;
